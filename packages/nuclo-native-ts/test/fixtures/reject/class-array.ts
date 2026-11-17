@@ -1,4 +1,5 @@
 // expect: natively they are different types
+// code: NUCLO1005
 interface Animal {
   sound(): string;
 }

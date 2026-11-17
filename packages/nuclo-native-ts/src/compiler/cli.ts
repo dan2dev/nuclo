@@ -17,6 +17,7 @@ import { emitSwift } from "./emitSwift.ts";
 import { emitWasmNative } from "./wasmNative.ts";
 import type { Program } from "./ir.ts";
 import { CompileError, type Diagnostic, formatDiagnostic, transpile } from "./transpile.ts";
+import { docsUrl, formatPretty, summary } from "./diagnostics.ts";
 import { buildWasm } from "./wasm.ts";
 import { buildWeb } from "./web.ts";
 
@@ -61,6 +62,7 @@ const TARGETS: Record<string, (input: TargetInput) => string | Promise<string>> 
   android({ program, entry, name, dir }) {
     writeFileSync(path.join(dir, `${name}.kt`), emitKotlin(program));
     copyFileSync(path.join(RUNTIMES, "android/NucloRuntime.kt"), path.join(dir, "NucloRuntime.kt"));
+    copyFileSync(path.join(RUNTIMES, "android/NucloJs.kt"), path.join(dir, "NucloJs.kt"));
     copyNative(entry, "android", dir);
     return path.join(dir, `${name}.kt`);
   },
@@ -129,6 +131,13 @@ function usage(): never {
   process.exit(2);
 }
 
+/** Errors on stderr, tsc-style with a code frame; colored on a terminal (NO_COLOR / FORCE_COLOR as usual). */
+function report(diagnostics: Diagnostic[], after = "") {
+  const color = !process.env.NO_COLOR && (!!process.env.FORCE_COLOR || !!process.stderr.isTTY);
+  process.stderr.write(`${diagnostics.map((d) => formatPretty({ ...d, id: d.id ?? "NUCLO6000" }, color)).join("\n")}\n`);
+  process.stderr.write(`${summary(diagnostics, color)}${after ? ` ${after}` : ""}\n`);
+}
+
 const [command, entry, ...rest] = process.argv.slice(2);
 
 if (command === "check") {
@@ -146,8 +155,8 @@ if (command === "check") {
       for (const d of error.diagnostics) found.set(formatDiagnostic(d), d);
     }
   }
-  if (json) console.log(JSON.stringify([...found.values()].map((d) => ({ ...d, file: path.resolve(d.file) }))));
-  else if (found.size) console.error(`${[...found.keys()].join("\n")}\n\n${found.size} error${found.size === 1 ? "" : "s"}.`);
+  if (json) console.log(JSON.stringify([...found.values()].map((d) => ({ ...d, file: path.resolve(d.file), severity: "error", ...(d.id?.startsWith("NUCLO") ? { docs: docsUrl(d.id) } : {}) }))));
+  else if (found.size) report([...found.values()]);
   else console.log(`${entries.join(", ")}: no errors (${Math.round(performance.now() - started)} ms)`);
   process.exit(found.size ? 1 : 0);
 }
@@ -177,8 +186,7 @@ try {
   console.log(`${entry} → ${written.join(", ")} (${Math.round(performance.now() - started)} ms)`);
 } catch (error) {
   if (error instanceof CompileError) {
-    console.error(error.message);
-    console.error(`\n${error.diagnostics.length} error${error.diagnostics.length === 1 ? "" : "s"}; nothing was written.`);
+    report(error.diagnostics, "Nothing was written.");
     process.exit(1);
   }
   throw error;

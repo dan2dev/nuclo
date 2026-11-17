@@ -1,6 +1,8 @@
-// expect: Generic methods are not supported natively
-export class Box {
-  map<U>(f: (n: number) => U): U {
-    return f(1);
+// expect: A generic static method of a generic class is not supported natively
+// code: NUCLO4002
+export class Box<T> {
+  constructor(readonly value: T) {}
+  static of<U>(v: U): Box<U> {
+    return new Box(v);
   }
 }

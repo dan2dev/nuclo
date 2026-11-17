@@ -34,8 +34,11 @@ internal class NView : NSView {
     var scroller: NSScrollView? = null
     var image: NSImage? = null
     var tracking = false
+    /** The window's content view only: runs the layout pass inside AppKit's, before the frame is drawn. */
+    var onLayout: (() -> Unit)? = null
 
     override fun isFlipped() = true
+    override fun layout() { super.layout(); onLayout?.invoke() }
     override fun acceptsFirstMouse(event: NSEvent?) = true
 
     override fun hitTest(point: CValue<CGPoint>): NSView? = if (!takesPointer) null else super.hitTest(point)
@@ -178,7 +181,6 @@ internal class AppKitBackend(private val window: NSWindow) : Backend {
     private var nextId = 1
     private val timers = HashMap<Int, NSTimer>()
     private var nextTimer = 1
-    private var layoutQueued = false
     private val contentView = NView(CGRectMake(0.0, 0.0, 420.0, 780.0))
     private var screen: NSScrollView? = null
     private var screenRoot: ViewId = 0
@@ -187,6 +189,7 @@ internal class AppKitBackend(private val window: NSWindow) : Backend {
     init {
         contentView.backend = this
         contentView.wantsLayer = true
+        contentView.onLayout = { layoutPass() }
         window.contentView = contentView
     }
 
@@ -520,11 +523,8 @@ internal class AppKitBackend(private val window: NSWindow) : Backend {
         requestLayout()
     }
 
-    override fun requestLayout() {
-        if (layoutQueued) return
-        layoutQueued = true
-        onMain { layoutQueued = false; layoutPass() }
-    }
+    // AppKit lays out before it draws: views added in this turn never show at their old frames.
+    override fun requestLayout() { contentView.needsLayout = true }
 
     /** Called when the window resizes, and after requestLayout. */
     fun layoutPass() {

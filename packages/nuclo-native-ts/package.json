@@ -7,6 +7,7 @@
 	"type": "module",
 	"exports": {
 		".": "./src/index.ts",
+		"./adapters": "./src/adapters.ts",
 		"./web": "./src/runtimes/web/index.ts"
 	},
 	"bin": {

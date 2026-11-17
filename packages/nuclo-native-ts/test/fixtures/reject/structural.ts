@@ -1,10 +1,10 @@
-// expect: same shape in TypeScript, but different native classes
-interface A {
+// expect: a copy would not be the same object
+// code: NUCLO1005
+interface Todo {
   id: number;
+  title: string;
 }
-interface B {
-  id: number;
-}
-export function convert(a: A): B {
-  return a;
+// Natively Partial<Todo> is another class (its fields are optional); JavaScript shares the object.
+export function draft(todo: Todo): Partial<Todo> {
+  return todo;
 }

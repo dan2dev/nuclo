@@ -121,7 +121,6 @@ internal class UIKitBackend(private val controller: NucloViewController) : Backe
     private val views = HashMap<ViewId, UView>()
     private var nextId = 1
     private val timers = AppleTimers()
-    private var layoutQueued = false
     private var screen: UIScrollView? = null
     private var screenRoot: ViewId = 0
     private var screenWatcher: ScrollWatcher? = null
@@ -142,6 +141,7 @@ internal class UIKitBackend(private val controller: NucloViewController) : Backe
         view.kind = kind
         view.contentMode = UIViewContentMode.UIViewContentModeRedraw
         view.backgroundColor = null
+        view.opaque = false // drawRect on an opaque view with no background paints black
         views[id] = view
         when (kind) {
             ViewKind.Input -> makeField(view)
@@ -496,11 +496,8 @@ internal class UIKitBackend(private val controller: NucloViewController) : Backe
         requestLayout()
     }
 
-    override fun requestLayout() {
-        if (layoutQueued) return
-        layoutQueued = true
-        onMain { layoutQueued = false; layoutPass() }
-    }
+    // UIKit lays out before it draws (viewDidLayoutSubviews → layoutPass): no frame shows stale positions.
+    override fun requestLayout() { controller.view.setNeedsLayout() }
 
     private fun safeFrame(): CValue<CGRect> {
         val ins = controller.view.safeAreaInsets

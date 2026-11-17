@@ -28,7 +28,7 @@ import AppKit  // macOS: the UIKit names come from runtimes/macos/UIKitShim.swif
 
 // MARK: - Types the generated code uses
 
-public typealias Params = [String: String]
+public typealias Params = JsMap<String>
 public typealias NativeElement = UIView
 public typealias Content = @MainActor () -> [NodeMod?]
 public typealias Cleanup = @MainActor () -> Void
@@ -103,9 +103,15 @@ public extension NativeComponent {
     func destroy(_ view: UIView) {}
 }
 
-public struct NError: Error, LocalizedError {
+public struct NError: Error, LocalizedError, @unchecked Sendable {
     public let message: String
+    /// "Error", or the class of an error the runtime throws as JavaScript would (`RangeError` of a BigInt division by 0).
+    public var name = "Error"
     public init(_ message: String) { self.message = message }
+    public init(name: String, _ message: String) { self.name = name; self.message = message }
+    /// The object of an app's error class (`class E extends Error`) this error carries (`throw new E(…)`).
+    public var obj: AnyObject? = nil
+    public init(name: String, _ message: String, obj: AnyObject) { self.name = name; self.message = message; self.obj = obj }
     public var errorDescription: String? { message }
 }
 
@@ -120,7 +126,7 @@ public enum Position: Equatable { case relative, absolute }
 // `Display.none` and `TextDecoration.none` are always written in full: against an optional, a bare
 // `.none` is Optional's.
 public enum Display: Equatable { case flex, none }
-public enum FontWeight: Equatable { case light, normal, medium, semibold, bold }
+public enum FontWeight: Hashable { case light, normal, medium, semibold, bold }
 public enum FontStyle: Equatable { case normal, italic }
 public enum TextAlign: Equatable { case left, center, right }
 public enum TextDecoration: Equatable { case none, underline, lineThrough }
@@ -657,7 +663,11 @@ private func cssColor(_ text: String) -> UIColor? {
 }
 
 /// globalStyle(): by tag name, and "body" for the screens and what every view inherits.
-@MainActor var globalStyles: [String: Style] = [:]
+@MainActor var globalStyles: [String: Style] = [:] { didSet { globalStylesStamp += 1 } }
+@MainActor var globalStylesStamp = 0
+/// Bumped whenever some node's computed style changes: a node's static style merge stays valid
+/// while its parent's stamp is the one it was merged against.
+@MainActor var styleStamp = 0
 
 @MainActor public func globalStyle(_ selector: String, _ style: Style) {
     for part in selector.split(separator: ",") {
@@ -717,7 +727,19 @@ private func builtinTagStyle(_ tag: String) -> Style {
 /// UIKit's initializer is not optional and AppKit's is.
 private func makeFont(_ descriptor: UIFontDescriptor, _ size: CGFloat) -> UIFont? { UIFont(descriptor: descriptor, size: size) }
 
-private func textFont(_ s: Style) -> UIFont {
+private struct FontKey: Hashable { let size: Double?, weight: FontWeight?, family: String?, italic: Bool }
+@MainActor private var fontCache: [FontKey: UIFont] = [:]
+
+/// The style's font, made once per size, weight, family and slant.
+@MainActor private func textFont(_ s: Style) -> UIFont {
+    let key = FontKey(size: s.fontSize, weight: s.fontWeight, family: s.fontFamily, italic: s.fontStyle == .italic)
+    if let font = fontCache[key] { return font }
+    let font = makeTextFont(s)
+    fontCache[key] = font
+    return font
+}
+
+private func makeTextFont(_ s: Style) -> UIFont {
     let size = CGFloat(s.fontSize ?? 15)
     let weight: UIFont.Weight
     switch s.fontWeight ?? .normal {
@@ -835,14 +857,39 @@ private func points(_ value: Double?) -> CGFloat? {
     /// The label shows an attributed string (see Style.richText).
     private var rich = false
 
-    var classes: [Style] = []
-    var dynamicClass: (@MainActor () -> StyleClass)?
-    var inline = Style()
-    var dynamicInline: (@MainActor () -> Style)?
+    var classes: [Style] = [] { didSet { staleBase() } }
+    var dynamicClass: (@MainActor () -> StyleClass)? { didSet { staleBase() } }
+    /// Behind a reference: most nodes have none, and a Style is over a kilobyte inline.
+    private var inlineRef: StyleRef?
+    var inline: Style {
+        get { inlineRef?.style ?? Style() }
+        set {
+            inlineRef = StyleRef(newValue)
+            staleBase()
+        }
+    }
+    var dynamicInline: (@MainActor () -> Style)? { didSet { staleBase() } }
     private(set) var computed = Style()
-    private var painted: Style?
+    /// Changes whenever `computed` does (see styleStamp).
+    private(set) var computedStamp = 0
+    /// The static part of the style (inherited, tag, classes, inline) of a node with a dynamic style,
+    /// merged against the parent's `computedStamp` and `globalStylesStamp` in `baseFrom`.
+    private var baseRef: StyleRef?
+    private var baseFrom = (-1, -1)
+    /// The last applyStyle depended on nothing but the static part: refresh() can skip it while
+    /// `baseFrom` holds.
+    private var staticStyle = false
+    private func staleBase() {
+        baseRef = nil
+        baseFrom = (-2, -2)
+    }
+    /// The last style painted: `computed`, once there is one.
+    private var hasPainted = false
+    private var painted: Style? { hasPainted ? computed : nil }
     /// The frame the parent's layout gave.
     private var placed: CGRect?
+    /// The last text measure: available width → size.
+    private var textMeasure: (width: CGFloat, size: CGSize)?
 
     /// The update pass this node was built in: its bindings already ran then.
     private let born: Int
@@ -995,7 +1042,8 @@ private func points(_ value: Double?) -> CGFloat? {
         let text = textParts.count == 1 ? textParts[0]() : textParts.map { $0() }.joined()
         guard text != lastText else { return }
         lastText = text
-        setText()
+        // Before the first paint, the paint sets the text (with its style) itself.
+        if painted != nil { setText() }
         invalidateLayout()
     }
 
@@ -1003,6 +1051,7 @@ private func points(_ value: Double?) -> CGFloat? {
 
     /// Writes the text into the label: plain, or with the attributes a UILabel has no property for.
     private func setText() {
+        textMeasure = nil
         guard let label else { return }
         let text = transformed(lastText ?? "")
         guard rich else {
@@ -1044,7 +1093,7 @@ private func points(_ value: Double?) -> CGFloat? {
         guard !destroyed, born != Runtime.shared.generation else { return }
         reconcile?()
         for binding in bindings { binding() }
-        applyStyle()
+        if !(staticStyle && baseFrom == (parent?.computedStamp ?? -1, globalStylesStamp) && !Runtime.shared.forcing) { applyStyle() }
         for child in children { child.refresh() }
     }
 
@@ -1056,14 +1105,30 @@ private func points(_ value: Double?) -> CGFloat? {
     func applyStyle() {
         guard let view else {
             computed = parent?.computed ?? Style()
+            computedStamp = parent?.computedStamp ?? -1
             return
         }
-        let root = parent == nil ? (globalStyles["body"]?.inherited ?? Style()) : Style()
-        var s = (parent?.computed.inherited ?? root).merged(tagStyle(tag))
-        for c in classes { s = s.merged(c) }
-        if let dynamicClass { s = s.merged(dynamicClass().style) }
-        s = s.merged(inline)
+        // The static part is merged once per parent style: an update then costs the dynamic merges only.
+        let from = (parent?.computedStamp ?? -1, globalStylesStamp)
+        let dynamic = dynamicClass != nil || dynamicInline != nil
+        var s: Style
+        if let baseRef, dynamic, baseFrom == from {
+            s = baseRef.style
+        } else {
+            let root = parent == nil ? (globalStyles["body"]?.inherited ?? Style()) : Style()
+            s = (parent?.computed.inherited ?? root).merged(tagStyle(tag))
+            for c in classes { s = s.merged(c) }
+            if dynamicClass == nil, let inlineRef { s = s.merged(inlineRef.style) }
+            baseRef = dynamic ? StyleRef(s) : nil
+            baseFrom = from
+        }
+        if let dynamicClass {
+            s = s.merged(dynamicClass().style)
+            if let inlineRef { s = s.merged(inlineRef.style) }
+        }
         if let dynamicInline { s = s.merged(dynamicInline()) }
+        staticStyle = dynamicClass == nil && dynamicInline == nil && s.media == nil && !s.structural && s.empty == nil && s.checked == nil
+            && s.placeholderShown == nil && s.disabled == nil && s.enabled == nil && s.hover == nil && s.focused == nil && s.pressed == nil
         // `@media` and screens, against the window's width.
         if let media = s.media {
             Runtime.shared.usesMedia = true
@@ -1090,7 +1155,9 @@ private func points(_ value: Double?) -> CGFloat? {
         let before = painted
         if s == before && !Runtime.shared.forcing { return }
         computed = s
-        painted = s
+        hasPainted = true
+        styleStamp += 1
+        computedStamp = styleStamp
         paint(view, s, before)
         guard let before else {
             invalidateLayout()
@@ -1120,6 +1187,7 @@ private func points(_ value: Double?) -> CGFloat? {
     private var fieldText: String? { (view as? UITextField)?.text ?? (view as? UITextView)?.text }
 
     private func paint(_ view: UIView, _ s: Style, _ before: Style?) {
+        textMeasure = nil
         let clips = s.overflow == .hidden || s.overflow == .scroll
         // A scroller (and a textarea, which is one) always clips its content; a label paints its own background,
         // which only a clip rounds.
@@ -1473,7 +1541,14 @@ private func points(_ value: Double?) -> CGFloat? {
             // One line of the style's line height inside the padding, as the web's field.
             size = CGSize(width: min(available, 180), height: computed.lineHeightPoints + field.insets.top + field.insets.bottom)
         } else {
-            let fit = view.sizeThatFits(CGSize(width: available, height: CGFloat.greatestFiniteMagnitude))
+            // A label or button is measured again only when its text, its style or the width changed.
+            let fit: CGSize
+            if let m = textMeasure, m.width == available, kind == .text || kind == .button {
+                fit = m.size
+            } else {
+                fit = view.sizeThatFits(CGSize(width: available, height: CGFloat.greatestFiniteMagnitude))
+                textMeasure = (available, fit)
+            }
             // Up to the device pixel, as a browser places text: whole points would put every box after it up to a point off.
             let scale = Runtime.shared.scale
             size = CGSize(width: min((fit.width * scale).rounded(.up) / scale, available), height: fit.height.rounded(.up))
@@ -2728,13 +2803,13 @@ public struct Attr: NodeMod {
 // MARK: - list()
 
 /// Rows keyed by identity (classes) as nuclo's list(): a row is rebuilt only when its item is new.
-@MainActor public func list<T: AnyObject>(_ items: @escaping @MainActor () -> [T], _ render: @escaping @MainActor (T, Int) -> Node?) -> NodeMod {
-    listFragment(items, render, key: { AnyHashable(ObjectIdentifier($0)) })
+@MainActor public func list<T: AnyObject>(_ items: @escaping @MainActor () -> JsArray<T>, _ render: @escaping @MainActor (T, Int) -> Node?) -> NodeMod {
+    listFragment({ items().a }, render, key: { AnyHashable(ObjectIdentifier($0)) })
 }
 
 /// Rows keyed by value (strings, numbers).
-@MainActor public func list<T: Hashable>(_ items: @escaping @MainActor () -> [T], _ render: @escaping @MainActor (T, Int) -> Node?) -> NodeMod {
-    listFragment(items, render, key: { AnyHashable($0) })
+@MainActor public func list<T: Hashable>(_ items: @escaping @MainActor () -> JsArray<T>, _ render: @escaping @MainActor (T, Int) -> Node?) -> NodeMod {
+    listFragment({ items().a }, render, key: { AnyHashable($0) })
 }
 
 @MainActor private func listFragment<T>(
@@ -3191,16 +3266,16 @@ public struct NTab {
     public func text() async throws -> String { String(decoding: data, as: UTF8.self) }
 
     public func json<T>(_ decode: @MainActor (Any?) throws -> T) async throws -> T {
-        try decode(try JSONSerialization.jsonObject(with: data, options: [.fragmentsAllowed]))
+        try decode(try jsJsonParse(String(decoding: data, as: UTF8.self)))
     }
 }
 
-@MainActor public func fetch(_ url: String, method: String = "GET", body: String? = nil, headers: [String: String] = [:]) async throws -> NResponse {
+@MainActor public func fetch(_ url: String, method: String = "GET", body: String? = nil, headers: JsMap<String> = [:]) async throws -> NResponse {
     guard let u = URL(string: url) else { throw NError("Invalid URL: \(url)") }
     var request = URLRequest(url: u)
     request.httpMethod = method
     request.httpBody = body?.data(using: .utf8)
-    for (key, value) in headers { request.setValue(value, forHTTPHeaderField: key) }
+    for (key, value) in headers.jsEntries { request.setValue(value, forHTTPHeaderField: key) }
     let (data, response) = try await URLSession.shared.data(for: request)
     return NResponse(status: (response as? HTTPURLResponse)?.statusCode ?? 0, data: data)
 }
@@ -3209,33 +3284,375 @@ public func delay(_ ms: Double) async throws {
     try await Task.sleep(nanoseconds: UInt64(max(0, ms) * 1_000_000))
 }
 
+/// A timer of `setTimeout` / `setInterval`. Timers run in the order they are due (ties: the order they were set),
+/// each as its own task: the microtasks it queues run before the next timer, as in JavaScript.
 @MainActor public final class NTimer {
-    fileprivate var task: Task<Void, Never>?
-    func cancel() { task?.cancel() }
+    fileprivate var callback: (@MainActor () -> Void)?
+    fileprivate var due = 0.0
+    fileprivate var seq = 0
+    fileprivate var interval: Double?
+    func cancel() { callback = nil }
+}
+
+@MainActor enum JsTimers {
+    static var pending: [NTimer] = []
+    static var seq = 0
+    static let start = DispatchTime.now().uptimeNanoseconds
+
+    static func now() -> Double {
+        let origin = start
+        return Double(DispatchTime.now().uptimeNanoseconds - origin) / 1_000_000
+    }
+
+    static func add(_ timer: NTimer, after ms: Double) {
+        seq += 1
+        timer.seq = seq
+        timer.due = now() + max(0, ms)
+        let i = pending.firstIndex { $0.due > timer.due } ?? pending.count
+        pending.insert(timer, at: i)
+        arm(timer.due)
+    }
+
+    static func arm(_ due: Double) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + max(0, due - now()) / 1000) { fire() }
+    }
+
+    static func fire() {
+        jsDrainMicrotasks()
+        while let first = pending.first, first.due <= now() {
+            pending.removeFirst()
+            guard let callback = first.callback else { continue }
+            if first.interval == nil { first.callback = nil }
+            callback()
+            jsDrainMicrotasks()
+            if let interval = first.interval, first.callback != nil { add(first, after: interval) }
+        }
+        if let first = pending.first { arm(first.due) }
+    }
 }
 
 @MainActor @discardableResult public func setTimeout(_ callback: @escaping @MainActor () -> Void, _ ms: Double) -> NTimer {
     let timer = NTimer()
-    timer.task = Task { @MainActor in
-        try? await Task.sleep(nanoseconds: UInt64(max(0, ms) * 1_000_000))
-        if !Task.isCancelled { callback() }
-    }
+    timer.callback = callback
+    JsTimers.add(timer, after: ms)
     return timer
 }
 
 @MainActor @discardableResult public func setInterval(_ callback: @escaping @MainActor () -> Void, _ ms: Double) -> NTimer {
     let timer = NTimer()
-    timer.task = Task { @MainActor in
-        while !Task.isCancelled {
-            try? await Task.sleep(nanoseconds: UInt64(max(1, ms) * 1_000_000))
-            if !Task.isCancelled { callback() }
-        }
-    }
+    timer.callback = callback
+    timer.interval = max(1, ms)
+    JsTimers.add(timer, after: max(1, ms))
     return timer
 }
 
 @MainActor public func clearTimeout(_ timer: NTimer) { timer.cancel() }
 @MainActor public func clearInterval(_ timer: NTimer) { timer.cancel() }
+
+// MARK: - Promises and the microtask queue
+
+/// JavaScript's microtask queue: promise reactions and the resumptions of async functions run here, in FIFO order,
+/// after the synchronous code that queued them and before the next timer or event. The runtime's entry points
+/// (the app's start, timers, native completions) drain it; anything else queued gets a drain on the main queue.
+@MainActor enum JsJobs {
+    static var queue: [() -> Void] = []
+    static var head = 0
+    static var draining = false
+    static var scheduled = false
+    /// Promises rejected while nothing handled them: reported once the queue drains, if still unhandled.
+    static var rejected: [JsRejection] = []
+    /// A drain at the main run loop's next turn, before its timers and sources (the next event): in JavaScript the
+    /// microtasks an event handler queued run as soon as it returns. (`DispatchQueue.main.async` alone may come after.)
+    static var observing = false
+    static func observe() {
+        if observing { return }
+        observing = true
+        let activities = CFRunLoopActivity.beforeTimers.rawValue | CFRunLoopActivity.beforeSources.rawValue | CFRunLoopActivity.beforeWaiting.rawValue
+        let observer = CFRunLoopObserverCreateWithHandler(nil, activities, true, 0) { _, _ in
+            MainActor.assumeIsolated { if JsJobs.scheduled { jsDrainMicrotasks() } }
+        }
+        CFRunLoopAddObserver(CFRunLoopGetMain(), observer, .commonModes)
+    }
+}
+
+@MainActor protocol JsRejection: AnyObject {
+    var jsHandled: Bool { get }
+    var jsReason: Error? { get }
+}
+
+@MainActor public func jsQueueMicrotask(_ job: @escaping () -> Void) {
+    JsJobs.queue.append(job)
+    jsScheduleDrain()
+}
+
+@MainActor func jsScheduleDrain() {
+    if JsJobs.draining || JsJobs.scheduled { return }
+    JsJobs.scheduled = true
+    JsJobs.observe()
+    DispatchQueue.main.async { jsDrainMicrotasks() }
+}
+
+/// Runs every queued microtask (and those they queue), then reports the rejections nothing handled.
+@MainActor public func jsDrainMicrotasks() {
+    if JsJobs.draining { return }
+    JsJobs.draining = true
+    while JsJobs.head < JsJobs.queue.count {
+        let job = JsJobs.queue[JsJobs.head]
+        JsJobs.head += 1
+        job()
+    }
+    JsJobs.queue.removeAll(keepingCapacity: true)
+    JsJobs.head = 0
+    // The job is over: WeakRef targets it read are no longer kept (lib4).
+    JsKept.objects.removeAll()
+    JsJobs.draining = false
+    JsJobs.scheduled = false
+    // No app code is running: a safe point for the cycle collector.
+    jsGcMaybe()
+    if JsJobs.rejected.isEmpty { return }
+    let rejected = JsJobs.rejected
+    JsJobs.rejected = []
+    for p in rejected where !p.jsHandled { consoleLog("Uncaught (in promise) \(jsErrorMessage(p.jsReason!))") }
+}
+
+/// `Promise<T>`: pending, then fulfilled with a value or rejected with an error, once. Its reactions run as
+/// microtasks; they are dropped once it settles, so a promise holds no callback (and no cycle) after that.
+@MainActor public final class JsPromise<T>: JsRejection {
+    private var state = 0
+    private var value: T?
+    private var reason: Error?
+    private var reactions: [(JsPromise<T>) -> Void] = []
+    /// Resolved or rejected (or following another promise): what settles it later is ignored.
+    private var resolved = false
+    var jsHandled = false
+    var jsReason: Error? { reason }
+    /// The state machine of the async function this is the promise of (asyncLower.ts); dropped once it settles.
+    fileprivate var step: ((JsPromise<T>) -> Void)?
+    fileprivate var awaitError: Error?
+
+    public init() {}
+
+    public static func resolved(_ v: T) -> JsPromise<T> {
+        let p = JsPromise<T>()
+        p.resolve(v)
+        return p
+    }
+
+    public static func rejected(_ e: Error) -> JsPromise<T> {
+        let p = JsPromise<T>()
+        p.reject(e)
+        return p
+    }
+
+    public func resolve(_ v: T) {
+        if resolved { return }
+        resolved = true
+        settle(1, v, nil)
+    }
+
+    public func reject(_ e: Error) {
+        if resolved { return }
+        resolved = true
+        settle(2, nil, e)
+    }
+
+    /// Resolving with a promise: it follows `p`, starting a job later (JavaScript's NewPromiseResolveThenableJob).
+    public func adopt(_ p: JsPromise<T>) {
+        if resolved { return }
+        resolved = true
+        if p === self { return settle(2, nil, NError(name: "TypeError", "Chaining cycle detected for promise #<Promise>")) }
+        jsQueueMicrotask { p.react({ self.settle(1, $0, nil) }, { self.settle(2, nil, $0) }) }
+    }
+
+    private func settle(_ s: Int, _ v: T?, _ e: Error?) {
+        state = s
+        value = v
+        reason = e
+        step = nil
+        if s == 2 && !jsHandled {
+            JsJobs.rejected.append(self)
+            jsScheduleDrain()
+        }
+        let pending = reactions
+        reactions = []
+        for r in pending { jsQueueMicrotask { r(self) } }
+    }
+
+    /// JavaScript's PerformPromiseThen without a derived promise: one of the two runs in a job once it settled.
+    func react(_ onFulfilled: @escaping (T) -> Void, _ onRejected: @escaping (Error) -> Void) {
+        jsHandled = true
+        let reaction: (JsPromise<T>) -> Void = { p in if p.state == 1 { onFulfilled(p.value!) } else { onRejected(p.reason!) } }
+        if state == 0 { reactions.append(reaction) } else { jsQueueMicrotask { reaction(self) } }
+    }
+
+    public func then<U>(_ onFulfilled: @escaping (T) throws -> U) -> JsPromise<U> {
+        let d = JsPromise<U>()
+        react({ v in do { d.resolve(try onFulfilled(v)) } catch { d.reject(error) } }, { d.reject($0) })
+        return d
+    }
+
+    public func thenP<U>(_ onFulfilled: @escaping (T) throws -> JsPromise<U>) -> JsPromise<U> {
+        let d = JsPromise<U>()
+        react({ v in do { d.adopt(try onFulfilled(v)) } catch { d.reject(error) } }, { d.reject($0) })
+        return d
+    }
+
+    public func then2<U>(_ onFulfilled: @escaping (T) throws -> U, _ onRejected: @escaping (Error) throws -> U) -> JsPromise<U> {
+        let d = JsPromise<U>()
+        react({ v in do { d.resolve(try onFulfilled(v)) } catch { d.reject(error) } }, { e in do { d.resolve(try onRejected(e)) } catch { d.reject(error) } })
+        return d
+    }
+
+    public func then2P<U>(_ onFulfilled: @escaping (T) throws -> JsPromise<U>, _ onRejected: @escaping (Error) throws -> JsPromise<U>) -> JsPromise<U> {
+        let d = JsPromise<U>()
+        react({ v in do { d.adopt(try onFulfilled(v)) } catch { d.reject(error) } }, { e in do { d.adopt(try onRejected(e)) } catch { d.reject(error) } })
+        return d
+    }
+
+    public func jsCatch(_ onRejected: @escaping (Error) throws -> T) -> JsPromise<T> {
+        then2({ $0 }, onRejected)
+    }
+
+    public func jsCatchP(_ onRejected: @escaping (Error) throws -> JsPromise<T>) -> JsPromise<T> {
+        then2P({ JsPromise<T>.resolved($0) }, onRejected)
+    }
+
+    /// `finally(f)` as the specification writes it: `f`'s result (a promise, or a new resolved one) is waited
+    /// for, then the value or the error goes on.
+    public func jsFinally(_ f: @escaping () throws -> Void) -> JsPromise<T> {
+        then2P({ v in try f(); return JsPromise<Void>.resolved(()).then { _ in v } }, { e in try f(); return JsPromise<Void>.resolved(()).then { _ -> T in throw e } })
+    }
+
+    public func jsFinallyP<X>(_ f: @escaping () throws -> JsPromise<X>) -> JsPromise<T> {
+        then2P({ v in try f().then { _ in v } }, { e in try f().then { _ -> T in throw e } })
+    }
+
+    public static func all(_ ps: JsArray<JsPromise<T>>) -> JsPromise<JsArray<T>> {
+        let ps = ps.a
+        let d = JsPromise<JsArray<T>>()
+        var values = [T?](repeating: nil, count: ps.count)
+        var remaining = ps.count
+        if ps.isEmpty { d.resolve([]) }
+        for (i, p) in ps.enumerated() {
+            p.react({ v in
+                values[i] = v
+                remaining -= 1
+                if remaining == 0 { d.resolve(JsArray(values.map { $0! })) }
+            }, { d.reject($0) })
+        }
+        return d
+    }
+
+    public static func allSettled(_ ps: JsArray<JsPromise<T>>) -> JsPromise<JsArray<JsSettled<T>>> {
+        let ps = ps.a
+        let d = JsPromise<JsArray<JsSettled<T>>>()
+        var results = [JsSettled<T>?](repeating: nil, count: ps.count)
+        var remaining = ps.count
+        if ps.isEmpty { d.resolve([]) }
+        for (i, p) in ps.enumerated() {
+            let done = { (r: JsSettled<T>) in
+                results[i] = r
+                remaining -= 1
+                if remaining == 0 { d.resolve(JsArray(results.map { $0! })) }
+            }
+            p.react({ done(JsSettled(status: "fulfilled", value: $0, reason: nil)) }, { done(JsSettled(status: "rejected", value: nil, reason: $0)) })
+        }
+        return d
+    }
+
+    public static func race(_ ps: JsArray<JsPromise<T>>) -> JsPromise<T> {
+        let d = JsPromise<T>()
+        for p in ps { p.react({ d.resolve($0) }, { d.reject($0) }) }
+        return d
+    }
+
+    public static func any(_ ps: JsArray<JsPromise<T>>) -> JsPromise<T> {
+        let d = JsPromise<T>()
+        var remaining = ps.count
+        if ps.isEmpty { d.reject(NError(name: "AggregateError", "")) }
+        for p in ps {
+            p.react({ d.resolve($0) }, { _ in
+                remaining -= 1
+                if remaining == 0 { d.reject(NError(name: "AggregateError", "")) }
+            })
+        }
+        return d
+    }
+
+    /// `await q` in the async function this is the promise of: it resumes a job after `q` settles, with
+    /// its value (`store`) or its error (thrown by `check()` where the function resumes).
+    public func awaitOn<U>(_ q: JsPromise<U>, _ store: ((U) -> Void)? = nil) {
+        q.react({ v in
+            store?(v)
+            self.step?(self)
+        }, { e in
+            self.awaitError = e
+            self.step?(self)
+        })
+    }
+
+    public func check() throws {
+        guard let e = awaitError else { return }
+        awaitError = nil
+        throw e
+    }
+}
+
+/// An element of `Promise.allSettled`'s result.
+@MainActor public final class JsSettled<T> {
+    public let status: String
+    public let value: T?
+    public let reason: Error?
+    init(status: String, value: T?, reason: Error?) {
+        self.status = status
+        self.value = value
+        self.reason = reason
+    }
+}
+
+/// An async function's promise: `step` runs its body up to its first `await` at once, as JavaScript does.
+@MainActor public func jsAsync<T>(_ step: @escaping (JsPromise<T>) -> Void) -> JsPromise<T> {
+    let p = JsPromise<T>()
+    p.step = step
+    step(p)
+    return p
+}
+
+extension JsPromise {
+    /// `new Promise<T>(executor)`: the executor runs at once; what it throws rejects the promise.
+    public static func create(_ executor: (@escaping (T) -> Void, @escaping (Error) -> Void) throws -> Void) -> JsPromise<T> {
+        let p = JsPromise<T>()
+        do { try executor({ p.resolve($0) }, { p.reject($0) }) } catch { p.reject(error) }
+        return p
+    }
+}
+
+extension JsPromise where T == Void {
+    /// `new Promise<void>(executor)`: `resolve()` takes no value.
+    public static func createVoid(_ executor: (@escaping () -> Void, @escaping (Error) -> Void) throws -> Void) -> JsPromise<Void> {
+        let p = JsPromise<Void>()
+        do { try executor({ p.resolve(()) }, { p.reject($0) }) } catch { p.reject(error) }
+        return p
+    }
+}
+
+/// The promise of a native async call (fetch, the app's platform code): settled from its task, then the
+/// microtasks run, as after any task in JavaScript.
+@MainActor public func jsNative<T>(_ call: @escaping @MainActor () async throws -> T) -> JsPromise<T> {
+    let p = JsPromise<T>()
+    Task { @MainActor in
+        do { p.resolve(try await call()) } catch { p.reject(error) }
+        jsDrainMicrotasks()
+    }
+    return p
+}
+
+/// `delay(ms)`: a promise a timer resolves.
+@MainActor public func jsDelay(_ ms: Double) -> JsPromise<Void> {
+    let p = JsPromise<Void>()
+    setTimeout({ p.resolve(()) }, ms)
+    return p
+}
 
 /// One callback before the next frame. The display link keeps it alive until it ran or was cancelled.
 @MainActor public final class NFrame: NSObject {
@@ -3272,10 +3689,11 @@ public func consoleLog(_ values: String...) { print(values.joined(separator: " "
 
 // MARK: - JSON
 
-/// Decoders the compiler generates per interface call into these.
+/// Decoders the compiler generates per interface call into these, over what `jsJsonParse` gives: `JsMap<Any>`
+/// objects (JavaScript's key order), `[Any]` arrays, `String`, `Double`, `Bool` and `NSNull`.
 public enum NJSON {
-    public static func object(_ v: Any?) throws -> [String: Any] {
-        guard let o = v as? [String: Any] else { throw NError("Expected a JSON object") }
+    public static func object(_ v: Any?) throws -> JsMap<Any> {
+        guard let o = v as? JsMap<Any> else { throw NError("Expected a JSON object") }
         return o
     }
 
@@ -3285,8 +3703,8 @@ public enum NJSON {
     }
 
     public static func double(_ v: Any?) throws -> Double {
-        guard let n = v as? NSNumber else { throw NError("Expected a JSON number") }
-        return n.doubleValue
+        guard let n = v as? Double else { throw NError("Expected a JSON number") }
+        return n
     }
 
     public static func int(_ v: Any?) throws -> Int { Int(try double(v)) }
@@ -3296,18 +3714,394 @@ public enum NJSON {
         return b
     }
 
-    public static func array<T>(_ v: Any?, _ element: (Any?) throws -> T) throws -> [T] {
+    public static func array<T>(_ v: Any?, _ element: (Any?) throws -> T) throws -> JsArray<T> {
         guard let a = v as? [Any] else { throw NError("Expected a JSON array") }
-        return try a.map(element)
+        return JsArray(try a.map(element))
     }
 
-    public static func map<T>(_ v: Any?, _ value: (Any?) throws -> T) throws -> [String: T] {
-        try object(v).mapValues(value)
+    public static func map<T>(_ v: Any?, _ value: (Any?) throws -> T) throws -> JsMap<T> {
+        let m = JsMap<T>()
+        for (k, x) in try object(v).jsEntries { m[k] = try value(x) }
+        return m
     }
 
     public static func optional<T>(_ v: Any?, _ value: (Any?) throws -> T) throws -> T? {
         v == nil || v is NSNull ? nil : try value(v)
     }
+}
+
+/// `JSON.parse(text)`: JavaScript's JSON grammar (a SyntaxError otherwise), numbers as JavaScript reads them, objects
+/// in its key order (a repeated key keeps its first place and its last value).
+public func jsJsonParse(_ text: String) throws -> Any {
+    var p = NJSONParser(s: Array(text.utf16))
+    p.ws()
+    let v = try p.value()
+    p.ws()
+    guard p.i == p.s.count else { throw p.fail() }
+    return v
+}
+
+struct NJSONParser {
+    let s: [UInt16]
+    var i = 0
+    func fail() -> NError { NError(name: "SyntaxError", i < s.count ? "JSON Parse error: Unexpected character" : "JSON Parse error: Unexpected EOF") }
+    func at(_ c: UInt16) -> Bool { i < s.count && s[i] == c }
+    mutating func ws() { while i < s.count && (s[i] == 32 || s[i] == 9 || s[i] == 10 || s[i] == 13) { i += 1 } }
+    mutating func lit(_ w: String) throws { for c in w.utf16 { guard at(c) else { throw fail() }; i += 1 } }
+    mutating func digits() -> Bool { let d = i; while i < s.count && s[i] >= 48 && s[i] <= 57 { i += 1 }; return i > d }
+    mutating func value() throws -> Any {
+        guard i < s.count else { throw fail() }
+        switch s[i] {
+        case 123:
+            i += 1
+            let o = JsMap<Any>()
+            ws()
+            if at(125) { i += 1; return o }
+            while true {
+                ws()
+                guard at(34) else { throw fail() }
+                let k = try str()
+                ws(); try lit(":"); ws()
+                o[k] = try value()
+                ws()
+                if at(44) { i += 1; continue }
+                guard at(125) else { throw fail() }
+                i += 1
+                return o
+            }
+        case 91:
+            i += 1
+            var a: [Any] = []
+            ws()
+            if at(93) { i += 1; return a }
+            while true {
+                ws()
+                a.append(try value())
+                ws()
+                if at(44) { i += 1; continue }
+                guard at(93) else { throw fail() }
+                i += 1
+                return a
+            }
+        case 34: return try str()
+        case 116: try lit("true"); return true
+        case 102: try lit("false"); return false
+        case 110: try lit("null"); return NSNull()
+        default:
+            let start = i
+            if at(45) { i += 1 }
+            if at(48) { i += 1 } else if !digits() { throw fail() }
+            if at(46) { i += 1; guard digits() else { throw fail() } }
+            if at(101) || at(69) {
+                i += 1
+                if at(43) || at(45) { i += 1 }
+                guard digits() else { throw fail() }
+            }
+            // Up to 15 digits, no fraction or exponent: exact in a Double (no text round trip).
+            if i - start <= 15 && i > start && s[i - 1] >= 48 {
+                var n = 0, k = start, neg = false
+                if s[k] == 45 { neg = true; k += 1 }
+                while k < i, s[k] >= 48 && s[k] <= 57 { n = n * 10 + Int(s[k] - 48); k += 1 }
+                if k == i { return neg ? (n == 0 ? -0.0 : -Double(n)) : Double(n) }
+            }
+            return Double(String(decoding: s[start..<i], as: UTF16.self)) ?? .nan
+        }
+    }
+    mutating func str() throws -> String {
+        i += 1
+        // Fast path: plain ASCII up to the closing quote, built as UTF-8 directly.
+        var e = i
+        while e < s.count, s[e] >= 32 && s[e] < 128 && s[e] != 34 && s[e] != 92 { e += 1 }
+        if e < s.count && s[e] == 34 {
+            let start = i
+            i = e + 1
+            return String(unsafeUninitializedCapacity: e - start) { b in
+                for k in start..<e { b[k - start] = UInt8(truncatingIfNeeded: s[k]) }
+                return e - start
+            }
+        }
+        var u: [UInt16] = []
+        while true {
+            guard i < s.count else { throw fail() }
+            let c = s[i]
+            i += 1
+            if c == 34 { return String(decoding: u, as: UTF16.self) }
+            if c < 32 { i -= 1; throw fail() }
+            if c != 92 { u.append(c); continue }
+            guard i < s.count else { throw fail() }
+            let e = s[i]
+            i += 1
+            switch e {
+            case 34, 92, 47: u.append(e)
+            case 98: u.append(8)
+            case 102: u.append(12)
+            case 110: u.append(10)
+            case 114: u.append(13)
+            case 116: u.append(9)
+            case 117:
+                var v: UInt16 = 0
+                for _ in 0..<4 {
+                    guard i < s.count, let h = jsDigit(UInt8(truncatingIfNeeded: s[i] < 128 ? s[i] : 0)), h < 16 else { throw fail() }
+                    v = v << 4 | UInt16(h)
+                    i += 1
+                }
+                u.append(v)
+            default: throw fail()
+            }
+        }
+    }
+}
+
+/// What `JSON.stringify` writes into: the generated encoders call it value by value, it lays out `gap` as JavaScript does.
+public final class NJSONOut {
+    var out = ""
+    let gap: String
+    var counts: [Int] = []
+    var arrays: [Bool] = []
+    init(_ gap: String) { self.gap = gap }
+    func line() { if !gap.isEmpty { out += "\n"; for _ in counts { out += gap } } }
+    func next() { if counts[counts.count - 1] > 0 { out += "," }; counts[counts.count - 1] += 1; line() }
+    func pre() { if arrays.last == true { next() } }
+    public func key(_ k: String) { next(); quote(k); out += gap.isEmpty ? ":" : ": " }
+    public func null() { pre(); out += "null" }
+    public func bool(_ b: Bool) { pre(); out += b ? "true" : "false" }
+    public func num(_ d: Double) { pre(); out += d.isFinite ? jsNum(d) : "null" }
+    public func num(_ n: Int) { num(Double(n)) }
+    public func str(_ s: String) { pre(); quote(s) }
+    public func date(_ d: JsDate) { if d.t.isNaN { null() } else { str(d.toISO()) } }
+    func open(_ c: String, _ array: Bool) { pre(); out += c; counts.append(0); arrays.append(array) }
+    func close(_ c: String) { arrays.removeLast(); if counts.removeLast() > 0 { line() }; out += c }
+    public func obj(_ body: () throws -> Void) rethrows { open("{", false); try body(); close("}") }
+    public func arr<T>(_ xs: JsArray<T>, _ f: (T) throws -> Void) rethrows { open("[", true); for x in Array(xs) { try f(x) }; close("]") }
+    public func map<T>(_ m: JsMap<T>, _ f: (T) throws -> Void) rethrows { open("{", false); for (k, v) in m.jsEntries { key(k); try f(v) }; close("}") }
+    /// An object's field: left out when it is undefined.
+    public func field<T>(_ k: String, _ v: T?, _ f: (T) throws -> Void) rethrows { if let v { key(k); try f(v) } }
+    public func opt<T>(_ v: T?, _ f: (T) throws -> Void) rethrows { if let v { try f(v) } else { null() } }
+    func quote(_ s: String) {
+        // Fast path: ASCII with nothing to escape goes in as is.
+        if s.jsAscii({ b in !b.contains { $0 < 32 || $0 == 34 || $0 == 92 } }) == true {
+            out += "\""
+            out += s
+            out += "\""
+            return
+        }
+        var u: [UInt16] = [34]
+        let units = Array(s.utf16)
+        for (n, c) in units.enumerated() {
+            switch c {
+            case 34: u += [92, 34]
+            case 92: u += [92, 92]
+            case 8: u += [92, 98]
+            case 12: u += [92, 102]
+            case 10: u += [92, 110]
+            case 13: u += [92, 114]
+            case 9: u += [92, 116]
+            default:
+                let lone = (c >= 0xD800 && c < 0xDC00 && !(n + 1 < units.count && units[n + 1] >= 0xDC00 && units[n + 1] < 0xE000))
+                    || (c >= 0xDC00 && c < 0xE000 && !(n > 0 && units[n - 1] >= 0xD800 && units[n - 1] < 0xDC00))
+                if c < 32 || lone { u += Array(String(format: "\\u%04x", c).utf16) } else { u.append(c) }
+            }
+        }
+        u.append(34)
+        out += String(decoding: u, as: UTF16.self)
+    }
+}
+
+/// `JSON.stringify(value, null, gap)`: `write` writes the value.
+public func jsJsonStringify<T>(_ value: T, _ gap: String, _ write: (NJSONOut, T) -> Void) -> String {
+    let o = NJSONOut(gap)
+    write(o, value)
+    return o.out
+}
+/// `JSON.parse(text) as T`: `decode` is T's generated decoder.
+public func jsJsonDecode<T>(_ text: String, _ decode: (Any?) throws -> T) throws -> T { try decode(try jsJsonParse(text)) }
+/// The indent of `JSON.stringify(v, null, n)`: up to 10 spaces; of `(v, null, s)`: the first 10 code units of s.
+public func jsJsonGap(_ n: Double) -> String { n >= 1 ? String(repeating: " ", count: Int(Swift.min(10, n))) : "" }
+public func jsJsonGap(_ s: String) -> String { String(decoding: Array(s.utf16.prefix(10)), as: UTF16.self) }
+
+// MARK: - Date
+
+/// A JavaScript Date: a shared, mutable time value (milliseconds since 1970 UTC, NaN when invalid); `===` is identity.
+/// Local time is the platform's zone (TimeZone.current, which reads TZ), as JavaScript's is.
+public final class JsDate: Equatable {
+    public var t: Double
+    public init(_ t: Double) { self.t = jsTimeClip(t) }
+    public static func == (a: JsDate, b: JsDate) -> Bool { a === b }
+    public static func now() -> JsDate { JsDate(jsNow()) }
+    public static func parts(_ a: [Double]) -> JsDate { JsDate(jsUTCFromLocal(jsMakeParts(a))) }
+
+    /// The fields of the time value `base` (the last ones are kept: getters in a row compute them once).
+    private var fieldsAt = Double.nan, fields: [Double] = []
+    private func fieldsOf(_ base: Double) -> [Double] {
+        if base != fieldsAt { fields = jsDateFields(base); fieldsAt = base }
+        return fields
+    }
+    /// A field of the date: 0 year, 1 month, 2 date, 3 hours, 4 minutes, 5 seconds, 6 ms, 7 weekday.
+    public func get(_ field: Int, _ local: Bool) -> Double {
+        if t.isNaN { return .nan }
+        return fieldsOf(local ? t + jsLocalOffset(t) : t)[field]
+    }
+    /// The setters: `args` replace the fields from `from` on (setFullYear 0 … setMilliseconds 6).
+    @discardableResult public func set(_ from: Int, _ local: Bool, _ args: [Double]) -> Double {
+        var base = t
+        if base.isNaN { if from != 0 { return .nan }; base = 0 } else if local { base += jsLocalOffset(base) }
+        var f = fieldsOf(base)
+        for (n, a) in args.enumerated() { f[from + n] = a }
+        let v = jsMakeDate(jsMakeDay(f[0], f[1], f[2]), jsMakeTime(f[3], f[4], f[5], f[6]))
+        t = jsTimeClip(local ? jsUTCFromLocal(v) : v)
+        return t
+    }
+    @discardableResult public func setTime(_ v: Double) -> Double { t = jsTimeClip(v); return t }
+    public func timezoneOffset() -> Double { t.isNaN ? .nan : -jsLocalOffset(t) / 60000 }
+
+    public func toISOString() throws -> String {
+        if t.isNaN { throw NError(name: "RangeError", "Invalid Date") }
+        return toISO()
+    }
+    public func toJSON() -> String? { t.isNaN ? nil : toISO() }
+    func toISO() -> String {
+        let f = jsDateFields(t)
+        let y = Int(f[0])
+        let year = y >= 0 && y <= 9999 ? jsPad(y, 4) : (y < 0 ? "-" : "+") + jsPad(abs(y), 6)
+        return "\(year)-\(jsPad(Int(f[1]) + 1, 2))-\(jsPad(Int(f[2]), 2))T\(jsPad(Int(f[3]), 2)):\(jsPad(Int(f[4]), 2)):\(jsPad(Int(f[5]), 2)).\(jsPad(Int(f[6]), 3))Z"
+    }
+    public func toUTCString() -> String {
+        if t.isNaN { return "Invalid Date" }
+        let f = jsDateFields(t)
+        let y = Int(f[0])
+        return "\(jsWeekdays[Int(f[7])]), \(jsPad(Int(f[2]), 2)) \(jsMonths[Int(f[1])]) \(y < 0 ? "-" : "")\(jsPad(abs(y), 4)) \(jsPad(Int(f[3]), 2)):\(jsPad(Int(f[4]), 2)):\(jsPad(Int(f[5]), 2)) GMT"
+    }
+    public func toDateString() -> String {
+        if t.isNaN { return "Invalid Date" }
+        let f = jsDateFields(t + jsLocalOffset(t))
+        let y = Int(f[0])
+        return "\(jsWeekdays[Int(f[7])]) \(jsMonths[Int(f[1])]) \(jsPad(Int(f[2]), 2)) \(y < 0 ? "-" : "")\(jsPad(abs(y), 4))"
+    }
+}
+
+let jsWeekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+let jsMonths = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+func jsPad(_ n: Int, _ width: Int) -> String { let s = String(n); return String(repeating: "0", count: Swift.max(0, width - s.count)) + s }
+
+/// TimeClip: NaN past ±8.64e15 ms, else the whole number toward zero (+0, never -0).
+public func jsTimeClip(_ t: Double) -> Double { !t.isFinite || Swift.abs(t) > 8.64e15 ? .nan : t.rounded(.towardZero) + 0 }
+/// Date.UTC(y, m?, d?, h?, mi?, s?, ms?) / the local parts of `new Date(y, m, …)` (years 0 to 99 are 1900 to 1999).
+public func jsMakeParts(_ a: [Double]) -> Double {
+    var f: [Double] = [.nan, 0, 1, 0, 0, 0, 0]
+    for (n, v) in a.enumerated() where n < 7 { f[n] = v }
+    if f[0].isFinite { let y = f[0].rounded(.towardZero); if y >= 0 && y <= 99 { f[0] = 1900 + y } }
+    return jsMakeDate(jsMakeDay(f[0], f[1], f[2]), jsMakeTime(f[3], f[4], f[5], f[6]))
+}
+public func jsDateUTC(_ a: [Double]) -> Double { jsTimeClip(jsMakeParts(a)) }
+func jsMakeDay(_ y: Double, _ m: Double, _ d: Double) -> Double {
+    if !y.isFinite || !m.isFinite || !d.isFinite { return .nan }
+    let (yi, mi, di) = (y.rounded(.towardZero), m.rounded(.towardZero), d.rounded(.towardZero))
+    let ym = yi + (mi / 12).rounded(.down)
+    let mn = mi - (mi / 12).rounded(.down) * 12
+    return jsDaysFromCivil(ym, mn + 1, 1) + di - 1
+}
+func jsMakeTime(_ h: Double, _ m: Double, _ s: Double, _ ms: Double) -> Double {
+    if !h.isFinite || !m.isFinite || !s.isFinite || !ms.isFinite { return .nan }
+    return h.rounded(.towardZero) * 3_600_000 + m.rounded(.towardZero) * 60000 + s.rounded(.towardZero) * 1000 + ms.rounded(.towardZero)
+}
+func jsMakeDate(_ day: Double, _ time: Double) -> Double { day.isFinite && time.isFinite ? day * 86_400_000 + time : .nan }
+/// Days since 1970-01-01 of a proleptic Gregorian date (month 1 to 12).
+func jsDaysFromCivil(_ y0: Double, _ m: Double, _ d: Double) -> Double {
+    let y = m <= 2 ? y0 - 1 : y0
+    let era = (y / 400).rounded(.down)
+    let yoe = y - era * 400
+    let doy = ((153 * (m > 2 ? m - 3 : m + 9) + 2) / 5).rounded(.down) + d - 1
+    let doe = yoe * 365 + (yoe / 4).rounded(.down) - (yoe / 100).rounded(.down) + doy
+    return era * 146_097 + doe - 719_468
+}
+/// Year, month (0 to 11), date, hours, minutes, seconds, ms and weekday of a time value.
+func jsDateFields(_ t: Double) -> [Double] {
+    let day = (t / 86_400_000).rounded(.down)
+    var ms = t - day * 86_400_000
+    let z = day + 719_468
+    let era = (z / 146_097).rounded(.down)
+    let doe = z - era * 146_097
+    let yoe = ((doe - (doe / 1460).rounded(.down) + (doe / 36524).rounded(.down) - (doe / 146_096).rounded(.down)) / 365).rounded(.down)
+    let doy = doe - (365 * yoe + (yoe / 4).rounded(.down) - (yoe / 100).rounded(.down))
+    let mp = ((5 * doy + 2) / 153).rounded(.down)
+    let d = doy - ((153 * mp + 2) / 5).rounded(.down) + 1
+    let m = mp < 10 ? mp + 2 : mp - 10
+    let y = yoe + era * 400 + (m <= 1 ? 1 : 0)
+    let h = (ms / 3_600_000).rounded(.down); ms -= h * 3_600_000
+    let mi = (ms / 60000).rounded(.down); ms -= mi * 60000
+    let s = (ms / 1000).rounded(.down); ms -= s * 1000
+    let wd = day - ((day + 4) / 7).rounded(.down) * 7 + 4
+    return [y, m, d, h, mi, s, ms, wd.truncatingRemainder(dividingBy: 7)]
+}
+/// The platform zone's offset from UTC at the instant `t`, in ms.
+public func jsLocalOffset(_ t: Double) -> Double {
+    Double(TimeZone.current.secondsFromGMT(for: Date(timeIntervalSince1970: t / 1000))) * 1000
+}
+/// UTC(t) of a local time: the earlier instant of a repeated hour, the offset before the change for a skipped one.
+public func jsUTCFromLocal(_ tl: Double) -> Double {
+    if !tl.isFinite { return .nan }
+    let a = jsLocalOffset(tl - 86_400_000), b = jsLocalOffset(tl + 86_400_000)
+    let (t1, t2) = (tl - a, tl - b)
+    let ok1 = jsLocalOffset(t1) == a, ok2 = jsLocalOffset(t2) == b
+    if ok1 && ok2 { return Swift.min(t1, t2) }
+    return ok1 ? t1 : ok2 ? t2 : t1
+}
+/// Date.parse of the ISO format JavaScript reads (date-only forms are UTC, a date-time without an offset local time); NaN otherwise.
+public func jsDateParse(_ text: String) -> Double {
+    let s = Array(text.utf8)
+    var i = 0
+    func num(_ n: Int) -> Double? {
+        guard i + n <= s.count, s[i..<i + n].allSatisfy({ $0 >= 48 && $0 <= 57 }) else { return nil }
+        defer { i += n }
+        return Double(String(decoding: s[i..<i + n], as: UTF8.self))
+    }
+    func at(_ c: UInt8) -> Bool { if i < s.count && s[i] == c { i += 1; return true }; return false }
+    var y: Double
+    if i < s.count && (s[i] == 43 || s[i] == 45) {
+        let neg = s[i] == 45
+        i += 1
+        guard let v = num(6), !(neg && v == 0) else { return .nan }
+        y = neg ? -v : v
+    } else {
+        guard let v = num(4) else { return .nan }
+        y = v
+    }
+    var (mo, d, h, mi, sec, ms) = (1.0, 1.0, 0.0, 0.0, 0.0, 0.0)
+    if at(45) {
+        guard let v = num(2), v >= 1 && v <= 12 else { return .nan }
+        mo = v
+        if at(45) { guard let v = num(2), v >= 1 && v <= 31 else { return .nan }; d = v }
+    }
+    var offset: Double? = 0
+    if i < s.count && (s[i] == 84 || s[i] == 116 || s[i] == 32) {
+        i += 1
+        guard let hh = num(2), at(58), let mm = num(2), mm <= 59 else { return .nan }
+        (h, mi) = (hh, mm)
+        if at(58) {
+            guard let ss = num(2), ss <= 59 else { return .nan }
+            sec = ss
+            if at(46) {
+                let start = i
+                while i < s.count && s[i] >= 48 && s[i] <= 57 { i += 1 }
+                guard i > start else { return .nan }
+                let digits = String(decoding: s[start..<Swift.min(i, start + 3)], as: UTF8.self)
+                ms = Double(digits.padding(toLength: 3, withPad: "0", startingAt: 0))!
+            }
+        }
+        guard h < 24 || (h == 24 && mi == 0 && sec == 0 && ms == 0) else { return .nan }
+        offset = nil
+        if at(90) || at(122) { offset = 0 } else if i < s.count && (s[i] == 43 || s[i] == 45) {
+            let sign: Double = s[i] == 45 ? -1 : 1
+            i += 1
+            guard let oh = num(2), oh <= 23 else { return .nan }
+            _ = at(58)
+            guard let om = num(2), om <= 59 else { return .nan }
+            offset = sign * (oh * 60 + om) * 60000
+        }
+    }
+    guard i == s.count else { return .nan }
+    let local = jsMakeDate(jsMakeDay(y, mo - 1, d), jsMakeTime(h, mi, sec, ms))
+    return jsTimeClip(offset.map { local - $0 } ?? jsUTCFromLocal(local))
 }
 
 // MARK: - JavaScript semantics
@@ -3319,129 +4113,525 @@ public func jsNum(_ d: Double) -> String {
     if d == 0 { return "0" }
     if d == d.rounded() && abs(d) < 1e15 { return String(Int(d)) }
     // Swift's description has the shortest digits that read back as `d`: lay them out as JavaScript does.
-    var text = "\(abs(d))"
-    var exponent = 0
-    if let e = text.firstIndex(where: { $0 == "e" || $0 == "E" }) {
-        exponent = Int(text[text.index(after: e)...]) ?? 0
-        text = String(text[..<e])
+    // (Bytes, not Character ops: this is every number printed.)
+    var digits: [UInt8] = [], point = 0, exponent = 0, dot = false
+    var text = abs(d).description
+    text.withUTF8 { b in
+        for (i, c) in b.enumerated() {
+            if c == 46 { dot = true } else if c == 101 || c == 69 {
+                exponent = Int(String(decoding: UnsafeBufferPointer(rebasing: b[(i + 1)...]), as: UTF8.self)) ?? 0
+                break
+            } else {
+                digits.append(c)
+                if !dot { point += 1 }
+            }
+        }
     }
-    let parts = text.split(separator: ".", omittingEmptySubsequences: false)
-    return (d < 0 ? "-" : "") + jsLayout(String(parts[0]) + (parts.count > 1 ? String(parts[1]) : ""), parts[0].count + exponent)
+    return (d < 0 ? "-" : "") + jsLayout(digits, point + exponent)
 }
 
 /// Number::toString's layout of the digits `digits` with the decimal point after `point` of them.
-func jsLayout(_ digits: String, _ point: Int) -> String {
-    var digits = digits, n = point
-    while digits.count > 1 && digits.hasPrefix("0") { digits.removeFirst(); n -= 1 }
-    while digits.count > 1 && digits.hasSuffix("0") { digits.removeLast() }
-    let k = digits.count
-    if k <= n && n <= 21 { return digits + String(repeating: "0", count: n - k) }
-    if 0 < n && n <= 21 { return String(digits.prefix(n)) + "." + String(digits.dropFirst(n)) }
-    if -6 < n && n <= 0 { return "0." + String(repeating: "0", count: -n) + digits }
-    let e = n - 1
-    return String(digits.prefix(1)) + (k > 1 ? "." + String(digits.dropFirst()) : "") + "e" + (e >= 0 ? "+" : "-") + String(abs(e))
+func jsLayout(_ digits: String, _ point: Int) -> String { jsLayout(Array(digits.utf8), point) }
+func jsLayout(_ ds: [UInt8], _ point: Int) -> String {
+    var lo = 0, hi = ds.count, n = point
+    while hi - lo > 1 && ds[lo] == 48 { lo += 1; n -= 1 }
+    while hi - lo > 1 && ds[hi - 1] == 48 { hi -= 1 }
+    let k = hi - lo
+    var out: [UInt8] = []
+    out.reserveCapacity(k + 28)
+    if k <= n && n <= 21 {
+        out += ds[lo..<hi]
+        out += repeatElement(48, count: n - k)
+    } else if 0 < n && n <= 21 {
+        out += ds[lo..<(lo + n)]
+        out.append(46)
+        out += ds[(lo + n)..<hi]
+    } else if -6 < n && n <= 0 {
+        out += [48, 46]
+        out += repeatElement(48, count: -n)
+        out += ds[lo..<hi]
+    } else {
+        let e = n - 1
+        out.append(ds[lo])
+        if k > 1 { out.append(46); out += ds[(lo + 1)..<hi] }
+        out += [101, e >= 0 ? 43 : 45]
+        out += String(abs(e)).utf8
+    }
+    return String(decoding: out, as: UTF8.self)
 }
 
-public func jsFixed(_ d: Double, _ digits: Int) -> String { String(format: "%.\(digits)f", d) }
-public func jsRound(_ d: Double) -> Int { Int((d + 0.5).rounded(.down)) }
-public func jsNow() -> Double { Date().timeIntervalSince1970 * 1000 }
-public func jsNumber(_ s: String) -> Double { Double(s.trimmingCharacters(in: .whitespaces)) ?? .nan }
-public func jsParseInt(_ s: String) -> Int { Int(s.trimmingCharacters(in: .whitespaces).prefix { $0.isNumber || $0 == "-" }) ?? 0 }
+/// `toFixed`: the exact binary value rounded half up (printf rounds an exact tie to even); -0 is "0"; NaN, ±Infinity
+/// and anything from 1e21 print as `String(d)`.
+public func jsFixed(_ d: Double, _ digits: Int) -> String {
+    if !d.isFinite || Swift.abs(d) >= 1e21 { return jsNum(d) }
+    if d < 0 { return "-" + jsFixed(-d, digits) }
+    // A tie at this precision is an odd multiple of 2^-(digits + 1).
+    let scaled = d * Foundation.pow(2, Double(digits + 1))
+    let tie = scaled.rounded(.towardZero) == scaled && scaled.truncatingRemainder(dividingBy: 2) != 0
+    if !tie { return jsPrintf("%.*f", digits, d + 0) { String(decoding: $0, as: UTF8.self) } }
+    // A tie's text with one more digit is exact (it ends in 5): drop it and add one unit by hand (d.nextUp can be a
+    // whole unit away: 707273840904235.875.toFixed(2)).
+    return jsPrintf("%.*f", digits + 1, d) { b in
+        var u = Array(b.dropLast())
+        if u.last == 46 { u.removeLast() }
+        var i = u.count - 1
+        while i >= 0 && (u[i] == 57 || u[i] == 46) { if u[i] == 57 { u[i] = 48 }; i -= 1 }
+        if i < 0 { u.insert(49, at: 0) } else { u[i] += 1 }
+        return String(decoding: u, as: UTF8.self)
+    }
+}
+/// `Object.is` of numbers: SameValue (NaN is NaN, -0 isn't +0).
+public func jsObjectIs(_ a: Double, _ b: Double) -> Bool { a == b ? (a != 0 || a.sign == b.sign) : (a.isNaN && b.isNaN) }
+/// `Number.isSafeInteger`.
+public func jsIsSafeInteger(_ d: Double) -> Bool { d.rounded(.towardZero) == d && Swift.abs(d) <= 9007199254740991 }
+/// `s.replace(pattern, f)` / `replaceAll`: f(match, offset in UTF-16 units, s) for each match, left to right.
+public func jsReplaceFn(_ s: String, _ pattern: String, _ f: (String, Double, String) throws -> String) rethrows -> String { try jsReplaceBy(s, pattern, false, f) }
+public func jsReplaceAllFn(_ s: String, _ pattern: String, _ f: (String, Double, String) throws -> String) rethrows -> String { try jsReplaceBy(s, pattern, true, f) }
+private func jsReplaceBy(_ s: String, _ pattern: String, _ all: Bool, _ f: (String, Double, String) throws -> String) rethrows -> String {
+    let h = Array(s.utf16), n = Array(pattern.utf16)
+    var out: [UInt16] = [], last = 0, i = 0
+    while i + n.count <= h.count {
+        if h[i..<(i + n.count)].elementsEqual(n) {
+            out += h[last..<i]
+            out += Array(try f(pattern, Double(i), s).utf16)
+            last = i + n.count
+            if !all { break }
+            i += Swift.max(n.count, 1)
+        } else { i += 1 }
+    }
+    out += h[last...]
+    return String(decoding: out, as: UTF16.self)
+}
+/// `new Array(n)`'s length: a RangeError unless n is a whole number below 2^32.
+public func jsArrayLength(_ n: Double) throws -> Int {
+    guard n >= 0 && n < 4294967296 && n.rounded(.towardZero) == n else { throw NError(name: "RangeError", "Array length must be a positive integer of safe magnitude.") }
+    return Int(n)
+}
+/// ToIntegerOrInfinity: NaN is 0, fractions truncate toward 0.
+@inline(__always) public func jsToInteger(_ d: Double) -> Double { d.isNaN ? 0 : d.rounded(.towardZero) + 0 }
+/// `s.repeat(n)` of a count not known statically: a RangeError for a negative or infinite count.
+public func jsStrRepeat(_ s: String, _ n: Double) throws -> String {
+    let t = jsToInteger(n)
+    guard t >= 0 && t.isFinite else { throw NError(name: "RangeError", "String.prototype.repeat argument must be greater than or equal to 0 and not be Infinity") }
+    return t == 0 || s.isEmpty ? "" : String(repeating: s, count: Int(t))
+}
+/// `d.toFixed(f)` of digits not known statically: a RangeError out of 0...100.
+public func jsToFixedChecked(_ d: Double, _ f: Double) throws -> String {
+    let t = jsToInteger(f)
+    guard t >= 0 && t <= 100 else { throw NError(name: "RangeError", "toFixed() argument must be between 0 and 100") }
+    return jsFixed(d, Int(t))
+}
+/// `Math.round`: the nearest integer, a half up (`d + 0.5` would round 0.49999999999999994 up).
+/// `Math.round` of any number (NaN and ±Infinity stay themselves).
+public func jsRoundD(_ d: Double) -> Double { let f = d.rounded(.down); return d - f >= 0.5 ? f + 1 : f }
+public func jsRound(_ d: Double) -> Int { let f = d.rounded(.down); return Int(d - f >= 0.5 ? f + 1 : f) }
+/// `Date.now()`: whole milliseconds, as in JavaScript.
+public func jsNow() -> Double { (Date().timeIntervalSince1970 * 1000).rounded(.down) }
+/// `Number(s)`: JavaScript's StringToNumber (white space trimmed, "" is 0, 0x / 0o / 0b, Infinity, no "inf" or "1_0").
+public func jsNumber(_ s: String) -> Double {
+    let t = Array(s.jsTrim().utf8)
+    if t.isEmpty { return 0 }
+    if t.count > 2 && t[0] == 48, let radix = [120: 16, 88: 16, 111: 8, 79: 8, 98: 2, 66: 2][Int(t[1])] {
+        var v = 0.0
+        for c in t[2...] { guard let d = jsDigit(c), d < radix else { return .nan }; v = v * Double(radix) + Double(d) }
+        return v
+    }
+    var i = t.first == 43 || t.first == 45 ? 1 : 0
+    if Array(t[i...]) == Array("Infinity".utf8) { return t[0] == 45 ? -.infinity : .infinity }
+    var digits = 0
+    while i < t.count && jsDigit(t[i]).map({ $0 < 10 }) == true { i += 1; digits += 1 }
+    if i < t.count && t[i] == 46 { i += 1; while i < t.count && jsDigit(t[i]).map({ $0 < 10 }) == true { i += 1; digits += 1 } }
+    if digits == 0 { return .nan }
+    if i < t.count && (t[i] == 101 || t[i] == 69) {
+        i += 1
+        if i < t.count && (t[i] == 43 || t[i] == 45) { i += 1 }
+        let start = i
+        while i < t.count && jsDigit(t[i]).map({ $0 < 10 }) == true { i += 1 }
+        if i == start { return .nan }
+    }
+    return i == t.count ? strtod(String(decoding: t, as: UTF8.self), nil) : .nan
+}
+/// `parseInt(s, radix)`: the longest run of digits after white space, a sign and (radix 16 or none) 0x; NaN if none.
+public func jsParseInt(_ s: String, _ radix: Double = 0) -> Double {
+    var t = Array(s.jsTrimStart().utf8)[...]
+    let negative = t.first == 45
+    if t.first == 43 || t.first == 45 { t = t.dropFirst() }
+    var r = Int(jsI32(radix))
+    if r != 0 && (r < 2 || r > 36) { return .nan }
+    if (r == 0 || r == 16) && t.count >= 2 && t[t.startIndex] == 48 && (t[t.startIndex + 1] | 0x20) == 120 { t = t.dropFirst(2); r = 16 }
+    if r == 0 { r = 10 }
+    let run = t.prefix { jsDigit($0).map { $0 < r } == true }
+    if run.isEmpty { return .nan }
+    let v = r == 10 ? strtod(String(decoding: run, as: UTF8.self), nil) : run.reduce(0.0) { $0 * Double(r) + Double(jsDigit($1)!) }
+    return negative ? -v : v
+}
+private func jsDigit(_ c: UInt8) -> Int? {
+    switch c {
+    case 48...57: return Int(c) - 48
+    case 97...122: return Int(c) - 87
+    case 65...90: return Int(c) - 55
+    default: return nil
+    }
+}
+/// `Math.max` / `Math.min` of numbers: NaN if any is NaN, and +0 above -0.
+public func jsMax(_ a: Int, _ b: Int) -> Int { Swift.max(a, b) }
+public func jsMin(_ a: Int, _ b: Int) -> Int { Swift.min(a, b) }
+public func jsMax(_ a: Double, _ b: Double) -> Double { a.isNaN || b.isNaN ? .nan : a > b || (a == b && b.sign == .minus) ? a : b }
+public func jsMin(_ a: Double, _ b: Double) -> Double { a.isNaN || b.isNaN ? .nan : a < b || (a == b && a.sign == .minus) ? a : b }
 public func jsOr(_ a: String, _ b: String) -> String { a.isEmpty ? b : a }
+/** `f(v)`: a value computed once, then used (by `&&` / `||` on values: tested, then kept or not). */
+@inline(__always) public func jsWith<T, R>(_ v: T, _ f: (T) throws -> R) rethrows -> R { try f(v) }
+/** Statements inside an expression (an assignment used as a value), then its value. */
+@inline(__always) public func jsRun<R>(_ f: () throws -> R) rethrows -> R { try f() }
+
+/// `xs[i]!` out of range: JavaScript reads undefined and goes on, the native element type can't hold it. The trap
+/// says which JavaScript operation it was (the same words on every target).
+@inline(never) @usableFromInline func jsTrapIndex(_ i: Int, _ count: Int) -> Never {
+    fatalError("nuclo: xs[i]! read index \(i) of an array of length \(count): JavaScript gives undefined there, which the element type can't hold. Test the index (i < xs.length) or use xs[i] ?? fallback.")
+}
 
 public func jsErrorMessage(_ error: Error) -> String {
     let message = (error as? NError)?.message ?? error.localizedDescription
-    return "Error: \(message)"
+    let name = (error as? NError)?.name ?? "Error"
+    return message.isEmpty ? name : "\(name): \(message)"
 }
 
-public extension Array {
-    @discardableResult mutating func jsSplice(_ start: Int, _ count: Int) -> [Element] {
-        let from = start < 0 ? Swift.max(0, self.count + start) : Swift.min(start, self.count)
-        let to = Swift.min(self.count, from + Swift.max(0, count))
-        let removed = Array(self[from..<to])
-        removeSubrange(from..<to)
-        return removed
+/// `Record<string, T>`: a hash map (O(1) reads, writes and deletes) that lists its keys in JavaScript's order:
+/// integer-like keys ascending, then the others in insertion order (a key deleted and set again goes last).
+/// A map key compared by code units (Swift's String equates canonically equivalent text; its hash stays consistent).
+public struct JsKey: Hashable {
+    public let s: String
+    public init(_ s: String) { self.s = s }
+    // `==` first: Swift compares small strings' bits directly, so a mismatch while probing stays cheap.
+    public static func == (a: JsKey, b: JsKey) -> Bool { a.s == b.s && jsStrEq(a.s, b.s) }
+    public func hash(into h: inout Hasher) { h.combine(s) }
+    /// What Dictionary calls: a multiply-mix hash of the UTF-8 bytes (equal code units, equal bytes), not SipHash
+    /// over the NFC-normalized text.
+    public func _rawHashValue(seed: Int) -> Int {
+        var t = s
+        return t.withUTF8 { Int(truncatingIfNeeded: jsHashBytes($0, UInt64(bitPattern: Int64(seed)))) }
+    }
+}
+
+/// A Map / Set number key's hash input (SameValueZero bits): Dictionary hashes it with one mix, not SipHash.
+public struct JsNumH: Hashable {
+    @usableFromInline let bits: UInt64
+    @inlinable init(_ bits: UInt64) { self.bits = bits }
+    public func hash(into h: inout Hasher) { h.combine(bits) }
+    @inlinable public func _rawHashValue(seed: Int) -> Int { Int(bitPattern: UInt(truncatingIfNeeded: jsMix(bits ^ UInt64(bitPattern: Int64(seed))))) }
+}
+
+/// MurmurHash3's 64-bit finalizer: every input bit moves every output bit (Dictionary probes by the low bits).
+@inlinable @inline(__always) func jsMix(_ x: UInt64) -> UInt64 {
+    var z = x
+    z ^= z >> 33
+    z &*= 0xff51_afd7_ed55_8ccd
+    z ^= z >> 33
+    z &*= 0xc4ce_b9fe_1a85_ec53
+    z ^= z >> 33
+    return z
+}
+
+/// Bytes hashed 8 at a time (multiply-rotate, FxHash's step), then mixed: for map keys from the app (not hostile).
+@usableFromInline func jsHashBytes(_ b: UnsafeBufferPointer<UInt8>, _ seed: UInt64) -> UInt64 {
+    var h = seed ^ UInt64(b.count) &* 0x9E37_79B9_7F4A_7C15
+    guard let p = b.baseAddress.map(UnsafeRawPointer.init) else { return jsMix(h) }
+    var i = 0
+    while i + 8 <= b.count {
+        h = ((h << 5) | (h >> 59)) ^ p.loadUnaligned(fromByteOffset: i, as: UInt64.self)
+        h &*= 0x517c_c1b7_2722_0a95
+        i += 8
+    }
+    if i < b.count {
+        var w: UInt64 = 0
+        for j in i..<b.count { w |= UInt64(b[j]) << (UInt64(j - i) * 8) }
+        h = (((h << 5) | (h >> 59)) ^ w) &* 0x517c_c1b7_2722_0a95
+    }
+    return jsMix(h)
+}
+
+/// A `Record<string, T>` (see above): a reference, as a JavaScript object is, so every variable, field or closure
+/// holding it sees the same entries. Storage access is unchecked, as JsArray's: no access here overlaps another.
+public final class JsMap<Value>: ExpressibleByDictionaryLiteral {
+    @exclusivity(unchecked) private var slots: [JsKey: Int] = [:]
+    @exclusivity(unchecked) private var entries: [(key: String, value: Value)?] = []
+
+    public init() {}
+    public init(dictionaryLiteral elements: (String, Value)...) { for (k, v) in elements { self[k] = v } }
+    public init(_ dictionary: [String: Value]) { for (k, v) in dictionary { self[k] = v } }
+
+    public subscript(key: String) -> Value? {
+        get { slots[JsKey(key)].map { entries[$0]!.value } }
+        set {
+            guard let value = newValue else { removeValue(forKey: key); return }
+            if let i = slots[JsKey(key)] { entries[i]!.value = value } else { slots[JsKey(key)] = entries.count; entries.append((key, value)) }
+        }
     }
 
-    @discardableResult mutating func jsPop() -> Element? { popLast() }
+    @discardableResult public func removeValue(forKey key: String) -> Value? {
+        guard let i = slots.removeValue(forKey: JsKey(key)) else { return nil }
+        let old = entries[i]!.value
+        entries[i] = nil
+        // Mostly holes: compact, so the entries stay proportional to the keys.
+        if entries.count > 16 && slots.count * 2 < entries.count {
+            entries = entries.filter { $0 != nil }
+            for (i, entry) in entries.enumerated() { slots[JsKey(entry!.key)] = i }
+        }
+        return old
+    }
+
+    /// The entries in JavaScript's order (Object.keys / values / entries, for…in).
+    public var jsEntries: [(key: String, value: Value)] {
+        let live = entries.compactMap { $0 }
+        guard live.contains(where: { jsIsIndex($0.key) }) else { return live }
+        return live.filter { jsIsIndex($0.key) }.sorted { UInt32($0.key)! < UInt32($1.key)! } + live.filter { !jsIsIndex($0.key) }
+    }
+    public var jsKeys: JsArray<String> { JsArray(jsEntries.map { $0.key }) }
+    public var jsValues: JsArray<Value> { JsArray(jsEntries.map { $0.value }) }
+}
+
+/// An array index ("0" … "4294967294", no leading zero): JavaScript lists such keys first, in numeric order.
+public func jsIsIndex(_ key: String) -> Bool {
+    guard let n = UInt32(key), n < UInt32.max else { return false }
+    return String(n) == key
+}
+
+/// A JavaScript array: a shared, mutable reference over Swift's contiguous storage `a`. Every variable, parameter,
+/// field, closure or element holding it sees the same elements (no copy on assignment), and `===` is identity.
+/// Methods that call back into the app work on a snapshot of `a` (a retain, copied only if the callback changes
+/// the array), so a callback touching its own array never overlaps an access to it.
+public final class JsArray<Element>: RandomAccessCollection, ExpressibleByArrayLiteral {
+    /// Unchecked: no access to `a` here overlaps another (callbacks run on snapshots, arguments are evaluated first),
+    /// and Swift's dynamic exclusivity check on every element access would cost a third of a tight loop.
+    @exclusivity(unchecked) public var a: [Element]
+
+    @inlinable public init() { a = [] }
+    @inlinable public init(_ a: [Element]) { self.a = a }
+    @inlinable public init<S: Sequence>(_ s: S) where S.Element == Element { a = Array(s) }
+    @inlinable public init(arrayLiteral elements: Element...) { a = elements }
+
+    public typealias Index = Int
+    public typealias Indices = Range<Int>
+    @inlinable public var startIndex: Int { 0 }
+    @inlinable public var endIndex: Int { a.count }
+    @inlinable public var count: Int { a.count }
+    @inlinable public var isEmpty: Bool { a.isEmpty }
+    @inlinable public func index(after i: Int) -> Int { i + 1 }
+    @inlinable public func index(before i: Int) -> Int { i - 1 }
+
+    /// `xs[i]` (checked in range) and `xs[i] = v`; `xs[xs.length] = v` appends, as in JavaScript.
+    @inlinable public subscript(i: Int) -> Element {
+        get {
+            if i < 0 || i >= a.count { jsTrapIndex(i, a.count) }
+            return a[i]
+        }
+        set { if i == a.count { a.append(newValue) } else { a[i] = newValue } }
+    }
+
+    /// `for…of`: live, as JavaScript's array iterator, so elements pushed during the loop are visited.
+    public struct Iterator: IteratorProtocol {
+        @usableFromInline let array: JsArray
+        @usableFromInline var i = 0
+        @inlinable init(array: JsArray) { self.array = array }
+        @inlinable public mutating func next() -> Element? {
+            guard i < array.a.count else { return nil }
+            defer { i += 1 }
+            return array.a[i]
+        }
+    }
+    @inlinable public func makeIterator() -> Iterator { Iterator(array: self) }
+
+    @inlinable public func append(_ x: Element) { a.append(x) }
+    /// `xs.push(...ys)`: `ys` may be `xs` itself, so it is read first.
+    @inlinable public func append(contentsOf xs: JsArray<Element>) { let b = xs.a; a.append(contentsOf: b) }
+    @inlinable public func insert(_ x: Element, at i: Int) { a.insert(x, at: i) }
+
+    /// `push` / `unshift` as a value: the new length.
+    @inlinable public func jsPush(_ x: Element) -> Int { a.append(x); return a.count }
+    @inlinable public func jsPush(contentsOf xs: JsArray<Element>) -> Int { append(contentsOf: xs); return a.count }
+    @inlinable public func jsUnshift(_ x: Element) -> Int { a.insert(x, at: 0); return a.count }
+    @discardableResult @inlinable public func jsPop() -> Element? { a.popLast() }
+    @discardableResult @inlinable public func jsShift() -> Element? { a.isEmpty ? nil : a.removeFirst() }
+
+    @discardableResult public func jsSplice(_ start: Int, _ count: Int) -> JsArray<Element> {
+        let n = a.count
+        let from = start < 0 ? Swift.max(0, n + start) : Swift.min(start, n)
+        let to = Swift.min(n, from + Swift.max(0, count))
+        let removed = Array(a[from..<to])
+        a.removeSubrange(from..<to)
+        return JsArray(removed)
+    }
 
     /// `xs[i]` as JavaScript reads it: nil out of range instead of a trap.
-    func jsAt(_ i: Int) -> Element? { indices.contains(i) ? self[i] : nil }
+    @inlinable public func jsAt(_ i: Int) -> Element? { i >= 0 && i < a.count ? a[i] : nil }
+    /// `xs.at(i)`: from the end when negative.
+    @inlinable public func jsAtRel(_ i: Int) -> Element? { jsAt(i < 0 ? a.count + i : i) }
 
-    func jsSlice(_ start: Int, _ end: Int?) -> [Element] {
-        let n = count
+    public func jsSlice(_ start: Int, _ end: Int?) -> JsArray<Element> {
+        let n = a.count
         let from = start < 0 ? Swift.max(0, n + start) : Swift.min(start, n)
         let to = end.map { $0 < 0 ? Swift.max(0, n + $0) : Swift.min($0, n) } ?? n
-        return from < to ? Array(self[from..<to]) : []
-    }
-}
-
-public extension Array where Element: AnyObject {
-    func jsIndexOf(_ item: Element) -> Int { firstIndex { $0 === item } ?? -1 }
-    func jsIncludes(_ item: Element) -> Bool { contains { $0 === item } }
-}
-
-public extension Array where Element: Equatable {
-    func jsIndexOf(_ item: Element) -> Int { firstIndex(of: item) ?? -1 }
-    func jsIncludes(_ item: Element) -> Bool { contains(item) }
-}
-
-public extension Array {
-    /// JavaScript's `sort`: stable, and the same merge sort on every target, so even a comparator
-    /// that contradicts itself orders the same way everywhere. A positive result puts `b` first.
-    @discardableResult mutating func jsSort(_ cmp: (Element, Element) throws -> Double) rethrows -> [Element] {
-        self = try jsSorted(cmp)
-        return self
+        return from < to ? JsArray(Array(a[from..<to])) : JsArray()
     }
 
-    func jsSorted(_ cmp: (Element, Element) throws -> Double) rethrows -> [Element] {
-        var a = self
-        var b = self
-        var width = 1
-        while width < count {
-            var start = 0
-            while start < count {
-                let mid = Swift.min(start + width, count), end = Swift.min(start + 2 * width, count)
-                var l = start, r = mid, k = start
-                while l < mid && r < end {
-                    if try cmp(a[l], a[r]) > 0 { b[k] = a[r]; r += 1 } else { b[k] = a[l]; l += 1 }
-                    k += 1
+    /// `a.concat(b, c)` and spreads (`[...a, x]`): a new array.
+    public func jsConcat(_ others: JsArray<Element>...) -> JsArray<Element> {
+        var out = a
+        out.reserveCapacity(others.reduce(a.count) { $0 + $1.a.count })
+        for o in others { out.append(contentsOf: o.a) }
+        return JsArray(out)
+    }
+
+    /// JavaScript's `sort`, in place (the result is the array itself): stable, and the same merge sort on every
+    /// target, so even a comparator that contradicts itself orders the same way everywhere. A positive result puts
+    /// `b` first. It sorts a copy and stores it, so the comparator may read the array.
+    @discardableResult public func jsSort(_ cmp: (Element, Element) throws -> Double) rethrows -> JsArray<Element> {
+        // A stable bottom-up merge sort of indices (no retain / release per move), applied once at the end.
+        let x = a
+        let count = x.count
+        guard count > 1 else { return self }
+        var p = [Int](0..<count), q = p
+        try x.withUnsafeBufferPointer { xs in
+            try p.withUnsafeMutableBufferPointer { pp in
+                try q.withUnsafeMutableBufferPointer { qq in
+                    var (src, dst) = (pp, qq)
+                    var width = 1
+                    while width < count {
+                        var start = 0
+                        while start < count {
+                            let mid = Swift.min(start + width, count), end = Swift.min(start + 2 * width, count)
+                            var l = start, r = mid, k = start
+                            while l < mid && r < end {
+                                if try cmp(xs[src[l]], xs[src[r]]) > 0 { dst[k] = src[r]; r += 1 } else { dst[k] = src[l]; l += 1 }
+                                k += 1
+                            }
+                            while l < mid { dst[k] = src[l]; l += 1; k += 1 }
+                            while r < end { dst[k] = src[r]; r += 1; k += 1 }
+                            start += 2 * width
+                        }
+                        swap(&src, &dst)
+                        width *= 2
+                    }
+                    if src.baseAddress != pp.baseAddress { pp.baseAddress!.update(from: src.baseAddress!, count: count) }
                 }
-                while l < mid { b[k] = a[l]; l += 1; k += 1 }
-                while r < end { b[k] = a[r]; r += 1; k += 1 }
-                start += 2 * width
             }
-            swap(&a, &b)
-            width *= 2
         }
-        return a
-    }
-
-    @discardableResult mutating func jsReverse() -> [Element] {
-        reverse()
+        a = x.withUnsafeBufferPointer { xs in p.map { xs[$0] } }
         return self
     }
 
-    @discardableResult mutating func jsShift() -> Element? { isEmpty ? nil : removeFirst() }
+    @discardableResult @inlinable public func jsReverse() -> JsArray<Element> { a.reverse(); return self }
 
-    /// `xs.at(i)`: from the end when negative.
-    func jsAtRel(_ i: Int) -> Element? { jsAt(i < 0 ? count + i : i) }
+    @inlinable public func map<U>(_ f: (Element) throws -> U) rethrows -> JsArray<U> { let s = a; return JsArray<U>(try s.map(f)) }
+    @inlinable public func filter(_ f: (Element) throws -> Bool) rethrows -> JsArray<Element> { let s = a; return JsArray(try s.filter(f)) }
+    @inlinable public func forEach(_ f: (Element) throws -> Void) rethrows { let s = a; for x in s { try f(x) } }
+    @inlinable public func contains(where f: (Element) throws -> Bool) rethrows -> Bool { let s = a; return try s.contains(where: f) }
+    @inlinable public func allSatisfy(_ f: (Element) throws -> Bool) rethrows -> Bool { let s = a; return try s.allSatisfy(f) }
+    @inlinable public func first(where f: (Element) throws -> Bool) rethrows -> Element? { let s = a; return try s.first(where: f) }
+    @inlinable public func firstIndex(where f: (Element) throws -> Bool) rethrows -> Int? { let s = a; return try s.firstIndex(where: f) }
+    @inlinable public func reduce<R>(_ initial: R, _ f: (R, Element) throws -> R) rethrows -> R { let s = a; return try s.reduce(initial, f) }
 
-    func jsMapI<U>(_ f: (Element, Int) throws -> U) rethrows -> [U] { try enumerated().map { try f($0.element, $0.offset) } }
-    func jsFilterI(_ f: (Element, Int) throws -> Bool) rethrows -> [Element] { try enumerated().filter { try f($0.element, $0.offset) }.map { $0.element } }
-    func jsForEachI(_ f: (Element, Int) throws -> Void) rethrows { for (i, x) in enumerated() { try f(x, i) } }
-    func jsSomeI(_ f: (Element, Int) throws -> Bool) rethrows -> Bool { try enumerated().contains { try f($0.element, $0.offset) } }
-    func jsEveryI(_ f: (Element, Int) throws -> Bool) rethrows -> Bool { try enumerated().allSatisfy { try f($0.element, $0.offset) } }
-    func jsFindI(_ f: (Element, Int) throws -> Bool) rethrows -> Element? { try enumerated().first { try f($0.element, $0.offset) }?.element }
-    func jsFindIndexI(_ f: (Element, Int) throws -> Bool) rethrows -> Int { try enumerated().first { try f($0.element, $0.offset) }?.offset ?? -1 }
+    public func jsMapI<U>(_ f: (Element, Int) throws -> U) rethrows -> JsArray<U> { let s = a; return JsArray<U>(try s.enumerated().map { try f($0.element, $0.offset) }) }
+    public func jsFilterI(_ f: (Element, Int) throws -> Bool) rethrows -> JsArray<Element> { let s = a; return JsArray(try s.enumerated().filter { try f($0.element, $0.offset) }.map { $0.element }) }
+    public func jsForEachI(_ f: (Element, Int) throws -> Void) rethrows { let s = a; for (i, x) in s.enumerated() { try f(x, i) } }
+    public func jsSomeI(_ f: (Element, Int) throws -> Bool) rethrows -> Bool { let s = a; return try s.enumerated().contains { try f($0.element, $0.offset) } }
+    public func jsEveryI(_ f: (Element, Int) throws -> Bool) rethrows -> Bool { let s = a; return try s.enumerated().allSatisfy { try f($0.element, $0.offset) } }
+    public func jsFindI(_ f: (Element, Int) throws -> Bool) rethrows -> Element? { let s = a; return try s.enumerated().first { try f($0.element, $0.offset) }?.element }
+    public func jsFindIndexI(_ f: (Element, Int) throws -> Bool) rethrows -> Int { let s = a; return try s.enumerated().first { try f($0.element, $0.offset) }?.offset ?? -1 }
 }
 
-public extension Array where Element: AnyObject {
-    func jsLastIndexOf(_ item: Element) -> Int { lastIndex { $0 === item } ?? -1 }
+public extension JsArray where Element == String {
+    @inlinable func joined(separator: String) -> String { a.joined(separator: separator) }
 }
 
-public extension Array where Element: Equatable {
-    func jsLastIndexOf(_ item: Element) -> Int { lastIndex(of: item) ?? -1 }
+/// indexOf / includes compare objects (arrays and maps too) by identity, as `===` does. `from`: where the search
+/// starts (from the end when negative); lastIndexOf searches back from it.
+public extension JsArray where Element: AnyObject {
+    @inlinable func jsIndexOf(_ item: Element, _ from: Int = 0) -> Int { a[jsRel(from)...].firstIndex { $0 === item } ?? -1 }
+    @inlinable func jsIncludes(_ item: Element, _ from: Int = 0) -> Bool { a[jsRel(from)...].contains { $0 === item } }
+    @inlinable func jsLastIndexOf(_ item: Element, _ from: Int = Int.max) -> Int { let k = jsRelLast(from); return k < 0 ? -1 : a[...k].lastIndex { $0 === item } ?? -1 }
+}
+
+public extension JsArray where Element: Equatable {
+    @inlinable func jsIndexOf(_ item: Element, _ from: Int = 0) -> Int { a[jsRel(from)...].firstIndex(of: item) ?? -1 }
+    /// SameValueZero: NaN includes NaN (`x != x` only for NaN), where indexOf's `===` never finds it.
+    @inlinable func jsIncludes(_ item: Element, _ from: Int = 0) -> Bool { a[jsRel(from)...].contains { $0 == item || ($0 != $0 && item != item) } }
+    @inlinable func jsLastIndexOf(_ item: Element, _ from: Int = Int.max) -> Int { let k = jsRelLast(from); return k < 0 ? -1 : a[...k].lastIndex(of: item) ?? -1 }
+}
+
+/// Strings by code units (see jsStrEq), not Swift's canonical equivalence.
+public extension JsArray where Element == String {
+    @inlinable func jsIndexOf(_ item: String, _ from: Int = 0) -> Int { a[jsRel(from)...].firstIndex { jsStrEq($0, item) } ?? -1 }
+    @inlinable func jsIncludes(_ item: String, _ from: Int = 0) -> Bool { a[jsRel(from)...].contains { jsStrEq($0, item) } }
+    @inlinable func jsLastIndexOf(_ item: String, _ from: Int = Int.max) -> Int { let k = jsRelLast(from); return k < 0 ? -1 : a[...k].lastIndex { jsStrEq($0, item) } ?? -1 }
+}
+
+/// Array APIs: splice with items, fill, copyWithin, flat, reduceRight, `new Array(n).fill(v)`, `Array.from({ length: n }, f)`.
+public extension JsArray {
+    /// A relative index (`fill`, `copyWithin`, `splice`, `indexOf`'s start): from the end when negative, clamped to 0…count.
+    @inlinable func jsRel(_ i: Int) -> Int { i < 0 ? Swift.max(0, a.count + i) : Swift.min(i, a.count) }
+    /// `lastIndexOf`'s start: the last index searched (negative: none).
+    @inlinable func jsRelLast(_ i: Int) -> Int { i < 0 ? a.count + i : Swift.min(i, a.count - 1) }
+
+    /// `splice(start, count, ...items)`: `items` may be the array itself, so it is read first.
+    @discardableResult func jsSplice(_ start: Int, _ count: Int, _ items: JsArray<Element>) -> JsArray<Element> {
+        let b = items.a
+        let from = jsRel(start), to = from + Swift.min(Swift.max(0, count), a.count - from)
+        let removed = JsArray(Array(a[from..<to]))
+        a.replaceSubrange(from..<to, with: b)
+        return removed
+    }
+    @discardableResult func jsFill(_ v: Element, _ start: Int, _ end: Int?) -> JsArray<Element> {
+        let from = jsRel(start), to = end.map(jsRel) ?? a.count
+        var i = from
+        while i < to { a[i] = v; i += 1 }
+        return self
+    }
+    @discardableResult func jsCopyWithin(_ target: Int, _ start: Int, _ end: Int?) -> JsArray<Element> {
+        let t = jsRel(target), s = jsRel(start), n = Swift.min((end.map(jsRel) ?? a.count) - s, a.count - t)
+        if n > 0 { let b = Array(a[s..<s + n]); a.replaceSubrange(t..<t + n, with: b) }
+        return self
+    }
+    /// `flat()` of a `T[][]`: one level.
+    func jsFlat<U>() -> JsArray<U> where Element == JsArray<U> {
+        var out: [U] = []
+        out.reserveCapacity(a.reduce(0) { $0 + $1.a.count })
+        for x in a { out.append(contentsOf: x.a) }
+        return JsArray<U>(out)
+    }
+    func jsReduceRight<R>(_ initial: R, _ f: (R, Element) throws -> R) rethrows -> R { let s = a; return try s.reversed().reduce(initial, f) }
+    static func jsFilled(_ n: Int, _ v: Element) -> JsArray<Element> { JsArray(Array(repeating: v, count: Swift.max(0, n))) }
+    static func jsFrom(length n: Int, _ f: (Int) throws -> Element) rethrows -> JsArray<Element> { JsArray(try (0..<Swift.max(0, n)).map(f)) }
+
+    // ES2023.
+    func jsFindLast(_ f: (Element, Int) throws -> Bool) rethrows -> Element? {
+        let s = a
+        var i = s.count - 1
+        while i >= 0 { if try f(s[i], i) { return s[i] }; i -= 1 }
+        return nil
+    }
+    func jsFindLastIndex(_ f: (Element, Int) throws -> Bool) rethrows -> Int {
+        let s = a
+        var i = s.count - 1
+        while i >= 0 { if try f(s[i], i) { return i }; i -= 1 }
+        return -1
+    }
+    func jsToSpliced(_ start: Int, _ count: Int, _ items: JsArray<Element>? = nil) -> JsArray<Element> {
+        let out = JsArray(a)
+        out.jsSplice(start, count, items ?? JsArray())
+        return out
+    }
+    /// `with(i, v)`: a RangeError out of range, as JavaScript throws.
+    func jsWith(_ i: Double, _ v: Element) throws -> JsArray<Element> {
+        let t = i.isNaN ? 0 : i.rounded(.towardZero)
+        let k = t < 0 ? Double(a.count) + t : t
+        guard k >= 0 && k < Double(a.count) else { throw NError(name: "RangeError", "Array index out of range") }
+        var b = a
+        b[Int(k)] = v
+        return JsArray(b)
+    }
+    /// `new Array(n).fill(v)` of a length not known statically: a RangeError unless it is a whole number below 2^32.
+    static func jsFilledChecked(_ n: Double, _ v: Element) throws -> JsArray<Element> { jsFilled(try jsArrayLength(n), v) }
 }
 
 /// `++x` / `x++` inside an expression.
@@ -3453,11 +4643,38 @@ public func jsPostIncr(_ x: inout Double, _ d: Double) -> Double { let v = x; x 
 /// ToInt32, which the bitwise operators apply to their operands.
 public func jsI32(_ x: Int) -> Int32 { Int32(truncatingIfNeeded: x) }
 public func jsI32(_ x: Double) -> Int32 {
+    if Swift.abs(x) < 9.2e18 { return Int32(truncatingIfNeeded: Int64(x)) }  // trunc commutes with mod 2^32: no fmod
     guard x.isFinite else { return 0 }
     return Int32(truncatingIfNeeded: Int64(x.truncatingRemainder(dividingBy: 4294967296)))
 }
 
-public func jsSign(_ x: Double) -> Int { x > 0 ? 1 : x < 0 ? -1 : 0 }
+public func jsSign(_ x: Double) -> Double { x > 0 ? 1 : x < 0 ? -1 : x }
+
+/// `x ** y` / `Math.pow` as JavaScriptCore (bun) computes them: a whole exponent 0…1000 by binary powering (C's pow
+/// rounds differently: 1.07 ** 10), anything else by pow; NaN where JavaScript differs from C (`1 ** Infinity`, `x ** NaN`).
+@inlinable public func jsPow(_ x: Double, _ y: Double) -> Double {
+    if y.isNaN || (Swift.abs(x) == 1 && y.isInfinite) { return .nan }
+    if y >= 0 && y <= 1000 && y == y.rounded(.towardZero) {
+        var r = 1.0, b = x, e = Int(y)
+        while e != 0 { if e & 1 != 0 { r *= b }; b *= b; e >>= 1 }
+        return r
+    }
+    return Foundation.pow(x, y)
+}
+
+/// `===` on strings: the same code units (Swift's `==` equates canonically equivalent text: "é" and "e\u{301}").
+@inlinable public func jsStrEq(_ a: String, _ b: String) -> Bool {
+    let n = a.utf8.count
+    guard n == b.utf8.count else { return false }
+    if n == 0 { return true }
+    let same = a.utf8.withContiguousStorageIfAvailable { pa in b.utf8.withContiguousStorageIfAvailable { pb in memcmp(pa.baseAddress!, pb.baseAddress!, n) == 0 } }
+    if let same, let same { return same }
+    return a.utf8.elementsEqual(b.utf8)
+}
+@inlinable public func jsStrEq(_ a: String?, _ b: String?) -> Bool {
+    guard let a, let b else { return a == nil && b == nil }
+    return jsStrEq(a, b)
+}
 public func jsIsInteger(_ x: Double) -> Bool { x.isFinite && x.rounded(.towardZero) == x }
 
 /// JavaScript's white space and line terminators, which trim() removes.
@@ -3474,7 +4691,31 @@ public extension String {
 
     private static func jsFrom(_ units: ArraySlice<UInt16>) -> String { String(decoding: units, as: UTF16.self) }
 
-    func jsTrim() -> String { jsTrimEnd().jsTrimStart() }
+    /// Fast path: `f` over the UTF-8 bytes when the text is ASCII (a UTF-16 offset is then a byte offset), else nil.
+    /// O(1) for native strings (the ASCII flag; no copy), where the generic paths below copy every unit.
+    @inline(__always) func jsAscii<R>(_ f: (UnsafeBufferPointer<UInt8>) -> R) -> R? {
+        var s = self
+        guard s.utf8.count == s.utf16.count else { return nil }
+        return s.withUTF8(f)
+    }
+
+    // By code units, as JavaScript: Swift's hasPrefix / contains match whole characters ("👨‍👩‍👧" doesn't start
+    // with "👨" there) and equate canonically equivalent text, and `contains("")` is false.
+    func jsStartsWith(_ s: String) -> Bool { utf8.starts(with: s.utf8) }
+    func jsEndsWith(_ s: String) -> Bool { utf8.count >= s.utf8.count && utf8.dropFirst(utf8.count - s.utf8.count).elementsEqual(s.utf8) }
+    func jsIncludes(_ s: String) -> Bool { s.isEmpty || jsIndexOf(s) >= 0 }
+    /// Swift's lowercased() lacks the final-sigma rule ("ΣΑΣ" is "σας").
+    func jsLower() -> String { unicodeScalars.contains("\u{3A3}") ? (self as NSString).lowercased : lowercased() }
+
+    func jsTrim() -> String {
+        if let r = jsAscii({ b -> String in
+            var i = 0, e = b.count
+            while i < e && jsIsSpace(UInt16(b[i])) { i += 1 }
+            while e > i && jsIsSpace(UInt16(b[e - 1])) { e -= 1 }
+            return i == 0 && e == b.count ? self : String(decoding: UnsafeBufferPointer(rebasing: b[i..<e]), as: UTF8.self)
+        }) { return r }
+        return jsTrimEnd().jsTrimStart()
+    }
     func jsTrimStart() -> String { String.jsFrom(Array(utf16).drop { jsIsSpace($0) }) }
     func jsTrimEnd() -> String {
         let units = Array(utf16)
@@ -3483,9 +4724,18 @@ public extension String {
         return String.jsFrom(units[0..<end])
     }
 
-    func jsSlice(_ start: Int, _ end: Int?) -> String { String.jsFrom(ArraySlice(Array(utf16).jsSlice(start, end))) }
+    func jsSlice(_ start: Int, _ end: Int?) -> String {
+        if let r = jsAscii({ b -> String in
+            let n = b.count
+            let from = start < 0 ? Swift.max(0, n + start) : Swift.min(start, n)
+            let to = end.map { $0 < 0 ? Swift.max(0, n + $0) : Swift.min($0, n) } ?? n
+            return from < to ? String(decoding: UnsafeBufferPointer(rebasing: b[from..<to]), as: UTF8.self) : ""
+        }) { return r }
+        return String.jsFrom(ArraySlice(JsArray(Array(utf16)).jsSlice(start, end).a))
+    }
 
     func jsIndexOf(_ s: String, _ from: Int = 0) -> Int {
+        if let r = jsAscii({ h in s.jsAscii { n in jsFindBytes(h, n, from) } ?? -1 }) { return r }
         let h = Array(utf16), n = Array(s.utf16)
         var i = Swift.max(0, Swift.min(from, h.count))
         while i + n.count <= h.count {
@@ -3496,6 +4746,16 @@ public extension String {
     }
 
     func jsLastIndexOf(_ s: String) -> Int {
+        if let r = jsAscii({ h in
+            s.jsAscii { n -> Int in
+                var i = h.count - n.count
+                while i >= 0 {
+                    if n.isEmpty || memcmp(h.baseAddress! + i, n.baseAddress!, n.count) == 0 { return i }
+                    i -= 1
+                }
+                return -1
+            } ?? -1
+        }) { return r }
         let h = Array(utf16), n = Array(s.utf16)
         var i = h.count - n.count
         while i >= 0 {
@@ -3505,9 +4765,22 @@ public extension String {
         return -1
     }
 
-    func jsSplit(_ sep: String) -> [String] {
+    func jsSplit(_ sep: String) -> JsArray<String> {
+        if !sep.isEmpty, let r = jsAscii({ h in
+            sep.jsAscii { n -> JsArray<String> in
+                var parts: [String] = [], start = 0
+                while true {
+                    let i = jsFindBytes(h, n, start)
+                    if i < 0 { break }
+                    parts.append(String(decoding: UnsafeBufferPointer(rebasing: h[start..<i]), as: UTF8.self))
+                    start = i + n.count
+                }
+                parts.append(String(decoding: UnsafeBufferPointer(rebasing: h[start...]), as: UTF8.self))
+                return JsArray(parts)
+            }
+        }), let r { return r }
         let h = Array(utf16), n = Array(sep.utf16)
-        if n.isEmpty { return h.map { String.jsFrom([$0]) } }
+        if n.isEmpty { return JsArray(h.map { String.jsFrom([$0]) }) }
         var parts: [String] = [], start = 0, i = 0
         while i + n.count <= h.count {
             if h[i..<(i + n.count)].elementsEqual(n) {
@@ -3517,7 +4790,7 @@ public extension String {
             } else { i += 1 }
         }
         parts.append(String.jsFrom(h[start..<h.count]))
-        return parts
+        return JsArray(parts)
     }
 
     /// `replace` / `replaceAll` with a string pattern, `$$ $& $` $'` in the replacement included.
@@ -3568,9 +4841,366 @@ public extension String {
     func jsRepeat(_ n: Int) -> String { String(repeating: self, count: Swift.max(0, n)) }
 }
 
+/// The first `n` in `h` at or after `from` (clamped), -1 if none: memchr for the first byte, then memcmp.
+@usableFromInline func jsFindBytes(_ h: UnsafeBufferPointer<UInt8>, _ n: UnsafeBufferPointer<UInt8>, _ from: Int) -> Int {
+    var i = Swift.max(0, Swift.min(from, h.count))
+    if n.isEmpty { return i }
+    let last = h.count - n.count
+    guard let hb = h.baseAddress, let nb = n.baseAddress else { return -1 }
+    while i <= last {
+        guard let p = memchr(hb + i, Int32(nb[0]), last - i + 1) else { return -1 }
+        i = hb.distance(to: p.assumingMemoryBound(to: UInt8.self))
+        if memcmp(hb + i, nb, n.count) == 0 { return i }
+        i += 1
+    }
+    return -1
+}
+
 /// `a < b` on strings: UTF-16 units in order, as JavaScript compares (not Swift's Unicode order).
 public func jsCompare(_ a: String, _ b: String) -> Int {
     a.utf16.elementsEqual(b.utf16) ? 0 : a.utf16.lexicographicallyPrecedes(b.utf16) ? -1 : 1
+}
+
+// MARK: - String and number APIs (js.fn): positions are UTF-16 units, converted as JavaScript converts them
+
+/// ToIntegerOrInfinity: NaN is 0, a fraction truncates.
+@inline(__always) private func jsPos(_ d: Double) -> Double { d.isNaN ? 0 : d.rounded(.towardZero) }
+/// A position clamped to 0...len.
+@inline(__always) private func jsClampPos(_ d: Double, _ len: Int) -> Int { let p = jsPos(d); return p <= 0 ? 0 : p >= Double(len) ? len : Int(p) }
+private func jsUnitAt(_ s: String, _ i: Double) -> UInt16? {
+    let p = jsPos(i), u = s.utf16
+    guard p >= 0 && p < Double(u.count) else { return nil }
+    return u[u.index(u.startIndex, offsetBy: Int(p))]
+}
+public func jsCharAt(_ s: String, _ i: Double) -> String { jsUnitAt(s, i).map { String(decoding: [$0], as: UTF16.self) } ?? "" }
+public func jsCharCodeAt(_ s: String, _ i: Double) -> Double { jsUnitAt(s, i).map { Double($0) } ?? .nan }
+public func jsCodePointAt(_ s: String, _ i: Double) -> Double? {
+    let p = jsPos(i), u = Array(s.utf16)
+    guard p >= 0 && p < Double(u.count) else { return nil }
+    let k = Int(p), a = Int(u[k])
+    if a >= 0xD800 && a < 0xDC00 && k + 1 < u.count && u[k + 1] >= 0xDC00 && u[k + 1] < 0xE000 { return Double((a - 0xD800) << 10 + Int(u[k + 1]) - 0xDC00 + 0x10000) }
+    return Double(a)
+}
+public func jsStrAt(_ s: String, _ i: Double) -> String? {
+    let n = Double(s.utf16.count), p = jsPos(i), k = p < 0 ? n + p : p
+    return k >= 0 && k < n ? jsCharAt(s, k) : nil
+}
+/** `s[i]`: the UTF-16 unit at an integer index in range, else undefined (rest). */
+public func jsStrIndex(_ s: String, _ i: Double) -> String? {
+    i >= 0 && i == i.rounded(.towardZero) && i < Double(s.utf16.count) ? jsCharAt(s, i) : nil
+}
+/** `for (const c of s)`, `[...s]`, `Array.from(s)`: code points (rest). */
+public func jsCodePoints(_ s: String) -> JsArray<String> { JsArray(s.unicodeScalars.map { String($0) }) }
+/** `xs.reduce(f)` without an initial value: index `i` of the start, or JavaScript's TypeError on an empty array (rest). */
+public func jsReduceStart(_ n: Int, _ i: Int) throws -> Int {
+    if n == 0 { throw NError(name: "TypeError", "Reduce of empty array with no initial value") }
+    return i
+}
+/**
+ * `Math.hypot(…)` of any count, as JavaScriptCore computes it (rest): 2 → libm hypot; 3 → libc++'s std::hypot(x, y, z)
+ * (scaled sum of squares); more → a running maximum with fused multiply-adds. Infinity wins over NaN.
+ */
+public func jsHypotN(_ xs: JsArray<Double>) -> Double {
+    let v = xs.a
+    if v.contains(where: { $0.isInfinite }) { return .infinity }
+    if v.count == 0 { return 0 }
+    if v.count == 1 { return Swift.abs(v[0]) }
+    if v.contains(where: { $0.isNaN }) { return .nan }
+    if v.count == 2 { return Foundation.hypot(v[0], v[1]) }
+    if v.count == 3 {
+        let m = Swift.max(Swift.abs(v[0]), Swift.max(Swift.abs(v[1]), Swift.abs(v[2])))
+        let th = 0x1p512, sc = m > th ? 0x1p-532 : m < 1 / th ? 1 / 0x1p-532 : 1.0
+        let (x, y, z) = (v[0] * sc, v[1] * sc, v[2] * sc)
+        return (x * x + y * y + z * z).squareRoot() / sc
+    }
+    var m = 0.0, sum = 0.0
+    for x in v {
+        let a = Swift.abs(x)
+        if m < a { let r = m / a; sum = 1.0.addingProduct(sum, r * r); m = a }
+        else if m != 0 { let r = a / m; sum = sum.addingProduct(r, r) }
+    }
+    return m == 0 ? 0 : sum.squareRoot() * m
+}
+private let jsUriUnreserved = Set("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_.!~*'()".utf8)
+private let jsUriReserved = Set(";/?:@&=+$,#".utf8)
+private func jsUriEncode(_ s: String, _ keepReserved: Bool) -> String {
+    let hex = Array("0123456789ABCDEF".utf8)
+    var out: [UInt8] = []
+    for b in s.utf8 {
+        if jsUriUnreserved.contains(b) || (keepReserved && jsUriReserved.contains(b)) { out.append(b) } else { out += [37, hex[Int(b >> 4)], hex[Int(b & 15)]] }
+    }
+    return String(decoding: out, as: UTF8.self)
+}
+/** `encodeURIComponent(s)` / `encodeURI(s)` (rest): UTF-8, uppercase hex (a Swift string has no lone surrogate to reject). */
+public func jsEncodeUriComponent(_ s: String) -> String { jsUriEncode(s, false) }
+public func jsEncodeUri(_ s: String) -> String { jsUriEncode(s, true) }
+private func jsUriDecode(_ s: String, _ keepReserved: Bool) throws -> String {
+    let u = Array(s.utf8)
+    func bad() -> NError { NError(name: "URIError", "URI error") }
+    func hex(_ c: UInt8) -> Int? { c >= 48 && c <= 57 ? Int(c) - 48 : c >= 65 && c <= 70 ? Int(c) - 55 : c >= 97 && c <= 102 ? Int(c) - 87 : nil }
+    func byte(_ i: Int) throws -> UInt8 {
+        guard i + 2 < u.count, u[i] == 37, let h = hex(u[i + 1]), let l = hex(u[i + 2]) else { throw bad() }
+        return UInt8(h * 16 + l)
+    }
+    var out: [UInt8] = []
+    var i = 0
+    while i < u.count {
+        if u[i] != 37 { out.append(u[i]); i += 1; continue }
+        let b = try byte(i)
+        if b < 0x80 {
+            if keepReserved && jsUriReserved.contains(b) { out += u[i..<(i + 3)] } else { out.append(b) }
+            i += 3
+            continue
+        }
+        let n = b & 0xE0 == 0xC0 ? 2 : b & 0xF0 == 0xE0 ? 3 : b & 0xF8 == 0xF0 ? 4 : 0
+        if n == 0 { throw bad() }
+        var seq = [b]
+        for k in 1..<n {
+            let c = try byte(i + 3 * k)
+            if c & 0xC0 != 0x80 { throw bad() }
+            seq.append(c)
+        }
+        // Overlong forms, surrogates and code points past U+10FFFF are errors, as in JavaScript.
+        if String(bytes: seq, encoding: .utf8) == nil { throw bad() }
+        out += seq
+        i += 3 * n
+    }
+    return String(decoding: out, as: UTF8.self)
+}
+/** `decodeURIComponent(s)` / `decodeURI(s)` (rest): a URIError on a malformed escape, as JavaScript. */
+public func jsDecodeUriComponent(_ s: String) throws -> String { try jsUriDecode(s, false) }
+public func jsDecodeUri(_ s: String) throws -> String { try jsUriDecode(s, true) }
+public func jsSubstring(_ s: String, _ a: Double, _ b: Double) -> String {
+    let u = Array(s.utf16), x = jsClampPos(a, u.count), y = jsClampPos(b, u.count)
+    return String(decoding: u[Swift.min(x, y)..<Swift.max(x, y)], as: UTF16.self)
+}
+public func jsSubstr(_ s: String, _ start: Double, _ length: Double) -> String {
+    let u = Array(s.utf16), n = Double(u.count)
+    var p = jsPos(start)
+    if p < 0 { p = Swift.max(n + p, 0) }
+    p = Swift.min(p, n)
+    let l = Swift.min(Swift.max(jsPos(length), 0), n - p)
+    return l <= 0 ? "" : String(decoding: u[Int(p)..<Int(p + l)], as: UTF16.self)
+}
+/// ToUint16.
+private func jsU16(_ d: Double) -> UInt16 { d.isFinite ? UInt16(truncatingIfNeeded: Int64(d.truncatingRemainder(dividingBy: 65536))) : 0 }
+public func jsFromCharCode(_ codes: Double...) -> String { String(decoding: codes.map(jsU16), as: UTF16.self) }
+/// One code (the usual call): no array; ASCII straight to a small string.
+public func jsFromCharCode(_ code: Double) -> String {
+    let u = jsU16(code)
+    return u < 0x80 ? String(Character(Unicode.Scalar(UInt8(u)))) : String(decoding: CollectionOfOne(u), as: UTF16.self)
+}
+public func jsFromCharCodes(_ codes: JsArray<Double>) -> String { String(decoding: codes.a.map(jsU16), as: UTF16.self) }
+public func jsFromCodePoint(_ points: Double...) throws -> String { try jsFromCodePointList(points) }
+public func jsFromCodePoints(_ points: JsArray<Double>) throws -> String { try jsFromCodePointList(points.a) }
+private func jsFromCodePointList(_ points: [Double]) throws -> String {
+    var u: [UInt16] = []
+    for c in points {
+        guard c >= 0 && c <= 0x10FFFF && c.rounded(.towardZero) == c else { throw NError(name: "RangeError", "Arguments contain a value that is out of range of code points") }
+        let v = Int(c)
+        if v < 0x10000 { u.append(UInt16(v)) } else { u.append(UInt16(0xD800 + (v - 0x10000) >> 10)); u.append(UInt16(0xDC00 + (v - 0x10000) & 0x3FF)) }
+    }
+    return String(decoding: u, as: UTF16.self)
+}
+public func jsNormalize(_ s: String, _ form: String) -> String {
+    switch form {
+    case "NFD": return s.decomposedStringWithCanonicalMapping
+    case "NFKC": return s.precomposedStringWithCompatibilityMapping
+    case "NFKD": return s.decomposedStringWithCompatibilityMapping
+    default: return s.precomposedStringWithCanonicalMapping
+    }
+}
+/// `split(sep, limit)`: at most ToUint32(limit) parts.
+public func jsSplitLimit(_ s: String, _ sep: String, _ limit: Double) -> JsArray<String> {
+    let lim = Int(UInt32(bitPattern: jsI32(limit))), parts = s.jsSplit(sep)
+    return parts.count > lim ? JsArray(Array(parts.a.prefix(lim))) : parts
+}
+public func jsStartsWithAt(_ s: String, _ t: String, _ pos: Double) -> Bool {
+    let h = Array(s.utf16), n = Array(t.utf16), p = jsClampPos(pos, h.count)
+    return p + n.count <= h.count && h[p..<(p + n.count)].elementsEqual(n)
+}
+public func jsEndsWithAt(_ s: String, _ t: String, _ end: Double) -> Bool {
+    let h = Array(s.utf16), n = Array(t.utf16), e = jsClampPos(end, h.count)
+    return e >= n.count && h[(e - n.count)..<e].elementsEqual(n)
+}
+public func jsIncludesAt(_ s: String, _ t: String, _ pos: Double) -> Bool { s.jsIndexOf(t, jsClampPos(pos, s.utf16.count)) >= 0 }
+public func jsIndexOfFrom(_ s: String, _ t: String, _ pos: Double) -> Int { s.jsIndexOf(t, jsClampPos(pos, s.utf16.count)) }
+/// `lastIndexOf(t, from)`: from NaN searches the whole string.
+public func jsLastIndexOfFrom(_ s: String, _ t: String, _ from: Double) -> Int {
+    let h = Array(s.utf16), n = Array(t.utf16)
+    var i = Swift.min(from.isNaN ? h.count : jsClampPos(from, h.count), h.count - n.count)
+    while i >= 0 {
+        if h[i..<(i + n.count)].elementsEqual(n) { return i }
+        i -= 1
+    }
+    return -1
+}
+
+/// `parseFloat(s)`: the longest decimal literal (or Infinity) after white space; NaN if none.
+public func jsParseFloat(_ s: String) -> Double {
+    let t = Array(s.jsTrimStart().utf8)
+    let digit = { (i: Int) in i < t.count && t[i] >= 48 && t[i] <= 57 }
+    var i = t.first == 43 || t.first == 45 ? 1 : 0
+    if t[i...].starts(with: "Infinity".utf8) { return t.first == 45 ? -.infinity : .infinity }
+    var digits = 0
+    while digit(i) { i += 1; digits += 1 }
+    if i < t.count && t[i] == 46 { i += 1; while digit(i) { i += 1; digits += 1 } }
+    if digits == 0 { return .nan }
+    var end = i
+    if i < t.count && t[i] | 0x20 == 101 {
+        var j = i + 1
+        if j < t.count && (t[j] == 43 || t[j] == 45) { j += 1 }
+        let first = j
+        while digit(j) { j += 1 }
+        if j > first { end = j }
+    }
+    return strtod(String(decoding: t[0..<end], as: UTF8.self), nil)
+}
+
+/// A finite d >= 0 as m * 2^e.
+private func jsDecompose(_ d: Double) -> (Int, Int) {
+    let bits = d.bitPattern, be = Int((bits >> 52) & 0x7FF), m = Int(bits & 0xF_FFFF_FFFF_FFFF)
+    return be == 0 ? (m, -1074) : (m | 1 << 52, be - 1075)
+}
+/// printf's `format` of d into a C buffer, handed to `f` (no Foundation String(format:)).
+@inline(__always) func jsPrintf<R>(_ format: String, _ precision: Int, _ d: Double, _ f: (UnsafeBufferPointer<UInt8>) -> R) -> R {
+    withUnsafeTemporaryAllocation(of: CChar.self, capacity: precision + 360) { buf in
+        let n = withVaList([Int32(precision), d]) { vsnprintf(buf.baseAddress!, buf.count, format, $0) }
+        return buf.baseAddress!.withMemoryRebound(to: UInt8.self, capacity: buf.count) { f(UnsafeBufferPointer(start: $0, count: Int(n))) }
+    }
+}
+/// `%.(p-1)e` of d: printf's exact, correctly rounded digits (an exact tie to even) and the first's exponent.
+private func jsPrintfDigits(_ d: Double, _ p: Int) -> ([UInt8], Int) {
+    jsPrintf("%.*e", p - 1, d) { b in
+        let e = b.firstIndex(of: 101)!
+        var x = 0
+        for c in b[(e + 2)...] { x = x * 10 + Int(c - 48) }
+        return (b[..<e].filter { $0 != 46 }, b[e + 1] == 45 ? -x : x)
+    }
+}
+/// d (finite, > 0) rounded to p significant digits, half up, from its exact decimal value: the digits and the
+/// exponent of the first. printf's digits, except at an exact tie (where it rounds to even): then rounded up by hand.
+/// d = m·2^e (m odd): for e < 0 the exact text has x + k + 1 digits (k = -e, the last one a 5), so a tie
+/// is x + k == p; an integer below 2^64 is checked by its remainder.
+private func jsRoundDigits(_ d: Double, _ p: Int) -> ([UInt8], Int) {
+    if d == 0 { return ([UInt8](repeating: 48, count: p), 0) }
+    var (m, e) = jsDecompose(d)
+    while m & 1 == 0 && e < 0 { m >>= 1; e += 1 }
+    let (ds, x) = jsPrintfDigits(d, p)
+    let tie: Bool
+    if e < 0 {
+        let k = -e
+        if x + k == p || x - 1 + k == p {
+            let (ds2, x2) = jsPrintfDigits(d, p + 1)
+            tie = x2 + k == p && ds2.last == 53
+        } else { tie = false }
+    } else if d < 18446744073709551616.0 {
+        let n = UInt64(d)
+        var t = 1, q: UInt64 = 1
+        while t < 20 && n / q >= 10 { q *= 10; t += 1 }
+        if p < t { var r: UInt64 = 1; for _ in 0..<(t - p) { r *= 10 }; tie = n % r == r / 2 } else { tie = false }
+    } else { return jsRoundDigitsBig(d, p) }
+    if !tie { return (ds, x) }
+    // At a tie the p + 1 digits are exact (the last a 5): the first p rounded up. (Not d.nextUp's digits: its gap can
+    // pass a digit, 707273840904235.875 → ...236.)
+    var (up, ux) = jsPrintfDigits(d, p + 1)
+    up.removeLast()
+    var i = p - 1
+    while i >= 0 && up[i] == 57 { up[i] = 48; i -= 1 }
+    if i < 0 { up.insert(49, at: 0); up.removeLast(); ux += 1 } else { up[i] += 1 }
+    return (up, ux)
+}
+/// jsRoundDigits from the exact bignum value (integers from 2^64).
+private func jsRoundDigitsBig(_ d: Double, _ p: Int) -> ([UInt8], Int) {
+    if d == 0 { return ([UInt8](repeating: 48, count: p), 0) }
+    let (m, e) = jsDecompose(d)
+    var n = JsBigInt(m), k = -e
+    if e >= 0 { n = n << JsBigInt(e) }
+    while k > 0 { let c = Swift.min(k, 13); var f = 1; for _ in 0..<c { f *= 5 }; n = n * JsBigInt(f); k -= c }
+    var ds = Array(n.toString(10).utf8), x = ds.count - 1 + Swift.min(e, 0)
+    if ds.count <= p { return (ds + [UInt8](repeating: 48, count: p - ds.count), x) }
+    let up = ds[p] >= 53
+    ds.removeLast(ds.count - p)
+    if up {
+        var i = p - 1
+        while i >= 0 && ds[i] == 57 { ds[i] = 48; i -= 1 }
+        if i < 0 { ds.insert(49, at: 0); ds.removeLast(); x += 1 } else { ds[i] += 1 }
+    }
+    return (ds, x)
+}
+private func jsExpText(_ ds: [UInt8], _ e: Int) -> String {
+    String(decoding: ds[0..<1], as: UTF8.self) + (ds.count > 1 ? "." + String(decoding: ds[1...], as: UTF8.self) : "") + "e" + (e >= 0 ? "+" : "-") + String(Swift.abs(e))
+}
+public func jsToPrecision(_ d: Double, _ precision: Double) throws -> String {
+    let p = jsPos(precision)
+    if !d.isFinite { return jsNum(d) }
+    guard p >= 1 && p <= 100 else { throw NError(name: "RangeError", "toPrecision() argument must be between 1 and 100") }
+    let n = Int(p), (ds, e) = jsRoundDigits(Swift.abs(d), n), sign = d < 0 ? "-" : ""
+    if e < -6 || e >= n { return sign + jsExpText(ds, e) }
+    let t = String(decoding: ds, as: UTF8.self)
+    if e == n - 1 { return sign + t }
+    if e >= 0 { return sign + t.prefix(e + 1) + "." + t.dropFirst(e + 1) }
+    return sign + "0." + String(repeating: "0", count: -(e + 1)) + t
+}
+public func jsToExponential(_ d: Double, _ digits: Double) throws -> String {
+    let f = jsPos(digits)
+    if !d.isFinite { return jsNum(d) }
+    guard f >= 0 && f <= 100 else { throw NError(name: "RangeError", "toExponential() argument must be between 0 and 100") }
+    let (ds, e) = jsRoundDigits(Swift.abs(d), Int(f) + 1)
+    return (d < 0 ? "-" : "") + jsExpText(ds, e)
+}
+/// `toExponential()`: the shortest digits that read back as d (those String(d) has).
+public func jsToExponentialAuto(_ d: Double) -> String {
+    if !d.isFinite { return jsNum(d) }
+    if d == 0 { return "0e+0" }
+    var text = "\(Swift.abs(d))", e = 0
+    if let k = text.firstIndex(where: { $0 == "e" || $0 == "E" }) { e = Int(text[text.index(after: k)...]) ?? 0; text = String(text[..<k]) }
+    let parts = text.split(separator: ".", omittingEmptySubsequences: false)
+    var ds = Array((String(parts[0]) + (parts.count > 1 ? String(parts[1]) : "")).utf8), point = parts[0].count + e
+    while ds.count > 1 && ds.first == 48 { ds.removeFirst(); point -= 1 }
+    while ds.count > 1 && ds.last == 48 { ds.removeLast() }
+    return (d < 0 ? "-" : "") + jsExpText(ds, point - 1)
+}
+/// `toString(radix)`: JavaScriptCore's digits (bun's): the integer part exact, the fraction until the next or previous
+/// double would print differently, rounded half to even (NumberPrototype.cpp's toStringWithRadixInternal, exactly).
+public func jsToRadix(_ d: Double, _ radixArg: Double) throws -> String {
+    let r = jsPos(radixArg)
+    guard r >= 2 && r <= 36 else { throw NError(name: "RangeError", "toString() radix argument must be between 2 and 36") }
+    let radix = Int(r)
+    if radix == 10 || !d.isFinite { return jsNum(d) }
+    let n = Swift.abs(d), fp = n - n.rounded(.down)
+    var ip = n.rounded(.down)
+    if fp == 0 && ip < 4503599627370496 { return String(Int(d), radix: radix) }
+    let chars = Array("0123456789abcdefghijklmnopqrstuvwxyz".utf8)
+    var frac: [UInt8] = []
+    if fp != 0 {
+        // Fixed point: every value here is a multiple of 2^-1076.
+        let s = 1076, sh = JsBigInt(s)
+        func scaled(_ x: Double, _ by: Int) -> JsBigInt { let (m, e) = jsDecompose(x); return JsBigInt(m) << JsBigInt(e + by) }
+        let one = JsBigInt(1) << sh, half = JsBigInt(1) << JsBigInt(s - 1), mask = one - JsBigInt(1), big = JsBigInt(radix)
+        var f = scaled(fp, s), next = scaled(n.nextUp - n, s - 1), last = scaled(n - n.nextDown, s - 1)
+        var digit = ip <= 9007199254740991 && ip.truncatingRemainder(dividingBy: 2) == 1 ? 1 : 0, odd = digit == 1, up = false
+        while true {
+            if f > half || (f == half && (radix & 1 == 1 ? odd : digit & 1 == 1)) {
+                if f + next > one { up = true; break }
+            } else if f < last { break }
+            f = f * big
+            digit = Int((f >> sh).double)
+            f = f & mask
+            next = next * big
+            last = last * big
+            frac.append(UInt8(digit))
+            if digit & 1 == 1 { odd.toggle() }
+        }
+        if up {
+            while frac.last == UInt8(radix - 1) { frac.removeLast() }
+            if frac.isEmpty { ip += 1 } else { frac[frac.count - 1] += 1 }
+        } else {
+            while frac.last == 0 { frac.removeLast() }
+        }
+    }
+    let whole = ip < 9007199254740992 ? String(Int(ip), radix: radix) : JsBigInt(whole: ip).toString(radix)
+    return (d < 0 ? "-" : "") + whole + (frac.isEmpty ? "" : "." + String(decoding: frac.map { chars[Int($0)] }, as: UTF8.self))
 }
 
 // MARK: - App delegate
@@ -3587,6 +5217,11 @@ public func jsCompare(_ a: String, _ b: String) -> Int {
     public func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
         start()
         return true
+    }
+
+    /// Memory pressure: the cycle collector frees every garbage cycle now (a full, indivisible collection).
+    public func applicationDidReceiveMemoryWarning(_ application: UIApplication) {
+        jsGcCollect()
     }
 
     public func application(_ application: UIApplication, configurationForConnecting connectingSceneSession: UISceneSession, options: UIScene.ConnectionOptions) -> UISceneConfiguration {
@@ -3729,3 +5364,1561 @@ public func jsCompare(_ a: String, _ b: String) -> Int {
     }
 }
 #endif
+
+// MARK: - BigInt and Symbol
+
+/// JavaScript's `bigint`: an arbitrary-precision signed integer. A value that fits in an Int (but Int.min) is held in
+/// `small` with `mag` nil, so arithmetic on small values never allocates (overflow-checked Int ops, then the slow path);
+/// a larger one keeps its magnitude in `mag` (little-endian 32-bit limbs, no high zero limb) and its sign in `small`
+/// (1 or -1). Each value has exactly one representation, so the synthesized `==` and `hash` compare values.
+public struct JsBigInt: Hashable, Comparable, CustomStringConvertible, LosslessStringConvertible {
+    let small: Int
+    let mag: [UInt32]?
+
+    public init(_ v: Int) {
+        if v == Int.min { small = -1; mag = [0, 0x8000_0000] } else { small = v; mag = nil }
+    }
+
+    /// A literal too big for an Int (decimal digits, maybe with a leading "-").
+    public init(literal text: String) { self = JsBigInt(text)! }
+
+    init(neg: Bool, mag m: [UInt32]) {
+        var m = m
+        while m.last == 0 { m.removeLast() }
+        if m.count <= 2 {
+            let u = m.isEmpty ? 0 : m.count == 1 ? UInt64(m[0]) : UInt64(m[0]) | UInt64(m[1]) << 32
+            if u <= UInt64(Int.max) { small = neg ? -Int(u) : Int(u); mag = nil; return }
+        }
+        small = neg ? -1 : 1
+        mag = m
+    }
+
+    var isNeg: Bool { small < 0 }
+    var isZero: Bool { mag == nil && small == 0 }
+    /// The magnitude as limbs (allocates for a small value).
+    var limbs: [UInt32] {
+        if let m = mag { return m }
+        let u = UInt64(small.magnitude)
+        return u == 0 ? [] : u >> 32 == 0 ? [UInt32(u)] : [UInt32(truncatingIfNeeded: u), UInt32(u >> 32)]
+    }
+
+    // MARK: Magnitudes
+
+    static func cmpMag(_ a: [UInt32], _ b: [UInt32]) -> Int {
+        if a.count != b.count { return a.count < b.count ? -1 : 1 }
+        var i = a.count - 1
+        while i >= 0 {
+            if a[i] != b[i] { return a[i] < b[i] ? -1 : 1 }
+            i -= 1
+        }
+        return 0
+    }
+
+    static func addMag(_ a: [UInt32], _ b: [UInt32]) -> [UInt32] {
+        let (x, y) = a.count >= b.count ? (a, b) : (b, a)
+        var r = [UInt32]()
+        r.reserveCapacity(x.count + 1)
+        var carry: UInt64 = 0
+        for i in 0..<x.count {
+            let s = UInt64(x[i]) + (i < y.count ? UInt64(y[i]) : 0) + carry
+            r.append(UInt32(truncatingIfNeeded: s))
+            carry = s >> 32
+        }
+        if carry != 0 { r.append(UInt32(carry)) }
+        return r
+    }
+
+    /// a - b, where a >= b.
+    static func subMag(_ a: [UInt32], _ b: [UInt32]) -> [UInt32] {
+        var r = [UInt32]()
+        r.reserveCapacity(a.count)
+        var borrow: Int64 = 0
+        for i in 0..<a.count {
+            var d = Int64(a[i]) - (i < b.count ? Int64(b[i]) : 0) - borrow
+            borrow = d < 0 ? 1 : 0
+            if d < 0 { d += 1 << 32 }
+            r.append(UInt32(d))
+        }
+        return r
+    }
+
+    static func mulMag(_ a: [UInt32], _ b: [UInt32]) -> [UInt32] {
+        if a.isEmpty || b.isEmpty { return [] }
+        var r = [UInt32](repeating: 0, count: a.count + b.count)
+        for i in 0..<a.count where a[i] != 0 {
+            let ai = UInt64(a[i])
+            var carry: UInt64 = 0
+            for j in 0..<b.count {
+                let t = ai * UInt64(b[j]) + UInt64(r[i + j]) + carry
+                r[i + j] = UInt32(truncatingIfNeeded: t)
+                carry = t >> 32
+            }
+            r[i + b.count] = UInt32(carry)
+        }
+        return r
+    }
+
+    static func shlMag(_ a: [UInt32], _ n: Int) -> [UInt32] {
+        if a.isEmpty { return [] }
+        let (limbs, bits) = (n / 32, n % 32)
+        var r = [UInt32](repeating: 0, count: limbs)
+        r.reserveCapacity(limbs + a.count + 1)
+        if bits == 0 { return r + a }
+        var carry: UInt32 = 0
+        for x in a {
+            r.append(x << UInt32(bits) | carry)
+            carry = x >> UInt32(32 - bits)
+        }
+        if carry != 0 { r.append(carry) }
+        return r
+    }
+
+    static func shrMag(_ a: [UInt32], _ n: Int) -> [UInt32] {
+        let (limbs, bits) = (n / 32, n % 32)
+        if limbs >= a.count { return [] }
+        var r = Array(a[limbs...])
+        if bits == 0 { return r }
+        for i in 0..<r.count {
+            r[i] = r[i] >> UInt32(bits) | (i + 1 < r.count ? r[i + 1] << UInt32(32 - bits) : 0)
+        }
+        while r.last == 0 { r.removeLast() }
+        return r
+    }
+
+    /// The quotient and remainder of `a` by a one-limb divisor.
+    static func divSmall(_ a: [UInt32], _ d: UInt32) -> ([UInt32], UInt32) {
+        var q = [UInt32](repeating: 0, count: a.count)
+        var rem: UInt64 = 0
+        var i = a.count - 1
+        while i >= 0 {
+            let cur = rem << 32 | UInt64(a[i])
+            q[i] = UInt32(cur / UInt64(d))
+            rem = cur % UInt64(d)
+            i -= 1
+        }
+        while q.last == 0 { q.removeLast() }
+        return (q, UInt32(rem))
+    }
+
+    /// Quotient and remainder of magnitudes (b not empty): Knuth's algorithm D.
+    static func divModMag(_ a: [UInt32], _ b: [UInt32]) -> ([UInt32], [UInt32]) {
+        if cmpMag(a, b) < 0 { return ([], a) }
+        if b.count == 1 {
+            let (q, r) = divSmall(a, b[0])
+            return (q, r == 0 ? [] : [r])
+        }
+        let s = b.last!.leadingZeroBitCount
+        var v = shlMag(b, s)
+        var u = shlMag(a, s)
+        while v.count > b.count { v.removeLast() }
+        while u.count < a.count + 1 { u.append(0) }
+        let n = v.count, m = u.count - n
+        var q = [UInt32](repeating: 0, count: m)
+        let vTop = UInt64(v[n - 1]), vNext = UInt64(v[n - 2])
+        var j = m - 1
+        while j >= 0 {
+            let num = UInt64(u[j + n]) << 32 | UInt64(u[j + n - 1])
+            var qhat = num / vTop
+            var rhat = num % vTop
+            while qhat > 0xFFFF_FFFF || qhat * vNext > (rhat << 32 | UInt64(u[j + n - 2])) {
+                qhat -= 1
+                rhat += vTop
+                if rhat > 0xFFFF_FFFF { break }
+            }
+            var borrow: Int64 = 0
+            var carry: UInt64 = 0
+            for i in 0..<n {
+                let p = qhat * UInt64(v[i]) + carry
+                carry = p >> 32
+                let t = Int64(u[i + j]) - borrow - Int64(p & 0xFFFF_FFFF)
+                u[i + j] = UInt32(truncatingIfNeeded: t)
+                borrow = t < 0 ? 1 : 0
+            }
+            let t = Int64(u[j + n]) - borrow - Int64(carry)
+            u[j + n] = UInt32(truncatingIfNeeded: t)
+            if t < 0 {
+                qhat -= 1
+                var c: UInt64 = 0
+                for i in 0..<n {
+                    let s2 = UInt64(u[i + j]) + UInt64(v[i]) + c
+                    u[i + j] = UInt32(truncatingIfNeeded: s2)
+                    c = s2 >> 32
+                }
+                u[j + n] = UInt32(truncatingIfNeeded: UInt64(u[j + n]) + c)
+            }
+            q[j] = UInt32(truncatingIfNeeded: qhat)
+            j -= 1
+        }
+        var r = shrMag(Array(u[0..<n]), s)
+        while r.last == 0 { r.removeLast() }
+        return (q, r)
+    }
+
+    // MARK: Arithmetic
+
+    public static func + (a: JsBigInt, b: JsBigInt) -> JsBigInt {
+        if a.mag == nil && b.mag == nil {
+            let (s, o) = a.small.addingReportingOverflow(b.small)
+            if !o { return JsBigInt(s) }
+        }
+        if a.isNeg == b.isNeg { return JsBigInt(neg: a.isNeg, mag: addMag(a.limbs, b.limbs)) }
+        let (x, y) = (a.limbs, b.limbs)
+        return cmpMag(x, y) >= 0 ? JsBigInt(neg: a.isNeg, mag: subMag(x, y)) : JsBigInt(neg: b.isNeg, mag: subMag(y, x))
+    }
+
+    public static prefix func - (a: JsBigInt) -> JsBigInt {
+        a.mag == nil ? JsBigInt(-a.small) : JsBigInt(neg: !a.isNeg, mag: a.mag!)
+    }
+
+    public static func - (a: JsBigInt, b: JsBigInt) -> JsBigInt {
+        if a.mag == nil && b.mag == nil {
+            let (s, o) = a.small.subtractingReportingOverflow(b.small)
+            if !o { return JsBigInt(s) }
+        }
+        return a + -b
+    }
+
+    public static func * (a: JsBigInt, b: JsBigInt) -> JsBigInt {
+        if a.mag == nil && b.mag == nil {
+            let (p, o) = a.small.multipliedReportingOverflow(by: b.small)
+            if !o { return JsBigInt(p) }
+        }
+        return JsBigInt(neg: a.isNeg != b.isNeg, mag: mulMag(a.limbs, b.limbs))
+    }
+
+    /// Truncates toward zero, as JavaScript does. The divisor is not zero (`jsBigDiv` checks).
+    public static func / (a: JsBigInt, b: JsBigInt) -> JsBigInt {
+        if a.mag == nil && b.mag == nil { return JsBigInt(a.small / b.small) }
+        return JsBigInt(neg: a.isNeg != b.isNeg, mag: divModMag(a.limbs, b.limbs).0)
+    }
+
+    /// Takes the sign of the dividend, as JavaScript does. The divisor is not zero.
+    public static func % (a: JsBigInt, b: JsBigInt) -> JsBigInt {
+        if a.mag == nil && b.mag == nil { return JsBigInt(a.small % b.small) }
+        return JsBigInt(neg: a.isNeg, mag: divModMag(a.limbs, b.limbs).1)
+    }
+
+    /// `a ** b` for b >= 0 (`jsBigPow` checks).
+    public static func pow(_ a: JsBigInt, _ b: JsBigInt) -> JsBigInt {
+        if b.mag != nil {
+            // Only 0, 1 and -1 have a power this large (`jsBigPow` throws for the others).
+            if a == JsBigInt(-1) { return b.limbs[0] & 1 == 0 ? JsBigInt(1) : a }
+            return a
+        }
+        var (result, base, e) = (JsBigInt(1), a, b.small)
+        while e > 0 {
+            if e & 1 == 1 { result = result * base }
+            e >>= 1
+            if e > 0 { base = base * base }
+        }
+        return result
+    }
+
+    public static func < (a: JsBigInt, b: JsBigInt) -> Bool {
+        if a.mag == nil && b.mag == nil { return a.small < b.small }
+        if a.isNeg != b.isNeg { return a.isNeg }
+        let c = cmpMag(a.limbs, b.limbs)
+        return a.isNeg ? c > 0 : c < 0
+    }
+
+    // MARK: Bits (two's complement of infinite width, as in JavaScript)
+
+    /// The value as `count` limbs of two's complement.
+    func twos(_ count: Int) -> [UInt32] {
+        var t = limbs + [UInt32](repeating: 0, count: count - limbs.count)
+        if isNeg {
+            var carry: UInt64 = 1
+            for i in 0..<t.count {
+                let s = UInt64(~t[i]) + carry
+                t[i] = UInt32(truncatingIfNeeded: s)
+                carry = s >> 32
+            }
+        }
+        return t
+    }
+
+    static func fromTwos(_ t: [UInt32]) -> JsBigInt {
+        guard let top = t.last, top & 0x8000_0000 != 0 else { return JsBigInt(neg: false, mag: t) }
+        var m = t
+        var carry: UInt64 = 1
+        for i in 0..<m.count {
+            let s = UInt64(~m[i]) + carry
+            m[i] = UInt32(truncatingIfNeeded: s)
+            carry = s >> 32
+        }
+        return JsBigInt(neg: true, mag: m)
+    }
+
+    static func bitwise(_ a: JsBigInt, _ b: JsBigInt, _ f: (UInt32, UInt32) -> UInt32) -> JsBigInt {
+        let n = max(a.limbs.count, b.limbs.count) + 1
+        let (x, y) = (a.twos(n), b.twos(n))
+        return fromTwos((0..<n).map { f(x[$0], y[$0]) })
+    }
+
+    public static func & (a: JsBigInt, b: JsBigInt) -> JsBigInt {
+        a.mag == nil && b.mag == nil ? JsBigInt(a.small & b.small) : bitwise(a, b, &)
+    }
+
+    public static func | (a: JsBigInt, b: JsBigInt) -> JsBigInt {
+        a.mag == nil && b.mag == nil ? JsBigInt(a.small | b.small) : bitwise(a, b, |)
+    }
+
+    public static func ^ (a: JsBigInt, b: JsBigInt) -> JsBigInt {
+        a.mag == nil && b.mag == nil ? JsBigInt(a.small ^ b.small) : bitwise(a, b, ^)
+    }
+
+    public static prefix func ~ (a: JsBigInt) -> JsBigInt { -a - JsBigInt(1) }
+
+    /// A shift count: past an Int, only the sign matters (no value that big fits in memory).
+    var shiftCount: Int { mag == nil ? small : isNeg ? -(1 << 62) : 1 << 62 }
+
+    public static func << (a: JsBigInt, b: JsBigInt) -> JsBigInt { shl(a, b.shiftCount) }
+    public static func >> (a: JsBigInt, b: JsBigInt) -> JsBigInt { shl(a, -b.shiftCount) }
+
+    /// `a * 2**n`, rounded toward -Infinity when n < 0.
+    static func shl(_ a: JsBigInt, _ n: Int) -> JsBigInt {
+        if a.isZero || n == 0 { return a }
+        if n > 0 {
+            if a.mag == nil && n < 63 {
+                let s = a.small << n
+                if s >> n == a.small && s != Int.min { return JsBigInt(s) }
+            }
+            precondition(n < 1 << 32, "RangeError: BigInt too big")
+            return JsBigInt(neg: a.isNeg, mag: shlMag(a.limbs, n))
+        }
+        let m = -n
+        if a.mag == nil { return JsBigInt(m >= 64 ? (a.small < 0 ? -1 : 0) : a.small >> m) }
+        if !a.isNeg { return JsBigInt(neg: false, mag: shrMag(a.limbs, m)) }
+        // floor(-x / 2^m) = -((x - 1) >> m) - 1
+        return -JsBigInt(neg: false, mag: shrMag(subMag(a.limbs, [1]), m)) - JsBigInt(1)
+    }
+
+    /// `BigInt.asUintN(bits, a)`: a modulo 2^bits.
+    public static func asUintN(_ bits: Int, _ a: JsBigInt) -> JsBigInt {
+        a & (shl(JsBigInt(1), bits) - JsBigInt(1))
+    }
+
+    /// `BigInt.asIntN(bits, a)`: a modulo 2^bits, as a signed value.
+    public static func asIntN(_ bits: Int, _ a: JsBigInt) -> JsBigInt {
+        if bits == 0 { return JsBigInt(0) }
+        let u = asUintN(bits, a)
+        return u < shl(JsBigInt(1), bits - 1) ? u : u - shl(JsBigInt(1), bits)
+    }
+
+    // MARK: Conversions
+
+    /// `Number(b)`: the nearest Double (ties to even), as JavaScript rounds it.
+    public var double: Double {
+        guard let m = mag else { return Double(small) }
+        let bits = m.count * 32 - m.last!.leadingZeroBitCount
+        if bits > 1024 { return isNeg ? -.infinity : .infinity }
+        // The top 64 bits, with a sticky low bit for any bit below them: Double(UInt64) then rounds as a whole would.
+        let shift = bits - 64
+        let top = JsBigInt.shrMag(m, shift)
+        var u = UInt64(top[0]) | (top.count > 1 ? UInt64(top[1]) << 32 : 0)
+        if JsBigInt.shlMag(top, shift) != m { u |= 1 }
+        let d = Double(sign: .plus, exponent: shift, significand: Double(u))
+        return isNeg ? -d : d
+    }
+
+    /// `BigInt(n)` of a whole Double.
+    init(whole d: Double) {
+        if Swift.abs(d) < 9.2e18 { self = JsBigInt(Int(d)); return }
+        let m = JsBigInt(Int(d.significandBitPattern | 1 << 52))
+        let v = JsBigInt.shl(m, Int(d.exponent) - 52)
+        self = d < 0 ? -v : v
+    }
+
+    public var description: String { toString(10) }
+
+    public func toString(_ radix: Int) -> String {
+        guard let m = mag else { return String(small, radix: radix) }
+        // Divide by the largest power of the radix that fits in a limb, `k` digits at a time.
+        var (chunk, k): (UInt32, Int) = (UInt32(radix), 1)
+        while UInt64(chunk) * UInt64(radix) <= UInt64(UInt32.max) { chunk *= UInt32(radix); k += 1 }
+        var rest = m
+        var parts: [String] = []
+        while !rest.isEmpty {
+            let (q, r) = JsBigInt.divSmall(rest, chunk)
+            let digits = String(r, radix: radix)
+            parts.append(q.isEmpty ? digits : String(repeating: "0", count: k - digits.count) + digits)
+            rest = q
+        }
+        return (isNeg ? "-" : "") + parts.reversed().joined()
+    }
+
+    /// JavaScript's StringToBigInt: decimal with an optional sign, or 0x / 0o / 0b; surrounding white space; "" is 0.
+    public init?(_ text: String) {
+        var s = Substring(text.jsTrim())
+        if s.isEmpty { self = JsBigInt(0); return }
+        var radix = 10
+        var neg = false
+        if s.count > 2, s.first == "0", let p = s.dropFirst().first, let r = ["x": 16, "X": 16, "o": 8, "O": 8, "b": 2, "B": 2][p] {
+            radix = r
+            s = s.dropFirst(2)
+        } else if s.first == "+" || s.first == "-" {
+            neg = s.first == "-"
+            s = s.dropFirst()
+        }
+        if s.isEmpty { return nil }
+        var mag: [UInt32] = []
+        for c in s.unicodeScalars {
+            guard c.isASCII, let d = Int(String(c), radix: radix) else { return nil }
+            // mag = mag * radix + d
+            var carry = UInt64(d)
+            for i in 0..<mag.count {
+                let t = UInt64(mag[i]) * UInt64(radix) + carry
+                mag[i] = UInt32(truncatingIfNeeded: t)
+                carry = t >> 32
+            }
+            if carry != 0 { mag.append(UInt32(carry)) }
+        }
+        self = JsBigInt(neg: neg, mag: mag)
+    }
+}
+
+/// The errors JavaScript's BigInt operations throw (`RangeError`, `SyntaxError`), with JavaScriptCore's messages.
+public func jsBigDiv(_ a: JsBigInt, _ b: JsBigInt) throws -> JsBigInt {
+    if b.isZero { throw NError(name: "RangeError", "0 is an invalid divisor value.") }
+    return a / b
+}
+
+public func jsBigMod(_ a: JsBigInt, _ b: JsBigInt) throws -> JsBigInt {
+    if b.isZero { throw NError(name: "RangeError", "0 is an invalid divisor value.") }
+    return a % b
+}
+
+public func jsBigPow(_ a: JsBigInt, _ b: JsBigInt) throws -> JsBigInt {
+    if b.isNeg { throw NError(name: "RangeError", "Negative exponent is not allowed") }
+    if b.mag != nil && a.mag == nil && Swift.abs(a.small) > 1 || b.mag != nil && a.mag != nil {
+        throw NError(name: "RangeError", "Out of memory: BigInt generated from this operation is too big")
+    }
+    return JsBigInt.pow(a, b)
+}
+
+/// `BigInt(n)` of a Double: only a whole number converts.
+public func jsBigFrom(_ d: Double) throws -> JsBigInt {
+    if !d.isFinite || d.rounded(.towardZero) != d { throw NError(name: "RangeError", "Not an integer") }
+    return JsBigInt(whole: d)
+}
+
+public func jsBigParse(_ s: String) throws -> JsBigInt {
+    guard let v = JsBigInt(s) else { throw NError(name: "SyntaxError", "Failed to parse String to BigInt") }
+    return v
+}
+
+public func jsBigToString(_ a: JsBigInt, _ radix: Double) throws -> String {
+    let radix = radix.rounded(.towardZero)
+    guard radix >= 2 && radix <= 36 else { throw NError(name: "RangeError", "toString() radix argument must be between 2 and 36") }
+    return a.toString(Int(radix))
+}
+
+/// JavaScript's `symbol`: a value only equal to itself (copies share its identity), with an optional description.
+/// A struct around the identity, so arrays of symbols take the Equatable overloads (jsIndexOf…) unambiguously.
+public struct JsSymbol: Hashable, CustomStringConvertible {
+    final class Id {}
+    private let id = Id()
+    public let desc: String?
+    public init(_ desc: String?) { self.desc = desc }
+    public static func == (a: JsSymbol, b: JsSymbol) -> Bool { a.id === b.id }
+    public func hash(into h: inout Hasher) { h.combine(ObjectIdentifier(id)) }
+    public var description: String { "Symbol(\(desc ?? ""))" }
+}
+
+// MARK: - Typed arrays
+
+/// An element type of a typed array: how it is stored (`S`), read (`N`: Int for the small integers, Double otherwise)
+/// and written (JavaScript's conversions: ToInt8…ToUint32 wrap, Uint8Clamped clamps and rounds half to even, Float32
+/// rounds to nearest even).
+public protocol JsTAKind {
+    associatedtype S
+    associatedtype N
+    static var zero: S { get }
+    static var bytes: Int { get }
+    static func num(_ s: S) -> N
+    static func dbl(_ s: S) -> Double
+    static func from(_ v: Int) -> S
+    static func from(_ v: Double) -> S
+}
+public enum JsTAInt8: JsTAKind {
+    public static let zero: Int8 = 0, bytes = 1
+    @inline(__always) public static func num(_ s: Int8) -> Int { Int(s) }
+    @inline(__always) public static func dbl(_ s: Int8) -> Double { Double(s) }
+    @inline(__always) public static func from(_ v: Int) -> Int8 { Int8(truncatingIfNeeded: v) }
+    @inline(__always) public static func from(_ v: Double) -> Int8 { Int8(truncatingIfNeeded: jsI32(v)) }
+}
+public enum JsTAUint8: JsTAKind {
+    public static let zero: UInt8 = 0, bytes = 1
+    @inline(__always) public static func num(_ s: UInt8) -> Int { Int(s) }
+    @inline(__always) public static func dbl(_ s: UInt8) -> Double { Double(s) }
+    @inline(__always) public static func from(_ v: Int) -> UInt8 { UInt8(truncatingIfNeeded: v) }
+    @inline(__always) public static func from(_ v: Double) -> UInt8 { UInt8(truncatingIfNeeded: jsI32(v)) }
+}
+public enum JsTAUint8Clamped: JsTAKind {
+    public static let zero: UInt8 = 0, bytes = 1
+    @inline(__always) public static func num(_ s: UInt8) -> Int { Int(s) }
+    @inline(__always) public static func dbl(_ s: UInt8) -> Double { Double(s) }
+    @inline(__always) public static func from(_ v: Int) -> UInt8 { UInt8(Swift.min(Swift.max(v, 0), 255)) }
+    @inline(__always) public static func from(_ v: Double) -> UInt8 { v.isNaN ? 0 : UInt8(Swift.min(Swift.max(v, 0), 255).rounded(.toNearestOrEven)) }
+}
+public enum JsTAInt16: JsTAKind {
+    public static let zero: Int16 = 0, bytes = 2
+    @inline(__always) public static func num(_ s: Int16) -> Int { Int(s) }
+    @inline(__always) public static func dbl(_ s: Int16) -> Double { Double(s) }
+    @inline(__always) public static func from(_ v: Int) -> Int16 { Int16(truncatingIfNeeded: v) }
+    @inline(__always) public static func from(_ v: Double) -> Int16 { Int16(truncatingIfNeeded: jsI32(v)) }
+}
+public enum JsTAUint16: JsTAKind {
+    public static let zero: UInt16 = 0, bytes = 2
+    @inline(__always) public static func num(_ s: UInt16) -> Int { Int(s) }
+    @inline(__always) public static func dbl(_ s: UInt16) -> Double { Double(s) }
+    @inline(__always) public static func from(_ v: Int) -> UInt16 { UInt16(truncatingIfNeeded: v) }
+    @inline(__always) public static func from(_ v: Double) -> UInt16 { UInt16(truncatingIfNeeded: jsI32(v)) }
+}
+public enum JsTAInt32: JsTAKind {
+    public static let zero: Int32 = 0, bytes = 4
+    @inline(__always) public static func num(_ s: Int32) -> Int { Int(s) }
+    @inline(__always) public static func dbl(_ s: Int32) -> Double { Double(s) }
+    @inline(__always) public static func from(_ v: Int) -> Int32 { Int32(truncatingIfNeeded: v) }
+    @inline(__always) public static func from(_ v: Double) -> Int32 { jsI32(v) }
+}
+public enum JsTAUint32: JsTAKind {
+    public static let zero: UInt32 = 0, bytes = 4
+    @inline(__always) public static func num(_ s: UInt32) -> Double { Double(s) }
+    @inline(__always) public static func dbl(_ s: UInt32) -> Double { Double(s) }
+    @inline(__always) public static func from(_ v: Int) -> UInt32 { UInt32(truncatingIfNeeded: v) }
+    @inline(__always) public static func from(_ v: Double) -> UInt32 { UInt32(bitPattern: jsI32(v)) }
+}
+public enum JsTAFloat32: JsTAKind {
+    public static let zero: Float = 0, bytes = 4
+    @inline(__always) public static func num(_ s: Float) -> Double { Double(s) }
+    @inline(__always) public static func dbl(_ s: Float) -> Double { Double(s) }
+    @inline(__always) public static func from(_ v: Int) -> Float { Float(Double(v)) }
+    @inline(__always) public static func from(_ v: Double) -> Float { Float(v) }
+}
+public enum JsTAFloat64: JsTAKind {
+    public static let zero: Double = 0, bytes = 8
+    @inline(__always) public static func num(_ s: Double) -> Double { s }
+    @inline(__always) public static func dbl(_ s: Double) -> Double { s }
+    @inline(__always) public static func from(_ v: Int) -> Double { Double(v) }
+    @inline(__always) public static func from(_ v: Double) -> Double { v }
+}
+public typealias Int8Array = JsTypedArray<JsTAInt8>
+public typealias Uint8Array = JsTypedArray<JsTAUint8>
+public typealias Uint8ClampedArray = JsTypedArray<JsTAUint8Clamped>
+public typealias Int16Array = JsTypedArray<JsTAInt16>
+public typealias Uint16Array = JsTypedArray<JsTAUint16>
+public typealias Int32Array = JsTypedArray<JsTAInt32>
+public typealias Uint32Array = JsTypedArray<JsTAUint32>
+public typealias Float32Array = JsTypedArray<JsTAFloat32>
+public typealias Float64Array = JsTypedArray<JsTAFloat64>
+
+/// The packed memory views share (`subarray`).
+public final class JsTAStore<S> {
+    let p: UnsafeMutablePointer<S>
+    /// Elements (an `ArrayBuffer`, a store of bytes, has this many bytes).
+    let count: Int
+    init(_ count: Int, _ zero: S) {
+        self.count = count
+        p = .allocate(capacity: Swift.max(count, 1))
+        p.initialize(repeating: zero, count: count)
+    }
+    deinit { p.deallocate() }
+}
+
+/// ToIntegerOrInfinity of a relative index, clamped to `0...len` (negative counts from the end).
+@inline(__always) func jsTARel(_ d: Double, _ len: Int) -> Int {
+    let t = d.isNaN ? 0 : d.rounded(.towardZero)
+    return Int(t < 0 ? Swift.max(Double(len) + t, 0) : Swift.min(t, Double(len)))
+}
+
+/// A stable merge sort with JavaScript's comparator contract (`cmp(a, b) > 0` puts b first).
+func jsMergeSort(_ v: inout [Double], _ cmp: (Double, Double) -> Double) {
+    let n = v.count
+    var tmp = v
+    var width = 1
+    while width < n {
+        var lo = 0
+        while lo < n {
+            let mid = Swift.min(lo + width, n), hi = Swift.min(lo + 2 * width, n)
+            var i = lo, j = mid, k = lo
+            while i < mid && j < hi {
+                if cmp(v[j], v[i]) < 0 { tmp[k] = v[j]; j += 1 } else { tmp[k] = v[i]; i += 1 }
+                k += 1
+            }
+            while i < mid { tmp[k] = v[i]; i += 1; k += 1 }
+            while j < hi { tmp[k] = v[j]; j += 1; k += 1 }
+            lo = hi
+        }
+        swap(&v, &tmp)
+        width *= 2
+    }
+}
+
+/// A JavaScript typed array: a view (`off`, `length`) over packed storage it may share with other views.
+/// A write out of range is ignored; callbacks get each value as a Double (a JavaScript number) and its index.
+public final class JsTypedArray<K: JsTAKind>: CustomStringConvertible {
+    let store: JsTAStore<K.S>
+    let off: Int
+    public let length: Int
+    @inline(__always) var p: UnsafeMutablePointer<K.S> { store.p + off }
+
+    init(_ store: JsTAStore<K.S>, _ off: Int, _ length: Int) {
+        self.store = store; self.off = off; self.length = length
+    }
+    public static var BYTES_PER_ELEMENT: Int { K.bytes }
+    /// `new X(n)`.
+    public convenience init(length n: Int) {
+        precondition(n >= 0, "RangeError: Invalid typed array length: \(n)")
+        self.init(JsTAStore(n, K.zero), 0, n)
+    }
+    /// `new X(numbers)`, `X.of(…)`, `X.from(numbers)`.
+    public convenience init<Q: Sequence>(doubles xs: Q) where Q.Element == Double {
+        let v = Array(xs)
+        self.init(length: v.count)
+        for i in 0..<v.count { p[i] = K.from(v[i]) }
+    }
+    /// `new X(typedArray)`: each value converted.
+    public convenience init<K2>(typed src: JsTypedArray<K2>) {
+        self.init(length: src.length)
+        for i in 0..<length { p[i] = K.from(src.dbl(i)) }
+    }
+    @inline(__always) func dbl(_ i: Int) -> Double { K.dbl(p[i]) }
+    public var byteLength: Int { length * K.bytes }
+    public var byteOffset: Int { off * K.bytes }
+    public var description: String { join(",") }
+
+    /// `ta[i]!`: traps out of range, as an array read does.
+    @inline(__always) public func get(_ i: Int) -> K.N {
+        precondition(i >= 0 && i < length, "typed array index out of range")
+        return K.num(p[i])
+    }
+    /// `ta[i]`: undefined out of range.
+    @inline(__always) public func opt(_ i: Int) -> K.N? { i >= 0 && i < length ? K.num(p[i]) : nil }
+    /// `ta[i] = v`: ignored out of range.
+    @inline(__always) public func put(_ i: Int, _ v: Int) { if i >= 0 && i < length { p[i] = K.from(v) } }
+    @inline(__always) public func putD(_ i: Int, _ v: Double) { if i >= 0 && i < length { p[i] = K.from(v) } }
+    public func jsAt(_ i: Double) -> K.N? {
+        let t = i.isNaN ? 0 : i.rounded(.towardZero)
+        let k = t < 0 ? Double(length) + t : t
+        return k >= 0 && k < Double(length) ? K.num(p[Int(k)]) : nil
+    }
+    @discardableResult public func fill(_ v: Double, _ start: Double, _ end: Double) -> JsTypedArray {
+        let s = K.from(v), a = jsTARel(start, length), b = jsTARel(end, length)
+        if a < b { for i in a..<b { p[i] = s } }
+        return self
+    }
+    public func subarray(_ start: Double, _ end: Double) -> JsTypedArray {
+        let a = jsTARel(start, length), b = jsTARel(end, length)
+        return JsTypedArray(store, off + a, Swift.max(b, a) - a)
+    }
+    public func slice(_ start: Double, _ end: Double) -> JsTypedArray {
+        let a = jsTARel(start, length), b = jsTARel(end, length)
+        let r = JsTypedArray(length: Swift.max(b, a) - a)
+        for i in 0..<r.length { r.p[i] = p[a + i] }
+        return r
+    }
+    private func setValues(_ v: [Double], _ offset: Double) {
+        let o = offset.isNaN ? 0 : offset.rounded(.towardZero)
+        precondition(o >= 0 && o + Double(v.count) <= Double(length), "RangeError: offset is out of bounds")
+        for i in 0..<v.count { p[Int(o) + i] = K.from(v[i]) }
+    }
+    /// `set(numbers, offset)`.
+    public func setFrom<Q: Sequence>(_ xs: Q, _ offset: Double) where Q.Element == Double { setValues(Array(xs), offset) }
+    /// `set(typedArray, offset)`: read first, so an overlapping view of the same storage copies as if through a temporary.
+    public func setFromTa<K2>(_ src: JsTypedArray<K2>, _ offset: Double) { setValues(src.doubles(), offset) }
+    @discardableResult public func copyWithin(_ target: Double, _ start: Double, _ end: Double) -> JsTypedArray {
+        let t = jsTARel(target, length), s = jsTARel(start, length), e = jsTARel(end, length)
+        let count = Swift.min(Swift.max(e - s, 0), length - t)
+        if count > 0 { (p + t).update(from: p + s, count: count) }
+        return self
+    }
+    @discardableResult public func reverse() -> JsTypedArray {
+        var i = 0, j = length - 1
+        while i < j { let x = p[i]; p[i] = p[j]; p[j] = x; i += 1; j -= 1 }
+        return self
+    }
+    private func writeAll(_ v: [Double]) { for i in 0..<v.count { p[i] = K.from(v[i]) } }
+    /// `sort()`: numeric, -0 before +0, NaN last.
+    @discardableResult public func sortNum() -> JsTypedArray {
+        var v = doubles()
+        v.sort { a, b in a.isNaN ? false : b.isNaN ? true : a < b || (a == b && a.sign == .minus && b.sign == .plus) }
+        writeAll(v)
+        return self
+    }
+    /// `sort(cmp)`: stable.
+    @discardableResult public func sortBy(_ cmp: (Double, Double) -> Double) -> JsTypedArray {
+        var v = doubles()
+        jsMergeSort(&v, cmp)
+        writeAll(v)
+        return self
+    }
+    /// `[...ta]`.
+    public func toArray() -> JsArray<Double> { JsArray(doubles()) }
+    func doubles() -> [Double] { (0..<length).map { dbl($0) } }
+    public func indexOf(_ v: Double, _ from: Double) -> Int {
+        var i = jsTARel(from, length)
+        while i < length { if dbl(i) == v { return i }; i += 1 }
+        return -1
+    }
+    public func lastIndexOf(_ v: Double, _ from: Double) -> Int {
+        let t = from.isNaN ? 0 : from.rounded(.towardZero)
+        let k = t < 0 ? Double(length) + t : Swift.min(t, Double(length) - 1)
+        if k < 0 { return -1 }
+        var i = Int(k)
+        while i >= 0 { if dbl(i) == v { return i }; i -= 1 }
+        return -1
+    }
+    /// SameValueZero: NaN is found.
+    public func includes(_ v: Double, _ from: Double) -> Bool {
+        var i = jsTARel(from, length)
+        while i < length { let x = dbl(i); if x == v || (x.isNaN && v.isNaN) { return true }; i += 1 }
+        return false
+    }
+    public func join(_ sep: String) -> String { (0..<length).map { jsNum(dbl($0)) }.joined(separator: sep) }
+    public func map(_ f: (Double, Int) -> Double) -> JsTypedArray {
+        let r = JsTypedArray(length: length)
+        for i in 0..<length { r.p[i] = K.from(f(dbl(i), i)) }
+        return r
+    }
+    public func filter(_ f: (Double, Int) -> Bool) -> JsTypedArray {
+        var kept: [K.S] = []
+        for i in 0..<length where f(dbl(i), i) { kept.append(p[i]) }
+        let r = JsTypedArray(length: kept.count)
+        for i in 0..<kept.count { r.p[i] = kept[i] }
+        return r
+    }
+    public func forEach(_ f: (Double, Int) -> Void) { for i in 0..<length { f(dbl(i), i) } }
+    public func some(_ f: (Double, Int) -> Bool) -> Bool { for i in 0..<length where f(dbl(i), i) { return true }; return false }
+    public func every(_ f: (Double, Int) -> Bool) -> Bool { for i in 0..<length where !f(dbl(i), i) { return false }; return true }
+    public func find(_ f: (Double, Int) -> Bool) -> K.N? { for i in 0..<length where f(dbl(i), i) { return K.num(p[i]) }; return nil }
+    public func findIndex(_ f: (Double, Int) -> Bool) -> Int { for i in 0..<length where f(dbl(i), i) { return i }; return -1 }
+    public func reduce<A>(_ initial: A, _ f: (A, Double) -> A) -> A {
+        var acc = initial
+        for i in 0..<length { acc = f(acc, dbl(i)) }
+        return acc
+    }
+}
+
+// MARK: - Map and Set
+
+/// How a `Map` / `Set` key is hashed: SameValueZero for numbers (NaN is NaN, -0 is +0), code units for strings,
+/// value for booleans / bigints / symbols, identity for objects (app classes, arrays, maps).
+public protocol JsKeyKind { associatedtype K; associatedtype H: Hashable; static func h(_ k: K) -> H; static func norm(_ k: K) -> K }
+public extension JsKeyKind { @inlinable static func norm(_ k: K) -> K { k } }
+public enum JsNumK: JsKeyKind {
+    @inlinable public static func norm(_ k: Double) -> Double { k == 0 ? 0 : k }
+    @inlinable public static func h(_ k: Double) -> JsNumH { JsNumH(k == 0 ? 0 : k.isNaN ? 0x7ff8_0000_0000_0000 : k.bitPattern) }
+}
+public enum JsIntK: JsKeyKind { @inlinable public static func h(_ k: Int) -> JsNumH { JsNumH(UInt64(bitPattern: Int64(k))) } }
+public enum JsStrK: JsKeyKind { @inlinable public static func h(_ k: String) -> JsKey { JsKey(k) } }
+public enum JsHashK<T: Hashable>: JsKeyKind { @inlinable public static func h(_ k: T) -> T { k } }
+public enum JsRefK<T>: JsKeyKind { @inlinable public static func h(_ k: T) -> ObjectIdentifier { ObjectIdentifier(k as AnyObject) } }
+
+/// JavaScript's `Map` (and `Set`: `V == Void`): a shared hash map (O(1) get / set / has / delete) in insertion order.
+/// A delete leaves a hole until the slots are compacted. Each slot keeps the sequence number it was added with, so
+/// iteration (`next(s)`: the entry after sequence `s`) is live as in JavaScript: an entry deleted before its turn is
+/// skipped, one added during the loop is visited, and compaction or `clear()` under a running loop loses nothing.
+public final class JsOMap<KK: JsKeyKind, V> {
+    @exclusivity(unchecked) @usableFromInline var index: [KK.H: Int] = [:]
+    @exclusivity(unchecked) @usableFromInline var slots: [(key: KK.K, value: V)?] = []
+    @exclusivity(unchecked) @usableFromInline var seqs: [Int] = []
+    @usableFromInline var nextSeq = 0
+    /// The slot of the sequence number `next` returned last.
+    @usableFromInline var cur = 0
+
+    public init() {}
+
+    @inlinable public func size() -> Int { index.count }
+    @inlinable public func get(_ k: KK.K) -> V? { index[KK.h(k)].map { slots[$0]!.value } }
+    @inlinable public func has(_ k: KK.K) -> Bool { index[KK.h(k)] != nil }
+    @discardableResult public func set(_ k: KK.K, _ v: V) -> JsOMap {
+        let h = KK.h(k)
+        if let i = index[h] { slots[i]!.value = v; return self }
+        index[h] = slots.count
+        // -0 is stored as +0.
+        slots.append((key: KK.norm(k), value: v))
+        seqs.append(nextSeq)
+        nextSeq += 1
+        return self
+    }
+    @discardableResult public func delete(_ k: KK.K) -> Bool {
+        guard let i = index.removeValue(forKey: KK.h(k)) else { return false }
+        let old = slots[i]
+        slots[i] = nil
+        _ = old  // released after the slot is cleared
+        // Mostly holes: compact, so the slots stay proportional to the entries.
+        if slots.count > 16 && index.count * 2 < slots.count {
+            var j = 0
+            for i in slots.indices where slots[i] != nil {
+                slots[j] = slots[i]
+                seqs[j] = seqs[i]
+                index[KK.h(slots[j]!.key)] = j
+                j += 1
+            }
+            slots.removeLast(slots.count - j)
+            seqs.removeLast(seqs.count - j)
+            cur = 0
+        }
+        return true
+    }
+    public func clear() {
+        let old = slots
+        index.removeAll()
+        slots.removeAll()
+        seqs.removeAll()
+        cur = 0
+        _ = old
+    }
+
+    /// The slot holding sequence number `s` (or the first after it).
+    @usableFromInline func slot(after s: Int) -> Int {
+        var lo = 0, hi = seqs.count
+        while lo < hi { let mid = (lo + hi) / 2; if seqs[mid] <= s { lo = mid + 1 } else { hi = mid } }
+        return lo
+    }
+    @usableFromInline func slot(of s: Int) -> Int { cur < seqs.count && seqs[cur] == s ? cur : slot(after: s - 1) }
+    /// The sequence number of the first live entry after `s` (-1: from the start), or -1 at the end.
+    public func next(_ s: Int) -> Int {
+        var p = s < 0 ? 0 : cur < seqs.count && seqs[cur] == s ? cur + 1 : slot(after: s)
+        while p < slots.count && slots[p] == nil { p += 1 }
+        if p >= slots.count { return -1 }
+        cur = p
+        return seqs[p]
+    }
+    @inlinable public func keyAt(_ s: Int) -> KK.K { slots[slot(of: s)]!.key }
+    @inlinable public func valueAt(_ s: Int) -> V { slots[slot(of: s)]!.value }
+
+    public func forEach(_ f: (V, KK.K) throws -> Void) rethrows {
+        var s = -1
+        while true {
+            s = next(s)
+            if s < 0 { return }
+            let e = slots[cur]!
+            try f(e.value, e.key)
+        }
+    }
+    public func keysArr() -> JsArray<KK.K> { JsArray(slots.compactMap { $0?.key }) }
+    public func valuesArr() -> JsArray<V> { JsArray(slots.compactMap { $0?.value }) }
+    public func pairs<T>(_ f: (KK.K, V) throws -> T) rethrows -> JsArray<T> { let s = slots; return JsArray(try s.compactMap { e in try e.map { try f($0.key, $0.value) } }) }
+    public func copy() -> JsOMap { let m = JsOMap(); for case let e? in slots { m.set(e.key, e.value) }; return m }
+    @discardableResult public func setAll(_ ks: JsArray<KK.K>, _ vs: JsArray<V>) -> JsOMap {
+        for (k, v) in zip(ks.a, vs.a) { set(k, v) }
+        return self
+    }
+}
+
+public extension JsOMap where V == Void {
+    @discardableResult func add(_ k: KK.K) -> JsOMap { set(k, ()) }
+    @discardableResult func addAll(_ ks: JsArray<KK.K>) -> JsOMap { for k in ks.a { set(k, ()) }; return self }
+    func forEachSet(_ f: (KK.K, KK.K) throws -> Void) rethrows { try forEach { _, k in try f(k, k) } }
+}
+
+// MARK: - Weak references (lib4)
+
+/// The targets `new WeakRef(x)` / `deref()` gave during the current job: kept alive until its microtasks have run, as
+/// JavaScript keeps them (ClearKeptObjects), so `new WeakRef(new C()).deref()` is the object on every target.
+@MainActor enum JsKept { static var objects: [AnyObject] = [] }
+@MainActor func jsKeep(_ o: AnyObject) {
+    JsKept.objects.append(o)
+    jsScheduleDrain()
+}
+
+/// `WeakMap<K, V>` (a `WeakSet` has `V == Void`): entries by the key's identity, the key held weakly (a dead key's entry
+/// is dropped by the next sweep, which runs as the map grows), not iterable. A value is held as long as its entry.
+public final class JsWeakMap<K, V> {
+    struct Entry { weak var key: AnyObject?; var value: V }
+    var slots: [ObjectIdentifier: Entry] = [:]
+    var sweepAt = 16
+    public init() {}
+    public func get(_ k: K) -> V? {
+        let o = k as AnyObject
+        guard let e = slots[ObjectIdentifier(o)], e.key === o else { return nil }
+        return e.value
+    }
+    public func has(_ k: K) -> Bool { let o = k as AnyObject; return slots[ObjectIdentifier(o)]?.key === o }
+    @discardableResult public func set(_ k: K, _ v: V) -> JsWeakMap {
+        let o = k as AnyObject
+        // A dead key's entry under a reused identity is replaced.
+        let old = slots.updateValue(Entry(key: o, value: v), forKey: ObjectIdentifier(o))
+        _ = old
+        if slots.count >= sweepAt {
+            slots = slots.filter { $0.value.key != nil }
+            sweepAt = Swift.max(16, slots.count * 2)
+        }
+        return self
+    }
+    @discardableResult public func delete(_ k: K) -> Bool {
+        guard has(k) else { return false }
+        let old = slots.removeValue(forKey: ObjectIdentifier(k as AnyObject))
+        _ = old
+        return true
+    }
+}
+public extension JsWeakMap where V == Void {
+    @discardableResult func add(_ k: K) -> JsWeakMap { set(k, ()) }
+}
+
+/// `WeakRef<T>`: its target while something else holds it (and until the job that made or read it ends).
+@MainActor public final class JsWeakRef<T> {
+    weak var target: AnyObject?
+    public init(_ t: T) {
+        let o = t as AnyObject
+        target = o
+        jsKeep(o)
+    }
+    public func deref() -> T? {
+        guard let o = target else { return nil }
+        jsKeep(o)
+        return (o as! T)
+    }
+}
+
+// MARK: - Cycle collector
+
+/// The Swift runtime's strong reference count of an object (exported by libswiftCore). Read only through a raw
+/// pointer, so reading it adds no reference.
+@_silgen_name("swift_retainCount") func jsGcRetainCount(_ object: UnsafeMutableRawPointer) -> Int
+
+/// Where a tracked object is in the registry (-1: not tracked). Not actor-isolated: `deinit` updates the registry.
+public protocol JsGcSlot: AnyObject { var gcIndex: Int { get set } }
+
+/// An object of a class the compiler found may be part of a reference cycle (cycles.ts): it reports the tracked
+/// objects it holds (`gcTraverse`, each reference once, as the reference counts count them) and can drop them (`gcClear`).
+@MainActor public protocol JsGcNode: JsGcSlot {
+    func gcTraverse(_ s: JsGcScan)
+    func gcClear()
+}
+
+struct JsGcEntry { unowned(unsafe) let o: JsGcNode }
+
+/// The registry of live tracked objects (no strong reference: an object leaves it in `deinit`) and the collector's
+/// settings. Generational: `live[0..<oldEnd]` survived a collection (the old generation), the rest is young.
+/// A young collection examines only the young objects (references from old ones count as outside references); the
+/// old generation is collected by an incremental pass (`JsGcPass`) spread over many short slices.
+public enum JsGc {
+    @exclusivity(unchecked) nonisolated(unsafe) static var live: [JsGcEntry] = []
+    @exclusivity(unchecked) nonisolated(unsafe) static var oldEnd = 0
+    /// While the incremental pass scans and marks, a store into a tracked field reports the value it overwrites.
+    @exclusivity(unchecked) nonisolated(unsafe) public static var marking = false
+    nonisolated(unsafe) static var pass: JsGcPass?
+    nonisolated(unsafe) static var oldAfterPass = 0
+    nonisolated(unsafe) static var idleInstalled = false
+    /// Young objects that start a young collection at the next safe point (Int.max: none, as a benchmark sets it).
+    nonisolated(unsafe) public static var threshold = 4_000
+    /// The most objects one indivisible step examines: a bigger young generation is promoted unexamined (the pass
+    /// collects it), and the pass verifies its candidates in groups of about this many.
+    nonisolated(unsafe) public static var stepMax = 16_000
+    /// How long one slice of the incremental pass may run, in nanoseconds.
+    nonisolated(unsafe) public static var sliceNanos: UInt64 = 1_000_000
+    nonisolated(unsafe) public static var collections = 0
+    /// Incremental passes started, and the objects the finished ones freed.
+    nonisolated(unsafe) public static var passes = 0
+    nonisolated(unsafe) public static var passFreed = 0
+    /// The longest one collector step (young collection and pass slice) kept the main thread, in nanoseconds.
+    nonisolated(unsafe) public static var maxPauseNanos: UInt64 = 0
+    public static var liveCount: Int { live.count - (pass?.holes ?? 0) }
+    public static var passActive: Bool { pass != nil }
+}
+
+@inline(__always) func jsGcNow() -> UInt64 { DispatchTime.now().uptimeNanoseconds }
+
+/// A slice's deadline (checked every 64 units of work; `.max`: none).
+struct JsGcClock {
+    let end: UInt64
+    var n = 0
+    @inline(__always) mutating func over() -> Bool {
+        n &+= 1
+        return n & 63 == 0 && end != .max && jsGcNow() >= end
+    }
+    func overNow() -> Bool { end != .max && jsGcNow() >= end }
+}
+
+@MainActor public func jsGcTrack(_ o: JsGcNode) -> Int {
+    JsGc.live.append(JsGcEntry(o: o))
+    return JsGc.live.count - 1
+}
+
+/// From `deinit`. An object the running pass numbered stays as a hole until the pass ends; others leave now.
+public func jsGcUntrack(_ i: Int) {
+    if i < 0 { return }
+    if let p = JsGc.pass, p.tombstone(i) { return }
+    jsGcRemove(i)
+}
+
+/// Removes entry `i`, keeping both generations contiguous: the old generation's last entry fills an old hole, the
+/// registry's last entry fills the young one.
+func jsGcRemove(_ i: Int) {
+    let last = JsGc.live.count - 1
+    var hole = i
+    if i < JsGc.oldEnd {
+        let lastOld = JsGc.oldEnd - 1
+        if i < lastOld {
+            JsGc.live[i] = JsGc.live[lastOld]
+            JsGc.live[i].o.gcIndex = i
+        }
+        JsGc.oldEnd = lastOld
+        hole = lastOld
+    }
+    if hole < last {
+        JsGc.live[hole] = JsGc.live[last]
+        JsGc.live[hole].o.gcIndex = hole
+    }
+    JsGc.live.removeLast()
+}
+
+/// A tracked field's store while the pass marks (emitted in the field's `willSet`): the overwritten object or
+/// container may now be held from somewhere the pass already scanned, so it is marked live for this pass.
+@MainActor public func jsGcBarrier(_ old: AnyObject?) {
+    guard let old, let p = JsGc.pass else { return }
+    let s = p.scan
+    if let o = old as? JsGcSlot {
+        if o.gcIndex >= 0 && o.gcIndex < p.end { s.grey(o.gcIndex) }
+    } else if let i = s.containers[ObjectIdentifier(old)] {
+        s.grey(Int(i))
+    }
+}
+
+/// What tracked objects reference. Nodes: the objects (by registry index below `limit` — the pass —, or numbered
+/// `-2 - gcIndex` by a subset collection), then the containers (arrays, records, Maps / Sets) reached through them, each
+/// once, held by the scan; an edge per reference, kept as runs per node.
+public final class JsGcScan {
+    let limit: Int
+    let objects: Int
+    var from: Int32 = 0
+    /// Each node's strong count (less the scan's own reference to a container), read at the end of the slice that found it.
+    var rc: [Int]
+    var head: [Int32]
+    var dead: [Bool]
+    var pending: [(Int32, UnsafeMutableRawPointer)] = []
+    var holds: [AnyObject] = []
+    var containers: [ObjectIdentifier: Int32] = [:]
+    var eTo: [Int32] = []
+    var runStart: [Int32] = []
+    var runNext: [Int32] = []
+    var runFrom: Int32 = -1
+    var inDeg: [Int32] = []
+    var marked: [Bool] = []
+    var greys: [Int32] = []
+    var stack: [Int32] = []
+    var cursor = 0
+
+    init(objects: Int, limit: Int) {
+        self.objects = objects
+        self.limit = limit
+        rc = [Int](repeating: 0, count: objects)
+        head = [Int32](repeating: -1, count: objects)
+        dead = [Bool](repeating: false, count: objects)
+    }
+
+    @inline(__always) func edge(_ to: Int32) {
+        if from != runFrom {
+            runFrom = from
+            runNext.append(head[Int(from)])
+            head[Int(from)] = Int32(runStart.count)
+            runStart.append(Int32(eTo.count))
+        }
+        eTo.append(to)
+    }
+    /// A reference to an object of a tracked class.
+    @inline(__always) public func node(_ o: JsGcSlot?) {
+        guard let o else { return }
+        let g = o.gcIndex
+        if g < -1 { edge(Int32(-2 - g)) } else if g >= 0 && g < limit { edge(Int32(g)) }
+    }
+    /// A reference to an object that may be of a tracked class (an interface's).
+    public func obj(_ o: AnyObject?) {
+        if let o = o as? JsGcSlot { node(o) }
+    }
+    /// A container: a node of its own (first time: its elements' edges).
+    @inline(__always) func enter(_ c: AnyObject) -> Bool {
+        let id = ObjectIdentifier(c)
+        if let i = containers[id] {
+            edge(i)
+            return false
+        }
+        let i = Int32(rc.count)
+        rc.append(0)
+        head.append(-1)
+        containers[id] = i
+        holds.append(c)
+        pending.append((i, Unmanaged.passUnretained(c).toOpaque()))
+        edge(i)
+        from = i
+        return true
+    }
+    public func arr<T>(_ a: JsArray<T>?, _ f: (JsGcScan, T) -> Void) {
+        guard let a else { return }
+        let saved = from
+        if enter(a) {
+            // Storage another array shares (a copy not yet written) would count its elements twice: own it.
+            a.a.reserveCapacity(0)
+            for e in a.a { f(self, e) }
+        }
+        from = saved
+    }
+    public func map<T>(_ m: JsMap<T>?, _ f: (JsGcScan, T) -> Void) {
+        guard let m else { return }
+        let saved = from
+        if enter(m) { m.gcEach { f(self, $0) } }
+        from = saved
+    }
+    public func omap<KK, V>(_ m: JsOMap<KK, V>?, _ f: (JsGcScan, KK.K, V) -> Void) {
+        guard let m else { return }
+        let saved = from
+        if enter(m) { m.gcEach { f(self, $0, $1) } }
+        from = saved
+    }
+
+    /// The counts of the nodes found since the last call (nothing of the scan but `holds` references them now).
+    @inline(never) func readCounts() {
+        for (i, p) in pending { rc[Int(i)] = jsGcRetainCount(p) - (Int(i) >= objects ? 1 : 0) }
+        pending.removeAll(keepingCapacity: true)
+    }
+    @inline(__always) func alive(_ i: Int) -> Bool { i >= objects || !dead[i] }
+    @inline(__always) func runEnd(_ r: Int) -> Int { r + 1 < runStart.count ? Int(runStart[r + 1]) : eTo.count }
+
+    /// The references into each node from the nodes still alive (resumable: false when the clock ran out).
+    func countIn(_ c: inout JsGcClock) -> Bool {
+        if inDeg.isEmpty { inDeg = [Int32](repeating: 0, count: rc.count) }
+        while cursor < rc.count {
+            let i = cursor
+            cursor += 1
+            if !alive(i) { continue }
+            var r = Int(head[i])
+            while r >= 0 {
+                for k in Int(runStart[r])..<runEnd(r) { inDeg[Int(eTo[k])] += 1 }
+                r = Int(runNext[r])
+            }
+            if c.over() { return false }
+        }
+        cursor = 0
+        return true
+    }
+    /// A node to keep (the pass's write barrier): marked now, or once marking starts.
+    func grey(_ i: Int) {
+        if marked.isEmpty { greys.append(Int32(i)) } else if !marked[i] {
+            marked[i] = true
+            stack.append(Int32(i))
+        }
+    }
+    /// Marks everything reachable from the nodes with outside references (strong count above the references from
+    /// nodes) and from the greyed ones (resumable).
+    func mark(_ c: inout JsGcClock) -> Bool {
+        if marked.isEmpty && !rc.isEmpty {
+            marked = [Bool](repeating: false, count: rc.count)
+            for g in greys { grey(Int(g)) }
+            greys = []
+        }
+        while cursor < rc.count {
+            let i = cursor
+            cursor += 1
+            if !marked[i] && alive(i) && rc[i] > Int(inDeg[i]) {
+                marked[i] = true
+                stack.append(Int32(i))
+            }
+            if c.over() { return false }
+        }
+        while let i = stack.popLast() {
+            var r = Int(head[Int(i)])
+            while r >= 0 {
+                for k in Int(runStart[r])..<runEnd(r) {
+                    let t = Int(eTo[k])
+                    if !marked[t] && alive(t) {
+                        marked[t] = true
+                        stack.append(Int32(t))
+                    }
+                }
+                r = Int(runNext[r])
+            }
+            if c.over() { return false }
+        }
+        cursor = 0
+        return true
+    }
+}
+
+extension JsMap {
+    func gcEach(_ f: (Value) -> Void) {
+        entries.reserveCapacity(0)
+        for case let e? in entries { f(e.value) }
+    }
+}
+
+extension JsOMap {
+    func gcEach(_ f: (KK.K, V) -> Void) {
+        slots.reserveCapacity(0)
+        for case let e? in slots { f(e.key, e.value) }
+    }
+}
+
+@MainActor @inline(never) func jsGcScanSubset(_ s: JsGcScan, _ members: [Int]) {
+    for (k, i) in members.enumerated() { JsGc.live[i].o.gcIndex = -2 - k }
+    for (k, i) in members.enumerated() {
+        let o = JsGc.live[i].o
+        s.pending.append((Int32(k), Unmanaged.passUnretained(o as AnyObject).toOpaque()))
+        s.from = Int32(k)
+        o.gcTraverse(s)
+    }
+}
+
+/// Collects the tracked objects at registry indices `members`, in one indivisible step (CPython's algorithm): an
+/// object's strong count minus the references from the members (and the containers they reach) is what the rest of
+/// the program holds, including every object outside the set; what is reachable from an object with such outside
+/// references is live; the rest is garbage, its references are dropped, and ARC frees it. Nothing of the app runs
+/// meanwhile, so this is exact for the set whatever happened before. Returns how many objects it freed.
+@MainActor func jsGcCollectSubset(_ members: [Int]) -> Int {
+    let n = members.count
+    if n == 0 { return 0 }
+    JsGc.collections += 1
+    let marking = JsGc.marking
+    JsGc.marking = false
+    var s: JsGcScan? = JsGcScan(objects: n, limit: 0)
+    jsGcScanSubset(s!, members)
+    s!.readCounts()
+    var c = JsGcClock(end: .max)
+    _ = s!.countIn(&c)
+    _ = s!.mark(&c)
+    // The members' registry indices back (a freed object leaves the registry by it), then the garbage.
+    for i in members { JsGc.live[i].o.gcIndex = i }
+    // Garbage: held while every one drops its references (none is freed under a gcClear), then released.
+    var garbage: [JsGcNode] = []
+    for k in 0..<n where !s!.marked[k] { garbage.append(JsGc.live[members[k]].o) }
+    s = nil
+    for g in garbage { g.gcClear() }
+    let freed = garbage.count
+    garbage.removeAll()
+    JsGc.marking = marking
+    return freed
+}
+
+/// The incremental collection of the old generation (the objects at registry indices `0..<end` when it started),
+/// in phases, each resumable at a slice's deadline: scan (each object's references and strong count), count,
+/// mark (from the objects with outside references, and from every object a tracked field's store overwrote while it
+/// ran: the write barrier), group the unmarked objects into connected candidate groups, verify each group with an
+/// indivisible subset collection (which alone decides what is freed), then compact the registry.
+/// Soundness does not depend on the slices seeing a consistent graph: a candidate is freed only by a verification,
+/// which is exact for its group at that instant. The barrier only keeps moved objects out of the candidates.
+/// Objects of the pass that die meanwhile stay in the registry as holes (`dead`) so the numbering holds.
+final class JsGcPass {
+    let end: Int
+    let scan: JsGcScan
+    var phase = 0
+    var cursor = 0
+    var holes = 0
+    var parent: [Int32] = []
+    var memberHead: [Int32] = []
+    var memberNext: [Int32] = []
+    var groups: [Int32] = []
+    var freed = 0
+
+    init(end: Int) {
+        self.end = end
+        scan = JsGcScan(objects: end, limit: end)
+    }
+
+    /// An object of the pass died: true when its entry stays as a hole (compaction already passed it: it leaves now).
+    func tombstone(_ i: Int) -> Bool {
+        if i >= end || (phase == 6 && i >= cursor) { return false }
+        scan.dead[i] = true
+        holes += 1
+        return true
+    }
+
+    func find(_ x: Int) -> Int {
+        var x = x
+        while Int(parent[x]) != x {
+            parent[x] = parent[Int(parent[x])]
+            x = Int(parent[x])
+        }
+        return x
+    }
+
+    /// Runs until the clock's deadline; true once the pass is over.
+    @MainActor func step(_ c: inout JsGcClock) -> Bool {
+        let s = scan
+        while true {
+            switch phase {
+            case 0:
+                jsGcScanSlice(self, &c)
+                s.readCounts()
+                if cursor < end { return false }
+                // Every count is read: the containers need not stay.
+                s.holds = []
+                cursor = 0
+                phase = 1
+            case 1:
+                if !s.countIn(&c) { return false }
+                phase = 2
+            case 2:
+                if !s.mark(&c) { return false }
+                JsGc.marking = false
+                s.inDeg = []
+                parent = (0..<Int32(s.rc.count)).map { $0 }
+                phase = 3
+            case 3:
+                while cursor < s.rc.count {
+                    let i = cursor
+                    cursor += 1
+                    if s.marked[i] || !s.alive(i) { continue }
+                    var r = Int(s.head[i])
+                    while r >= 0 {
+                        for k in Int(s.runStart[r])..<s.runEnd(r) {
+                            let t = Int(s.eTo[k])
+                            if !s.marked[t] && s.alive(t) {
+                                let a = find(i), b = find(t)
+                                if a != b { parent[max(a, b)] = Int32(min(a, b)) }
+                            }
+                        }
+                        r = Int(s.runNext[r])
+                    }
+                    if c.over() { return false }
+                }
+                cursor = 0
+                memberHead = [Int32](repeating: -1, count: s.rc.count)
+                memberNext = [Int32](repeating: -1, count: end)
+                phase = 4
+            case 4:
+                while cursor < end {
+                    let i = cursor
+                    cursor += 1
+                    if s.marked[i] || s.dead[i] { continue }
+                    let r = find(i)
+                    if memberHead[r] < 0 { groups.append(Int32(r)) }
+                    memberNext[i] = memberHead[r]
+                    memberHead[r] = Int32(i)
+                    if c.over() { return false }
+                }
+                cursor = 0
+                s.eTo = []
+                s.runStart = []
+                s.runNext = []
+                parent = []
+                phase = 5
+            case 5:
+                while cursor < groups.count {
+                    var members: [Int] = []
+                    while cursor < groups.count && members.count < JsGc.stepMax {
+                        var m = Int(memberHead[Int(groups[cursor])])
+                        cursor += 1
+                        while m >= 0 {
+                            if !s.dead[m] { members.append(m) }
+                            m = Int(memberNext[m])
+                        }
+                    }
+                    freed += jsGcCollectSubset(members)
+                    if c.overNow() { return false }
+                }
+                memberHead = []
+                memberNext = []
+                groups = []
+                s.rc = []
+                s.head = []
+                s.marked = []
+                cursor = end
+                phase = 6
+            default:
+                // Compaction, from the top: an entry above the cursor that dies now leaves at once (tombstone).
+                while cursor > 0 {
+                    cursor -= 1
+                    if s.dead[cursor] {
+                        holes -= 1
+                        jsGcRemove(cursor)
+                    }
+                    if c.over() { return false }
+                }
+                JsGc.pass = nil
+                JsGc.oldAfterPass = JsGc.oldEnd
+                JsGc.passFreed += freed
+                return true
+            }
+        }
+    }
+}
+
+@MainActor @inline(never) func jsGcScanSlice(_ p: JsGcPass, _ c: inout JsGcClock) {
+    let s = p.scan
+    while p.cursor < p.end {
+        let i = p.cursor
+        p.cursor += 1
+        if s.dead[i] { continue }
+        let o = JsGc.live[i].o
+        s.pending.append((Int32(i), Unmanaged.passUnretained(o as AnyObject).toOpaque()))
+        s.from = Int32(i)
+        o.gcTraverse(s)
+        if c.over() { return }
+    }
+}
+
+/// Ends a running pass at once (its candidates are dropped; the registry is compacted).
+@MainActor func jsGcAbortPass() {
+    guard let p = JsGc.pass else { return }
+    JsGc.marking = false
+    if p.phase != 6 {
+        p.phase = 6
+        p.cursor = p.end
+    }
+    var c = JsGcClock(end: .max)
+    _ = p.step(&c)
+}
+
+/// A young collection: the objects made since the last one, alone (old objects' references count as outside
+/// references), then they all become old. More than `stepMax` young objects (a long synchronous burst) are promoted
+/// unexamined: the incremental pass collects them.
+@MainActor func jsGcYoung() {
+    let lo = JsGc.oldEnd, n = JsGc.live.count - lo
+    if n > 0 && n <= JsGc.stepMax { _ = jsGcCollectSubset(Array(lo..<JsGc.live.count)) }
+    JsGc.oldEnd = JsGc.live.count
+}
+
+/// Starts an incremental pass over the old generation now (the young objects first become old), unless one runs.
+@MainActor public func jsGcStartPass() {
+    if JsGc.pass != nil { return }
+    JsGc.oldEnd = JsGc.live.count
+    JsGc.pass = JsGcPass(end: JsGc.oldEnd)
+    JsGc.passes += 1
+    JsGc.marking = true
+}
+
+/// Frees every tracked object only tracked garbage reaches, now, in one step over the whole registry (tests, memory
+/// warnings). A running pass is ended first. Returns how many objects it freed.
+@MainActor @discardableResult public func jsGcCollect() -> Int {
+    jsGcAbortPass()
+    let freed = jsGcCollectSubset(Array(0..<JsGc.live.count))
+    JsGc.oldEnd = JsGc.live.count
+    JsGc.oldAfterPass = JsGc.oldEnd
+    return freed
+}
+
+/// One collector step at a safe point (no app code on the stack): a young collection once `threshold` young objects
+/// exist; a pass once the old generation doubled since the last (at least 10 000 more); then a slice of the running
+/// pass, up to `sliceNanos`. While a pass runs, the main run loop's idle time (before it waits) runs more slices.
+@MainActor public func jsGcStep() {
+    let t0 = jsGcNow()
+    if JsGc.live.count - JsGc.oldEnd >= JsGc.threshold { jsGcYoung() }
+    if JsGc.pass == nil && JsGc.oldEnd - JsGc.oldAfterPass >= max(10_000, JsGc.oldAfterPass) { jsGcStartPass() }
+    if let p = JsGc.pass {
+        var c = JsGcClock(end: t0 + JsGc.sliceNanos)
+        _ = p.step(&c)
+    }
+    let t = jsGcNow() - t0
+    if t > JsGc.maxPauseNanos { JsGc.maxPauseNanos = t }
+    if JsGc.pass != nil { jsGcScheduleIdle() }
+}
+
+/// More slices while the main run loop is idle: an observer before it waits runs one and wakes it again.
+@MainActor func jsGcScheduleIdle() {
+    if !JsGc.idleInstalled {
+        JsGc.idleInstalled = true
+        let observer = CFRunLoopObserverCreateWithHandler(nil, CFRunLoopActivity.beforeWaiting.rawValue, true, 0) { _, _ in
+            MainActor.assumeIsolated { if JsGc.pass != nil { jsGcStep() } }
+        }
+        CFRunLoopAddObserver(CFRunLoopGetMain(), observer, .commonModes)
+    }
+    CFRunLoopWakeUp(CFRunLoopGetMain())
+}
+
+/// At a safe point (a microtask drain's end).
+@MainActor @inline(__always) func jsGcMaybe() {
+    if JsGc.pass != nil || JsGc.live.count - JsGc.oldEnd >= JsGc.threshold { jsGcStep() }
+}
+
+// MARK: - ArrayBuffer and DataView (lib4)
+
+/// `ArrayBuffer`: the byte store `Uint8Array` / `Uint8ClampedArray` views share (`new Uint8Array(buffer, …)`, `.buffer`).
+public typealias ArrayBuffer = JsTAStore<UInt8>
+
+private func jsRange(_ message: String) -> NError { NError(name: "RangeError", message) }
+/// ToIndex, with the message of the RangeError for a negative value.
+private func jsIndex(_ d: Double, _ negative: String) throws -> Int {
+    let t = jsToInteger(d)
+    if t < 0 { throw jsRange(negative) }
+    if t > 9007199254740991 { throw jsRange("length larger than (2 ** 53) - 1") }
+    return Int(t)
+}
+public func jsNewArrayBuffer(_ n: Double) throws -> ArrayBuffer { ArrayBuffer(try jsIndex(n, "length cannot be negative"), 0) }
+public func jsAbByteLength(_ b: ArrayBuffer) -> Double { Double(b.count) }
+public func jsAbSlice(_ b: ArrayBuffer, _ start: Double, _ end: Double) -> ArrayBuffer {
+    let s = jsTARel(start, b.count), e = Swift.max(jsTARel(end, b.count), s)
+    let out = ArrayBuffer(e - s, 0)
+    if e > s { out.p.update(from: b.p + s, count: e - s) }
+    return out
+}
+/// `new Uint8Array(buffer, byteOffset, length?)` (and Uint8ClampedArray): a view sharing the buffer's bytes.
+public func jsUint8View<K: JsTAKind>(_ b: ArrayBuffer, _ off: Double, _ len: Double?) throws -> JsTypedArray<K> where K.S == UInt8 {
+    let o = try jsIndex(off, "byteOffset cannot be negative")
+    let n = try len.map { try jsIndex($0, "length cannot be negative") }
+    guard o <= b.count, o + (n ?? 0) <= b.count else { throw jsRange("Length out of range of buffer") }
+    return JsTypedArray<K>(b, o, n ?? b.count - o)
+}
+public func jsNewUint8Array(_ b: ArrayBuffer, _ off: Double) throws -> Uint8Array { try jsUint8View(b, off, nil) }
+public func jsNewUint8ArrayLen(_ b: ArrayBuffer, _ off: Double, _ len: Double) throws -> Uint8Array { try jsUint8View(b, off, len) }
+public func jsNewUint8ClampedArray(_ b: ArrayBuffer, _ off: Double) throws -> Uint8ClampedArray { try jsUint8View(b, off, nil) }
+public func jsNewUint8ClampedArrayLen(_ b: ArrayBuffer, _ off: Double, _ len: Double) throws -> Uint8ClampedArray { try jsUint8View(b, off, len) }
+public func jsTaBuffer<K: JsTAKind>(_ t: JsTypedArray<K>) -> ArrayBuffer where K.S == UInt8 { t.store }
+
+/// `DataView`: reads and writes numbers of any size and byte order in a window of an ArrayBuffer.
+public final class DataView {
+    public let buffer: ArrayBuffer
+    public let byteOffset: Int
+    public let byteLength: Int
+    init(_ b: ArrayBuffer, _ o: Int, _ n: Int) { buffer = b; byteOffset = o; byteLength = n }
+}
+public func jsNewDataViewLen(_ b: ArrayBuffer, _ off: Double, _ len: Double) throws -> DataView { try jsNewDataView(b, off, len) }
+public func jsNewDataView(_ b: ArrayBuffer, _ off: Double, _ len: Double? = nil) throws -> DataView {
+    let o = try jsIndex(off, "byteOffset cannot be negative")
+    if o > b.count { throw jsRange("byteOffset exceeds source ArrayBuffer byteLength") }
+    guard let len else { return DataView(b, o, b.count - o) }
+    let n = try jsIndex(len, "byteLength cannot be negative")
+    if o + n > b.count { throw jsRange("Length out of range of buffer") }
+    return DataView(b, o, n)
+}
+public func jsDvBuffer(_ d: DataView) -> ArrayBuffer { d.buffer }
+public func jsDvByteLength(_ d: DataView) -> Double { Double(d.byteLength) }
+public func jsDvByteOffset(_ d: DataView) -> Double { Double(d.byteOffset) }
+/// The bytes [at, at + size) of the view as an unsigned integer in the given byte order.
+private func jsDvLoad(_ d: DataView, _ at: Double, _ size: Int, _ little: Bool) throws -> UInt64 {
+    let i = try jsIndex(at, "byteOffset cannot be negative")
+    if i + size > d.byteLength { throw jsRange("Out of bounds access") }
+    let p = d.buffer.p + d.byteOffset + i
+    var v: UInt64 = 0
+    for k in 0..<size { v |= UInt64(p[little ? k : size - 1 - k]) << (8 * UInt64(k)) }
+    return v
+}
+private func jsDvStore(_ d: DataView, _ at: Double, _ size: Int, _ little: Bool, _ v: UInt64) throws {
+    let i = try jsIndex(at, "byteOffset cannot be negative")
+    if i + size > d.byteLength { throw jsRange("Out of bounds access") }
+    let p = d.buffer.p + d.byteOffset + i
+    for k in 0..<size { p[little ? k : size - 1 - k] = UInt8(truncatingIfNeeded: v >> (8 * UInt64(k))) }
+}
+private let jsDvSizes = [1, 1, 2, 2, 4, 4, 4, 8]
+/// `getInt8` … `getFloat64` (kind 0 Int8, 1 Uint8, 2 Int16, 3 Uint16, 4 Int32, 5 Uint32, 6 Float32, 7 Float64).
+public func jsDvGet(_ d: DataView, _ kind: Int, _ at: Double, _ little: Bool) throws -> Double {
+    let v = try jsDvLoad(d, at, jsDvSizes[kind], little)
+    switch kind {
+    case 0: return Double(Int8(truncatingIfNeeded: v))
+    case 2: return Double(Int16(truncatingIfNeeded: v))
+    case 4: return Double(Int32(truncatingIfNeeded: v))
+    case 6: return Double(Float(bitPattern: UInt32(v)))
+    case 7: return Double(bitPattern: v)
+    default: return Double(v)
+    }
+}
+/// `setInt8` … `setFloat64`: the number converted as a typed array of that kind converts it (NaN stored canonical).
+public func jsDvSet(_ d: DataView, _ kind: Int, _ at: Double, _ x: Double, _ little: Bool) throws {
+    let v: UInt64
+    switch kind {
+    case 6: v = x.isNaN ? 0x7fc0_0000 : UInt64(Float(x).bitPattern)
+    case 7: v = x.isNaN ? 0x7ff8_0000_0000_0000 : x.bitPattern
+    default: v = UInt64(UInt32(bitPattern: jsI32(x)))
+    }
+    try jsDvStore(d, at, jsDvSizes[kind], little, v)
+}
+public func jsDvGetBig(_ d: DataView, _ signed: Bool, _ at: Double, _ little: Bool) throws -> JsBigInt {
+    let v = try jsDvLoad(d, at, 8, little)
+    return signed ? JsBigInt(Int(Int64(bitPattern: v))) : JsBigInt.asUintN(64, JsBigInt(Int(Int64(bitPattern: v))))
+}
+public func jsDvSetBig(_ d: DataView, _ signed: Bool, _ at: Double, _ x: JsBigInt, _ little: Bool) throws {
+    let v = JsBigInt.asIntN(64, x)
+    try jsDvStore(d, at, 8, little, UInt64(bitPattern: Int64(v.description)!))
+}

@@ -317,7 +317,10 @@ class Node {
     else for (const child of this.children) child.flatElements(out);
   }
 
-  /** Makes the DOM children the nodes' elements in order, moving only what is out of place. */
+  /**
+   * Makes the DOM children the nodes' elements in order, with the fewest moves: the elements already
+   * in order (the longest increasing run of their current places) stay, the others are inserted.
+   */
   syncViews() {
     if (this.kind !== "box") return void this.host?.syncViews();
     const wanted: HTMLElement[] = [];
@@ -331,12 +334,18 @@ class Node {
         moved = true;
       }
     }
-    wanted.forEach((child, i) => {
-      if (el.children[i] !== child) {
-        el.insertBefore(child, el.children[i] ?? null);
-        moved = true;
+    const current = el.children;
+    let inPlace = current.length === wanted.length;
+    for (let i = 0; inPlace && i < wanted.length; i++) inPlace = current[i] === wanted[i];
+    if (!inPlace) {
+      moved = true;
+      const at = new Map<Element, number>();
+      for (let i = 0; i < current.length; i++) at.set(current[i]!, i);
+      const stays = stableIndexes(wanted.map((child) => at.get(child) ?? -1));
+      for (let i = wanted.length - 1; i >= 0; i--) {
+        if (!stays[i]) el.insertBefore(wanted[i]!, wanted[i + 1] ?? null);
       }
-    });
+    }
     for (const child of this.children) child.mountDeep();
     // `:first-child`, `:odd`…: the places changed.
     if (moved) this.restyleStructural();
@@ -391,7 +400,7 @@ class Node {
     if (this.destroyed || this.born === generation) return;
     this.reconcile?.();
     for (const binding of [...this.bindings]) binding();
-    this.applyStyle();
+    if (!this.staticStyle) this.applyStyle();
     for (const child of [...this.children]) child.refresh();
   }
 
@@ -443,6 +452,10 @@ class Node {
       const host = this.host;
       if (!host || host.row || (s.alignSelf ?? host.align) !== "stretch") css += `;width:${this.kind === "input" ? 180 : 120}px`;
     }
+    // Nothing here can change until an event or a structural change calls applyStyle again: refresh() skips it.
+    this.staticStyle =
+      !this.dynamicClass && !this.dynamicInline && !s.media && !this.structural && !s.empty && !s.checked && !s.placeholderShown &&
+      !s.disabled && !s.enabled && !s.pressed && !s.hover && !s.focused && this.kind !== "input" && this.kind !== "image";
     if (css === this.painted) return;
     this.painted = css;
     el.style.cssText = css;
@@ -452,6 +465,8 @@ class Node {
 
   /** Whether its style follows its place among its siblings: list() restyles it when they change. */
   structural = false;
+  /** The last applyStyle read only the static style (classes, inline): refresh() need not run it again. */
+  private staticStyle = false;
   /** Set by the disabled attribute: `disabled` / `enabled` styles follow it. */
   disabled = false;
   private watchingFields = false;
@@ -508,6 +523,31 @@ class Node {
     this.bindings.length = 0;
     this.reconcile = null;
   }
+}
+
+/**
+ * Which entries of `places` (an element's current index, -1 for a new one) form the longest strictly
+ * increasing subsequence: those elements are already in order and need not move. O(n log n).
+ */
+function stableIndexes(places: number[]): boolean[] {
+  const tails: number[] = []; // index into places of the smallest tail of each run length
+  const previous = new Array<number>(places.length).fill(-1);
+  for (let i = 0; i < places.length; i++) {
+    const p = places[i]!;
+    if (p < 0) continue;
+    let lo = 0;
+    let hi = tails.length;
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1;
+      if (places[tails[mid]!]! < p) lo = mid + 1;
+      else hi = mid;
+    }
+    if (lo > 0) previous[i] = tails[lo - 1]!;
+    tails[lo] = i;
+  }
+  const stays = new Array<boolean>(places.length).fill(false);
+  for (let i = tails.length ? tails[tails.length - 1]! : -1; i >= 0; i = previous[i]!) stays[i] = true;
+  return stays;
 }
 
 // ---------------------------------------------------------------------------

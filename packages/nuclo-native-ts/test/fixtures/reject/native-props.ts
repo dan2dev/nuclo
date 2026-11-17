@@ -1,4 +1,5 @@
 // expect: Property 'longitude' is missing
+// code: TS2345
 import { type Double, native, render } from "../../../src/index.ts";
 
 interface MapProps {

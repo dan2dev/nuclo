@@ -1,4 +1,5 @@
 // expect: Fallthrough case in switch
+// code: TS7029
 export function name(n: number): string {
   let s = "";
   switch (n) {

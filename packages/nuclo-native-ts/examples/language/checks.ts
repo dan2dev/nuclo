@@ -526,7 +526,8 @@ export function classes(): string[] {
     `${scoreRows([30, 12.5])} | ${nameRows(["ana", "rui"])} | ${capturedCells("$", 1.5)} | ${sharedLocals(5)}`,
     `${loopClasses()} | ${loopReassigned()}`,
     `${destructuredShared([{ name: "ana", age: 30 }, { name: "rui", age: 7 }])} | ${patternLoops([3], { name: "eve", age: 3 })} | ${arrayLoops()}`,
-    elementLoops(),
+    `${elementLoops()} | ${paramElements()}`,
+    methodElements(),
   ];
 }
 
@@ -879,6 +880,65 @@ function elementLoops(): string {
   }
   for (const p of pads) p.pad(9);
   return `${pads.map((p) => p.label).join(" ")} | ${rows.map((r) => r.join("+")).join(" ")}`;
+}
+
+// Mutating the elements of an array parameter changes the caller's array: natively the caller shares it in a box.
+function padAll(rows: number[][], fill: number): void {
+  for (const row of rows) row.push(fill);
+}
+function stamp(rows: number[][]): Padded[] {
+  const out: Padded[] = [];
+  for (const row of rows) {
+    class Stamp implements Padded {
+      get label(): string {
+        return row.join("+");
+      }
+      pad(n: number): void {
+        row.push(n);
+      }
+    }
+    out.push(new Stamp());
+  }
+  padAll(rows, 7);
+  return out;
+}
+function paramElements(): string {
+  const grid: number[][] = [[1], [2]];
+  padAll(grid, 0);
+  const stamps = stamp(grid);
+  for (const s of stamps) s.pad(5);
+  return `${grid.map((r) => r.join("+")).join(" ")} | ${stamps.map((s) => s.label).join(" ")}`;
+}
+
+// The same through methods (an interface's, a class's, an override, an object literal's) and forEach callbacks.
+interface Grid {
+  fill(rows: number[][], n: number): void;
+}
+class RowFiller implements Grid {
+  fill(rows: number[][], n: number): void {
+    for (const row of rows) row.push(n);
+  }
+}
+class LoudFiller extends RowFiller {
+  override fill(rows: number[][], n: number): void {
+    super.fill(rows, n * 10);
+  }
+}
+const firstRowDoubler: Grid = {
+  fill: (rows: number[][], n: number) => {
+    rows.forEach((row, i) => {
+      if (i > 0) return;
+      row.push(n, n);
+    });
+  },
+};
+function methodElements(): string {
+  const grid: number[][] = [[1], [2]];
+  const fillers: Grid[] = [new RowFiller(), new LoudFiller(), firstRowDoubler];
+  for (const f of fillers) f.fill(grid, 3);
+  const plain: number[][] = [[0], [5, 5]];
+  plain.forEach((row) => row.push(row.length));
+  return `${grid.map((r) => r.join("+")).join(" ")} | ${plain.map((r) => r.join("+")).join(" ")}`;
 }
 
 function classExpressions(): string {

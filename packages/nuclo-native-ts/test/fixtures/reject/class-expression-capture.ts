@@ -1,4 +1,5 @@
 // expect: declare it with an initial value so it can be shared
+// code: NUCLO4004
 export function labeller(words: string[]): string {
   let prefix: string;
   prefix = words[0] ?? "-";

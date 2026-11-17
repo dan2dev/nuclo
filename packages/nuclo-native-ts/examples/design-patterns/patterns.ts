@@ -87,30 +87,17 @@ interface PizzaBuilder {
   cheese: () => PizzaBuilder;
   build: () => Pizza;
 }
-function pizzaBuilder(): PizzaBuilder {
-  let size = "medium";
-  const toppings: string[] = [];
-  let cheese = false;
-  // A builder can't return `this`, so its steps return the object through a holder set once it exists.
-  let holder: PizzaBuilder | null = null;
-  const me = (): PizzaBuilder => holder!;
-  const builder: PizzaBuilder = {
-    size: (s: string) => {
-      size = s;
-      return me();
-    },
-    topping: (t: string) => {
-      toppings.push(t);
-      return me();
-    },
-    cheese: () => {
-      cheese = true;
-      return me();
-    },
-    build: () => ({ size: size, toppings: toppings.slice(), extraCheese: cheese }),
+// Each step returns a new builder for the updated order: nothing points back at a builder (no reference cycle).
+function builderFor(order: Pizza): PizzaBuilder {
+  return {
+    size: (size: string) => builderFor({ ...order, size: size }),
+    topping: (topping: string) => builderFor({ ...order, toppings: [...order.toppings, topping] }),
+    cheese: () => builderFor({ ...order, extraCheese: true }),
+    build: () => ({ ...order, toppings: order.toppings.slice() }),
   };
-  holder = builder;
-  return builder;
+}
+function pizzaBuilder(): PizzaBuilder {
+  return builderFor({ size: "medium", toppings: [], extraCheese: false });
 }
 function describePizza(pizza: Pizza): string {
   return `${pizza.size} pizza with ${pizza.toppings.join(", ")}${pizza.extraCheese ? " and extra cheese" : ""}`;

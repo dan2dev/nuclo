@@ -2,7 +2,7 @@
  * The compiler's contract: TypeScript that would not build, or would behave differently, natively
  * is rejected with a diagnostic; everything else compiles. `bun test`.
  *
- * test/fixtures/reject/*.ts each start with `// expect: <part of the diagnostic>`.
+ * test/fixtures/reject/*.ts each start with `// expect: <part of the diagnostic>` and `// code: <its code>` (NUCLO1004…).
  * test/fixtures/accept.ts and the examples must compile; `bun run check:android` also builds their Kotlin.
  */
 import { describe, expect, test } from "bun:test";
@@ -13,7 +13,7 @@ import { emitKotlin } from "../src/compiler/emitKotlin.ts";
 import { emitRust } from "../src/compiler/emitRust.ts";
 import { emitSwift } from "../src/compiler/emitSwift.ts";
 import { emitWasmNative } from "../src/compiler/wasmNative.ts";
-import { CompileError, transpile } from "../src/compiler/transpile.ts";
+import { CompileError, type Diagnostic, transpile } from "../src/compiler/transpile.ts";
 
 const fixtures = path.join(import.meta.dir, "fixtures");
 
@@ -30,12 +30,26 @@ function diagnostics(file: string): string[] {
 describe("rejects what can't be native", () => {
   for (const name of readdirSync(path.join(fixtures, "reject")).sort()) {
     const file = path.join(fixtures, "reject", name);
-    const expected = /^\/\/ expect: (.+)$/m.exec(readFileSync(file, "utf8"))?.[1];
+    const text = readFileSync(file, "utf8");
+    const expected = /^\/\/ expect: (.+)$/m.exec(text)?.[1];
+    // `// code: NUCLO1004` (README "Diagnostic codes"; TS2322 for TypeScript's own): the code of the expected diagnostic.
+    const code = /^\/\/ code: (\S+)$/m.exec(text)?.[1];
     test(name.replace(/\.ts$/, ""), () => {
       expect(expected).toBeDefined();
-      const found = diagnostics(file);
-      expect(found.length).toBeGreaterThan(0);
-      expect(found.join("\n")).toContain(expected!);
+      let all: Diagnostic[] = [];
+      try {
+        transpile(file);
+      } catch (error) {
+        if (!(error instanceof CompileError)) throw error;
+        all = error.diagnostics;
+      }
+      expect(all.length).toBeGreaterThan(0);
+      const found = all.find((d) => `${d.line}:${d.column} ${d.message}`.includes(expected!));
+      expect(all.map((d) => `${d.line}:${d.column} ${d.message}`).join("\n")).toContain(expected!);
+      // At the app's code: never in TypeScript's lib, the API, or another file.
+      expect(all.map((d) => path.resolve(d.file)).filter((f) => f !== file)).toEqual([]);
+      expect(found!.line).toBeGreaterThan(0);
+      expect(code ? found!.id : `add "// code: ${found!.id}" under the expect line`).toBe(code ?? "");
     });
   }
 });
@@ -62,7 +76,8 @@ describe("compiles valid apps", () => {
       const rust = emitRust(transpile(path.join(examples, example.name, "App.ts")), { native, warn: (message) => warnings.push(message) });
       expect(rust).toContain("pub fn nuclo_main()");
       expect(warnings).toEqual([]);
-    });
+      // examples/language is the whole check corpus: compiling it takes several seconds.
+    }, 60_000);
   }
 });
 
@@ -145,6 +160,71 @@ describe("select", () => {
     expect(kotlin).toContain('if (selectChosen1 == "lemon")');
   });
   test("the options of a list add a piece for every item", () => {
-    expect(kotlin).toMatch(/cities\.map \{ c ->[\s\S]*joinToString\(""\)/);
+    expect(kotlin).toMatch(/cities\.mapTo\(ArrayList\(\)\) \{ c ->[\s\S]*joinToString\(""\)/);
   });
+});
+
+describe("diagnostics", () => {
+  const cli = path.join(import.meta.dir, "../src/compiler/cli.ts");
+  const cascade = path.join(fixtures, "diagnostics/cascade.ts");
+  const check = (...args: string[]) => Bun.spawnSync(["bun", cli, "check", ...args], { env: { ...process.env, NO_COLOR: "1" }, stdout: "pipe", stderr: "pipe" });
+
+  test("one error per cause, at the app's code, each with its code, frame, fix and docs", () => {
+    const r = check(cascade);
+    expect(r.exitCode).toBe(1);
+    const out = r.stderr.toString();
+    expect(out).toContain("test/fixtures/diagnostics/cascade.ts:9:13 - error NUCLO6002: `eval` cannot be compiled ahead of time.");
+    expect(out).toContain('9   const z = eval("1");\n              ~~~~');
+    expect(out).toContain("fix: write `(x) => !!x`");
+    expect(out).toContain("README.md#nuclo3001");
+    expect(out).not.toContain(".d.ts");
+    expect(out).toEndWith("Found 3 errors.\n");
+  }, 60_000);
+
+  test("--json is what tools read", () => {
+    const found = JSON.parse(check(cascade, "--json").stdout.toString());
+    expect(found.map((d: Diagnostic) => [d.line, d.column, d.id, d.fix])).toEqual([
+      [9, 13, "NUCLO6002", undefined],
+      [13, 20, "NUCLO6001", "(x) => !!x"],
+      [15, 31, "NUCLO3001", "Math.fround(0.1)"],
+    ]);
+    expect(found[0].file).toBe(cascade);
+  }, 60_000);
+
+  test("a clean entry exits 0, a usage error 2", () => {
+    expect(check(path.join(fixtures, "diagnostics/clean.ts")).exitCode).toBe(0);
+    expect(check().exitCode).toBe(2);
+  }, 60_000);
+
+  test("the editor plugin shows the same codes at the same ranges, with the fixes as quick fixes", async () => {
+    const ts = (await import("typescript")).default;
+    const { appCompilerOptions } = await import("../src/compiler/transpile.ts");
+    const host = {
+      getScriptFileNames: () => [cascade],
+      getScriptVersion: () => "1",
+      getScriptSnapshot: (f: string) => (existsSync(f) ? ts.ScriptSnapshot.fromString(readFileSync(f, "utf8")) : undefined),
+      getCurrentDirectory: () => process.cwd(),
+      getCompilationSettings: () => appCompilerOptions(),
+      getDefaultLibFileName: ts.getDefaultLibFilePath,
+      fileExists: ts.sys.fileExists,
+      readFile: ts.sys.readFile,
+    };
+    let refreshed!: () => void;
+    const done = new Promise<void>((resolve) => (refreshed = resolve));
+    const info = { languageService: ts.createLanguageService(host), config: {}, project: { projectService: { logger: { info() {} } }, refreshDiagnostics: () => refreshed() } };
+    const proxy = require("../plugin/index.js")({ typescript: ts }).create(info);
+    proxy.getSemanticDiagnostics(cascade);
+    await done;
+    const ours = proxy.getSemanticDiagnostics(cascade).filter((d: { source?: string }) => d.source === "nuclo-native-ts");
+    const text = readFileSync(cascade, "utf8");
+    expect(ours.map((d: { code: number; start: number; length: number }) => [d.code, text.slice(d.start, d.start + d.length)])).toEqual([
+      [96002, "eval"],
+      [96001, "(x) => x"],
+      [93001, "0.1"],
+    ]);
+    expect(ours[0].messageText).toBe("NUCLO6002: `eval` cannot be compiled ahead of time.");
+    expect(proxy.getSupportedCodeFixes(cascade)).toContain("93001");
+    const fix = proxy.getCodeFixesAtPosition(cascade, ours[2].start, ours[2].start, [93001], {}, {});
+    expect(fix.map((f: { changes: { textChanges: unknown[] }[] }) => f.changes[0]!.textChanges)).toEqual([[{ span: { start: ours[2].start, length: 3 }, newText: "Math.fround(0.1)" }]]);
+  }, 120_000);
 });

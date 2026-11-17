@@ -663,7 +663,8 @@ private let slop: CGFloat = 10
     open var attributedText: NSAttributedString? {
         didSet { changed() }
     }
-    open var font: UIFont = .systemFont(ofSize: 17) { didSet { changed() } }
+    private static let defaultFont: UIFont = .systemFont(ofSize: 17)
+    open var font: UIFont = UILabel.defaultFont { didSet { changed() } }
     open var textColor: UIColor = .black { didSet { changed() } }
     open var textAlignment: NSTextAlignment = .natural { didSet { changed() } }
     open var numberOfLines = 1 { didSet { changed() } }
@@ -674,8 +675,20 @@ private let slop: CGFloat = 10
     public required init?(coder: NSCoder) { super.init(coder: coder) }
 
     private func changed() {
+        laidOut = nil
         needsDisplay = true
         invalidateIntrinsicContentSize()
+    }
+
+    /// The last text layout, by width: measuring then drawing at the measured width lays the text out once.
+    /// The draw lets it go, so a label does not keep its layout manager.
+    private var laidOut: (width: CGFloat, layout: (NSLayoutManager, NSTextContainer, CGSize, NSTextStorage))?
+
+    private func layout(width: CGFloat) -> (NSLayoutManager, NSTextContainer, CGSize, NSTextStorage) {
+        if let laidOut, laidOut.width == width { return laidOut.layout }
+        let result = textLayout(drawn, width: width, lines: numberOfLines, mode: lineBreakMode)
+        laidOut = (width, result)
+        return result
     }
 
     private var drawn: NSAttributedString {
@@ -689,14 +702,15 @@ private let slop: CGFloat = 10
 
     /// Draws the text, centred vertically in `rect`, as UILabel does.
     open func drawText(in rect: CGRect) {
-        let (manager, container, size, storage) = textLayout(drawn, width: rect.width, lines: numberOfLines, mode: lineBreakMode)
+        let (manager, container, size, storage) = layout(width: rect.width)
+        laidOut = nil
         let y = rect.minY + max(0, (rect.height - size.height) / 2)
         // The layout manager does not keep its storage alive.
         withExtendedLifetime(storage) { manager.drawGlyphs(forGlyphRange: manager.glyphRange(for: container), at: CGPoint(x: rect.minX, y: y)) }
     }
 
     open override func sizeThatFits(_ size: CGSize) -> CGSize {
-        let (_, _, fit, _) = textLayout(drawn, width: size.width, lines: numberOfLines, mode: lineBreakMode)
+        let (_, _, fit, _) = layout(width: size.width)
         // Up to the device pixel, as a browser lays text out.
         let scale = window?.backingScaleFactor ?? NSScreen.main?.backingScaleFactor ?? 2
         return CGSize(width: ceil(fit.width * scale) / scale, height: ceil(fit.height))
@@ -1038,7 +1052,8 @@ public extension UIAdaptivePresentationControllerDelegate {
 }
 
 @MainActor public final class UIPresentationController: NSObject {
-    public let presentedViewController: UIViewController
+    /// The controller holds its presentation controller (`presentationController`): this side is unowned, or the pair never goes.
+    public unowned let presentedViewController: UIViewController
     public weak var delegate: UIAdaptivePresentationControllerDelegate?
     init(_ presented: UIViewController) { presentedViewController = presented }
 }

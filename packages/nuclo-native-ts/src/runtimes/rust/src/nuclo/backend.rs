@@ -372,6 +372,11 @@ pub(crate) fn now() -> f64 {
     }
 }
 
+/// The backend, if `nuclo::start` installed one (the cycle collector schedules its slices through it).
+pub(crate) fn try_backend() -> Option<Rc<dyn Backend>> {
+    BACKEND.with(|b| b.borrow().clone())
+}
+
 pub(crate) fn backend() -> Rc<dyn Backend> {
     BACKEND.with(|b| b.borrow().clone()).expect("nuclo::start(backend) was not called")
 }

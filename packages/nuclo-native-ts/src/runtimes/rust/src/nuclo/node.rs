@@ -14,7 +14,7 @@ pub use super::backend::{KeyboardEvent, PanEvent, PinchEvent, PointerEvent, Scro
 use super::flex;
 use super::js::{js_now, Arr, Map};
 use super::style::{
-    global, px, tag_style, Animation, Color, Display, Easing, FontFamily, FontStyle, FontWeight, ObjectFit, Overflow, PointerEvents, Position, Style, StyleClass, TextAlign, TextDecoration, TextTransform,
+    global, global_stamp, px, tag_style, Animation, Color, Display, Easing, FontFamily, FontStyle, FontWeight, ObjectFit, Overflow, PointerEvents, Position, Style, StyleClass, TextAlign, TextDecoration, TextTransform,
 };
 use super::task;
 
@@ -117,6 +117,11 @@ pub struct NodeData {
     inline: Cell<Style>,
     dynamic_inline: RefCell<Option<Rc<dyn Fn() -> Style>>>,
     pub(crate) computed: Cell<Style>,
+    /// Changes whenever `computed` does (from RT.style_stamp).
+    stamp: Cell<u64>,
+    /// The last apply_style read only the static style (tag, classes, inline, inherited): refresh()
+    /// skips it while the parent's stamp and the global styles are the ones it was computed against.
+    static_from: Cell<Option<(u64, u64)>>,
     painted: Cell<Option<Style>>,
     disabled: Cell<bool>,
 
@@ -209,6 +214,8 @@ impl Node {
             inline: Cell::default(),
             dynamic_inline: RefCell::default(),
             computed: Cell::default(),
+            stamp: Cell::new(0),
+            static_from: Cell::new(None),
             painted: Cell::new(None),
             disabled: Cell::new(false),
             born: RT.with(|rt| rt.generation.get()),
@@ -267,7 +274,10 @@ impl Node {
             match m {
                 Mod::None => {}
                 Mod::Node(child) => self.append(child),
-                Mod::Class(class) => self.classes.borrow_mut().push(*class.0),
+                Mod::Class(class) => {
+                    self.classes.borrow_mut().push(*class.0);
+                    self.static_from.set(None);
+                }
                 Mod::Apply(apply) => apply(self),
             }
         }
@@ -437,7 +447,10 @@ impl Node {
         for binding in bindings {
             binding();
         }
-        self.apply_style();
+        let from = (self.parent().map_or(0, |p| p.stamp.get()), global_stamp());
+        if forced() || self.static_from.get() != Some(from) {
+            self.apply_style();
+        }
         let children = self.children.borrow().clone();
         for child in children {
             child.refresh();
@@ -453,11 +466,14 @@ impl Node {
     }
 
     fn apply_style(&self) {
-        let parent = self.parent().map(|p| p.computed.get());
+        let parent_node = self.parent();
+        let parent = parent_node.as_ref().map(|p| p.computed.get());
         let Some(view) = self.view else {
             self.computed.set(parent.unwrap_or_default());
+            self.stamp.set(parent_node.map_or(0, |p| p.stamp.get()));
             return;
         };
+        let from = (parent_node.map_or(0, |p| p.stamp.get()), global_stamp());
         // A root inherits the body's text style (globalStyle("body", …)).
         let base = parent.map_or_else(|| global("body").unwrap_or_default().inherited(), |p| p.inherited());
         let mut s = base.merged(&tag_style(self.tag));
@@ -465,14 +481,28 @@ impl Node {
             s = s.merged(class);
         }
         let dynamic_class = self.dynamic_class.borrow().clone();
+        let dynamic = dynamic_class.is_some();
         if let Some(class) = dynamic_class {
             s = s.merged(&class().0);
         }
         s = s.merged(&self.inline.get());
         let dynamic_inline = self.dynamic_inline.borrow().clone();
+        let dynamic = dynamic || dynamic_inline.is_some();
         if let Some(inline) = dynamic_inline {
             s = s.merged(&inline());
         }
+        let only_static = !dynamic
+            && s.media.is_none()
+            && !s.structural()
+            && s.empty.is_none()
+            && s.checked.is_none()
+            && s.placeholder_shown.is_none()
+            && s.disabled.is_none()
+            && s.enabled.is_none()
+            && s.hover.is_none()
+            && s.focused.is_none()
+            && s.pressed.is_none();
+        self.static_from.set(only_static.then_some(from));
         // `@media` and screens, against the window's width.
         if let Some(media) = s.media {
             let width = viewport_width();
@@ -526,6 +556,12 @@ impl Node {
         // A screen without a background of its own shows the body's.
         if parent.is_none() && s.background_color.is_none() && !self.is_overlay() {
             s.background_color = global("body").and_then(|body| body.background_color);
+        }
+        if self.computed.get() != s {
+            self.stamp.set(RT.with(|rt| {
+                rt.style_stamp.set(rt.style_stamp.get() + 1);
+                rt.style_stamp.get()
+            }));
         }
         self.computed.set(s);
         let before = self.painted.get();
@@ -1144,6 +1180,8 @@ impl EndReached {
 struct Runtime {
     /// Counts update passes: a node built during one has already run its bindings.
     generation: Cell<u64>,
+    /// Counts changes of some node's computed style (NodeData::stamp).
+    style_stamp: Cell<u64>,
     /// Counts changes that can move a frame: measures are reused within one epoch.
     epoch: Cell<u64>,
     laid_out: Cell<u64>,
@@ -1504,7 +1542,10 @@ impl A {
     }
 
     pub fn style(value: Style) -> Mod {
-        Mod::apply(move |node| node.inline.set(node.inline.get().merged(&value)))
+        Mod::apply(move |node| {
+            node.inline.set(node.inline.get().merged(&value));
+            node.static_from.set(None);
+        })
     }
     pub fn style_fn(value: Rc<dyn Fn() -> Style>) -> Mod {
         Mod::apply(move |node| *node.dynamic_inline.borrow_mut() = Some(value.clone()))

@@ -21,7 +21,7 @@ fi
 rm -rf "$SRC" && mkdir -p build/ios && cp -R "$OUT/ios" "$SRC"
 rm -rf "$APP" && mkdir -p "$APP"
 SDK=$(xcrun --sdk iphonesimulator --show-sdk-path)
-xcrun swiftc -O -sdk "$SDK" -target arm64-apple-ios15.0-simulator -swift-version 5 \
+xcrun --sdk iphonesimulator swiftc -O -sdk "$SDK" -target arm64-apple-ios15.0-simulator -swift-version 5 \
   -parse-as-library -o "$APP/NucloApp" "$SRC"/*.swift
 cat > "$APP/Info.plist" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>

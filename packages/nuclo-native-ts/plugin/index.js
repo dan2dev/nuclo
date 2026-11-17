@@ -119,13 +119,19 @@ module.exports = ({ typescript: ts }) => ({
         if (check?.texts.get(sf.fileName) !== sf.text) continue;
         for (const d of check.byFile.get(sf.fileName) ?? []) {
           const start = sf.getPositionOfLineAndCharacter(d.line - 1, d.column - 1);
-          // One line at most: a rejected class or function is underlined at its head.
+          // One line at most: a rejected class or function is underlined at its head (as the CLI's code frame does).
           const length = Math.max(1, Math.min(d.length ?? Infinity, sf.getLineEndOfPosition(start) - start));
-          found.set(`${start}:${d.message}`, { file: sf, start, length, messageText: d.message, category: ts.DiagnosticCategory.Error, code: 9900, source: "nuclo-native-ts" });
+          // The CLI's code and text: "NUCLO3001: …", and as a number for the editor (ts(93001)).
+          const code = codeOf(d.id);
+          found.set(`${start}:${d.message}`, { file: sf, start, length, messageText: `${d.id ?? "NUCLO6000"}: ${d.message}`, category: ts.DiagnosticCategory.Error, code, source: "nuclo-native-ts", fix: d.fix, fixLength: d.length });
         }
       }
-      return [...found.values()];
+      fixes.set(sf.fileName, [...found.values()].filter((d) => d.fix !== undefined));
+      return [...found.values()].map(({ fix, fixLength, ...d }) => d);
     }
+
+    /** By file: the diagnostics last shown that have a mechanical fix. */
+    const fixes = new Map();
 
     const proxy = Object.create(null);
     for (const name of Object.keys(info.languageService)) proxy[name] = (...args) => info.languageService[name](...args);
@@ -138,6 +144,23 @@ module.exports = ({ typescript: ts }) => ({
         return prior;
       }
     };
+    // Quick fixes: the replacement the compiler computed (`(x) => !!x`, `Math.fround(0.1)`…), for the whole node it reported.
+    proxy.getSupportedCodeFixes = (fileName) => [...info.languageService.getSupportedCodeFixes(fileName), ...SUPPORTED];
+    proxy.getCodeFixesAtPosition = (fileName, start, end, errorCodes, ...rest) => {
+      const prior = info.languageService.getCodeFixesAtPosition(fileName, start, end, errorCodes, ...rest);
+      const ours = (fixes.get(fileName) ?? [])
+        .filter((d) => errorCodes.includes(d.code) && d.start <= end && start <= d.start + d.length)
+        .map((d) => ({
+          fixName: "nuclo-native-ts",
+          description: `Write \`${d.fix}\``,
+          changes: [{ fileName, textChanges: [{ span: { start: d.start, length: d.fixLength ?? d.length }, newText: d.fix }] }],
+        }));
+      return [...prior, ...ours];
+    };
     return proxy;
   },
 });
+
+/** NUCLO3001 → 93001; TypeScript's own codes are below 20000. */
+const codeOf = (id) => 90000 + (Number(/^NUCLO(\d+)$/.exec(id ?? "")?.[1]) || 6000);
+const SUPPORTED = ["NUCLO1001", "NUCLO1002", "NUCLO1003", "NUCLO1004", "NUCLO1005", "NUCLO2001", "NUCLO2002", "NUCLO3001", "NUCLO3002", "NUCLO4001", "NUCLO4002", "NUCLO4003", "NUCLO4004", "NUCLO5001", "NUCLO6000", "NUCLO6001", "NUCLO6002"].map((id) => String(codeOf(id)));

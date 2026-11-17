@@ -1,3 +1,4 @@
 // expect: is not available natively
+// code: NUCLO6001
 export const xs: number[] = [3, 1];
-xs.fill(0);
+xs.toLocaleString();

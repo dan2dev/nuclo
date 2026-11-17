@@ -1,4 +1,5 @@
 // expect: Declare a native component as a top-level const
+// code: NUCLO5001
 import { type Double, native, render } from "../../../src/index.ts";
 
 interface MapProps {

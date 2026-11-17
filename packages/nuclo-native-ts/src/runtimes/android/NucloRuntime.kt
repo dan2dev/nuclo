@@ -61,9 +61,6 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import android.window.OnBackInvokedDispatcher
-import org.json.JSONArray
-import org.json.JSONObject
-import org.json.JSONTokener
 import java.net.HttpURLConnection
 import java.net.URL
 import kotlin.concurrent.thread
@@ -2630,7 +2627,8 @@ class NRouter(private val routes: List<NRoute>, private val tabs: List<NTab> = e
 /** Starts an async call from synchronous code; an uncaught error is logged. */
 fun launch(block: suspend () -> Unit) {
     block.startCoroutine(Continuation(EmptyCoroutineContext) { result ->
-        result.exceptionOrNull()?.let { Log.e("nuclo", "Uncaught error in an async function", it) }
+        // As the browser's console says it of an async call nobody awaits.
+        result.exceptionOrNull()?.let { consoleLog("Uncaught (in promise) ${(it as? Exception)?.let(::jsErrorMessage) ?: it.toString()}") }
     })
 }
 
@@ -2657,7 +2655,7 @@ class NResponse internal constructor(val status: Int, private val body: String) 
 
     suspend fun text(): String = body
 
-    suspend fun <T> json(decode: (Any?) -> T): T = decode(JSONTokener(body).nextValue())
+    suspend fun <T> json(decode: (Any?) -> T): T = decode(jsJsonParse(body))
 }
 
 /** HttpURLConnection on a background thread; resumes on the main thread. Add the INTERNET permission. */
@@ -2683,38 +2681,18 @@ suspend fun fetch(url: String, method: String = "GET", body: String? = null, hea
         }
     }
 
-class NTimer internal constructor() {
-    internal var runnable: Runnable? = null
-    internal var cancelled = false
-
-    internal fun cancel() {
-        cancelled = true
-        runnable?.let { Runtime.main.removeCallbacks(it) }
-    }
+// Timers, microtasks, promises and JavaScript's semantics are in NucloJs.kt (also built for the plain JVM). Its event
+// loop here is the main thread's Handler.
+internal fun jsPost(ms: Long, job: Runnable) {
+    Runtime.main.postDelayed(job, ms)
 }
 
-fun setTimeout(callback: () -> Unit, ms: Double): NTimer {
-    val timer = NTimer()
-    timer.runnable = Runnable { if (!timer.cancelled) callback() }.also { Runtime.main.postDelayed(it, ms.toLong()) }
-    return timer
-}
+internal fun jsCancelPost(job: Runnable) = Runtime.main.removeCallbacks(job)
 
-fun setInterval(callback: () -> Unit, ms: Double): NTimer {
-    val timer = NTimer()
-    val tick = object : Runnable {
-        override fun run() {
-            if (timer.cancelled) return
-            callback()
-            if (!timer.cancelled) Runtime.main.postDelayed(this, max(1L, ms.toLong()))
-        }
-    }
-    timer.runnable = tick
-    Runtime.main.postDelayed(tick, max(1L, ms.toLong()))
-    return timer
+/** Runs `job` next, before anything already due (the microtasks an event handler queued run right after it). */
+internal fun jsPostFirst(job: Runnable) {
+    Runtime.main.postAtFrontOfQueue(job)
 }
-
-fun clearTimeout(timer: NTimer) = timer.cancel()
-fun clearInterval(timer: NTimer) = timer.cancel()
 
 class NFrame internal constructor() {
     internal var cancelled = false
@@ -2734,218 +2712,6 @@ fun cancelAnimationFrame(frame: NFrame) {
 fun consoleLog(vararg values: String) {
     Log.i("nuclo", values.joinToString(" "))
 }
-
-// ---------------------------------------------------------------------------
-// JSON
-// ---------------------------------------------------------------------------
-
-/** Decoders the compiler generates per interface call into these (org.json, part of Android). */
-object NJSON {
-    class Obj internal constructor(private val o: JSONObject) {
-        operator fun get(key: String): Any? = if (o.isNull(key)) null else o.get(key)
-    }
-
-    fun obj(v: Any?) = Obj(v as? JSONObject ?: throw Exception("Expected a JSON object"))
-    fun string(v: Any?) = v as? String ?: throw Exception("Expected a JSON string")
-    fun double(v: Any?) = (v as? Number)?.toDouble() ?: throw Exception("Expected a JSON number")
-    fun int(v: Any?) = double(v).toInt()
-    fun bool(v: Any?) = v as? Boolean ?: throw Exception("Expected a JSON boolean")
-
-    fun <T> array(v: Any?, element: (Any?) -> T): MutableList<T> {
-        val a = v as? JSONArray ?: throw Exception("Expected a JSON array")
-        return MutableList(a.length()) { element(if (a.isNull(it)) null else a.get(it)) }
-    }
-
-    fun <T> map(v: Any?, value: (Any?) -> T): MutableMap<String, T> {
-        val o = v as? JSONObject ?: throw Exception("Expected a JSON object")
-        return o.keys().asSequence().associateWith { value(if (o.isNull(it)) null else o.get(it)) }.toMutableMap()
-    }
-
-    fun <T> optional(v: Any?, value: (Any?) -> T): T? = if (v == null || v == JSONObject.NULL) null else value(v)
-}
-
-// ---------------------------------------------------------------------------
-// JavaScript semantics
-// ---------------------------------------------------------------------------
-
-/** Numbers the way JavaScript prints them: 3, not 3.0; 1e+21 and 1e-7, never 1.0E21 or 9.007199254740992E15. */
-fun jsNum(d: Double): String {
-    if (d.isNaN()) return "NaN"
-    if (d.isInfinite()) return if (d > 0) "Infinity" else "-Infinity"
-    if (d == 0.0) return "0"
-    if (d == Math.rint(d) && kotlin.math.abs(d) < 1e15) return d.toLong().toString()
-    // The fewest digits that read back as `d` (correctly rounded, so the closest such), laid out as JavaScript does.
-    val a = kotlin.math.abs(d)
-    for (precision in 1..17) {
-        val text = String.format(java.util.Locale.ROOT, "%.${precision - 1}e", a)
-        if (text.toDouble() != a) continue
-        val (mantissa, exponent) = text.split('e')
-        val digits = mantissa.replace(".", "")
-        return (if (d < 0) "-" else "") + jsLayout(digits, 1 + exponent.toInt())
-    }
-    return d.toString()
-}
-
-/** Number::toString's layout of the digits `digits` with the decimal point after `point` of them. */
-fun jsLayout(digits: String, point: Int): String {
-    var ds = digits.trimStart('0').ifEmpty { "0" }
-    val n = point - (digits.length - digits.trimStart('0').length)
-    ds = ds.trimEnd('0').ifEmpty { "0" }
-    val k = ds.length
-    return when {
-        n in k..21 -> ds + "0".repeat(n - k)
-        n in 1..21 -> ds.substring(0, n) + "." + ds.substring(n)
-        n in -5..0 -> "0." + "0".repeat(-n) + ds
-        else -> {
-            val e = n - 1
-            ds.substring(0, 1) + (if (k > 1) "." + ds.substring(1) else "") + "e" + (if (e >= 0) "+" else "-") + kotlin.math.abs(e)
-        }
-    }
-}
-
-fun jsFixed(d: Double, digits: Int) = String.format(java.util.Locale.ROOT, "%.${digits}f", d)
-fun jsRound(d: Double) = kotlin.math.floor(d + 0.5).toInt()
-fun jsNow() = System.currentTimeMillis().toDouble()
-fun jsNumber(s: String) = s.trim().toDoubleOrNull() ?: Double.NaN
-fun jsParseInt(s: String) = s.trim().takeWhile { it.isDigit() || it == '-' }.toIntOrNull() ?: 0
-fun jsErrorMessage(e: Exception) = "Error: ${e.message ?: e.javaClass.simpleName}"
-
-fun <T> MutableList<T>.jsSplice(start: Int, count: Int): MutableList<T> {
-    val from = if (start < 0) max(0, size + start) else min(start, size)
-    val to = min(size, from + max(0, count))
-    val range = subList(from, to)
-    val removed = range.toMutableList()
-    range.clear()
-    return removed
-}
-
-fun <T> List<T>.jsSlice(start: Int, end: Int?): MutableList<T> {
-    val from = if (start < 0) max(0, size + start) else min(start, size)
-    val to = end?.let { if (it < 0) max(0, size + it) else min(it, size) } ?: size
-    return if (from < to) subList(from, to).toMutableList() else mutableListOf()
-}
-
-fun String.jsSlice(start: Int, end: Int?): String {
-    val from = if (start < 0) max(0, length + start) else min(start, length)
-    val to = end?.let { if (it < 0) max(0, length + it) else min(it, length) } ?: length
-    return if (from < to) substring(from, to) else ""
-}
-
-/**
- * JavaScript's `sort`: stable, and the same merge sort on every target, so even a comparator that
- * contradicts itself orders the same way everywhere (TimSort would throw). A positive result puts `b` first.
- */
-fun <T> MutableList<T>.jsSort(cmp: (T, T) -> Double): MutableList<T> {
-    var a = toMutableList()
-    var b = toMutableList()
-    var width = 1
-    while (width < size) {
-        var start = 0
-        while (start < size) {
-            val mid = min(start + width, size)
-            val end = min(start + 2 * width, size)
-            var l = start
-            var r = mid
-            var k = start
-            while (l < mid && r < end) {
-                if (cmp(a[l], a[r]) > 0) b[k++] = a[r++] else b[k++] = a[l++]
-            }
-            while (l < mid) b[k++] = a[l++]
-            while (r < end) b[k++] = a[r++]
-            start += 2 * width
-        }
-        val t = a
-        a = b
-        b = t
-        width *= 2
-    }
-    for (i in indices) this[i] = a[i]
-    return this
-}
-
-fun <T> MutableList<T>.jsReverse(): MutableList<T> {
-    reverse()
-    return this
-}
-
-fun <T> MutableList<T>.jsShift(): T? = if (isEmpty()) null else removeAt(0)
-fun <T> List<T>.jsAtRel(i: Int): T? = getOrNull(if (i < 0) size + i else i)
-fun <T> List<T>.jsConcat(vararg parts: List<T>): MutableList<T> = (listOf(this) + parts).flatten().toMutableList()
-
-fun <T, U> List<T>.jsMapI(f: (T, Int) -> U): MutableList<U> = mapIndexed { i, x -> f(x, i) }.toMutableList()
-fun <T> List<T>.jsFilterI(f: (T, Int) -> Boolean): MutableList<T> = filterIndexed { i, x -> f(x, i) }.toMutableList()
-fun <T> List<T>.jsForEachI(f: (T, Int) -> Unit) = forEachIndexed { i, x -> f(x, i) }
-fun <T> List<T>.jsSomeI(f: (T, Int) -> Boolean): Boolean = withIndex().any { f(it.value, it.index) }
-fun <T> List<T>.jsEveryI(f: (T, Int) -> Boolean): Boolean = withIndex().all { f(it.value, it.index) }
-fun <T> List<T>.jsFindI(f: (T, Int) -> Boolean): T? = withIndex().firstOrNull { f(it.value, it.index) }?.value
-fun <T> List<T>.jsFindIndexI(f: (T, Int) -> Boolean): Int = withIndex().firstOrNull { f(it.value, it.index) }?.index ?: -1
-
-/** ToInt32, which the bitwise operators apply to their operands. */
-fun jsI32(x: Int): Int = x
-fun jsI32(x: Double): Int = if (x.isNaN() || x.isInfinite()) 0 else (x % 4294967296.0).toLong().toInt()
-fun jsUshr(a: Int, b: Int): Double = ((a ushr b).toLong() and 0xFFFFFFFFL).toDouble()
-
-fun jsSign(x: Double): Int = if (x > 0) 1 else if (x < 0) -1 else 0
-fun jsIsInteger(x: Double): Boolean = x.isFinite() && kotlin.math.truncate(x) == x
-
-/** JavaScript's white space and line terminators, which trim() removes. */
-private fun jsIsSpace(c: Char): Boolean = c in '\u0009'..'\u000D' || c == ' ' || c == '\u00A0' || c == '\u1680' || c in '\u2000'..'\u200A' ||
-    c == '\u2028' || c == '\u2029' || c == '\u202F' || c == '\u205F' || c == '\u3000' || c == '\uFEFF'
-
-fun String.jsTrim(): String = trim(::jsIsSpace)
-fun String.jsTrimStart(): String = trimStart(::jsIsSpace)
-fun String.jsTrimEnd(): String = trimEnd(::jsIsSpace)
-fun String.jsIndexOf(s: String, from: Int = 0): Int = indexOf(s, max(0, min(from, length)))
-fun String.jsLastIndexOf(s: String): Int = lastIndexOf(s)
-fun String.jsSplit(sep: String): MutableList<String> =
-    if (sep.isEmpty()) map { it.toString() }.toMutableList() else split(sep).toMutableList()
-fun String.jsRepeat(n: Int): String = repeat(max(0, n))
-fun String.jsPad(length: Int, fill: String, atStart: Boolean): String {
-    if (length <= this.length || fill.isEmpty()) return this
-    val pad = StringBuilder()
-    while (pad.length < length - this.length) pad.append(fill[pad.length % fill.length])
-    return if (atStart) pad.toString() + this else this + pad
-}
-
-/** `replace` / `replaceAll` with a string pattern, `$$ $& $` $'` in the replacement included. */
-fun String.jsReplace(pattern: String, replacement: String, all: Boolean): String {
-    val matches = mutableListOf<Int>()
-    var i = 0
-    while (i + pattern.length <= length) {
-        if (regionMatches(i, pattern, 0, pattern.length)) {
-            matches.add(i)
-            if (!all) break
-            i += max(pattern.length, 1)
-        } else i++
-    }
-    val out = StringBuilder()
-    var last = 0
-    for (at in matches) {
-        out.append(this, last, at)
-        var j = 0
-        while (j < replacement.length) {
-            val next = if (replacement[j] == '$' && j + 1 < replacement.length) replacement[j + 1] else ' '
-            when (next) {
-                '$' -> out.append('$')
-                '&' -> out.append(pattern)
-                '`' -> out.append(this, 0, at)
-                '\'' -> out.append(this, at + pattern.length, length)
-                else -> {
-                    out.append(replacement[j])
-                    j++
-                    continue
-                }
-            }
-            j += 2
-        }
-        last = at + pattern.length
-    }
-    out.append(this, last, length)
-    return out.toString()
-}
-
-/** `a < b` on strings: UTF-16 units in order, as JavaScript compares. */
-fun jsCompare(a: String, b: String): Int = a.compareTo(b).coerceIn(-1, 1)
 
 // ---------------------------------------------------------------------------
 // Activity

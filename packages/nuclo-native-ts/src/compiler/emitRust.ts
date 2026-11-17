@@ -13,11 +13,14 @@
  *    reads its enclosing function's locals takes them as extra parameters;
  *  - classes are flattened: a struct holds the fields of its class and of its bases, every method
  *    and constructor is a free function taking `this`, and a class with subclasses or an interface
- *    a class implements is a trait (`Rc<dyn Shape>`) whose methods take `self: Rc<Self>`.
- * Errors are `Result`s: every `async fn` returns one, and a `try` block is a labelled block that
- * a failing call breaks out of.
+ *    a class implements is a trait (`Rc<dyn Shape>`) whose methods take `&self`. Free functions borrow
+ *    `this` (`&Rc<C>`): calls clone no receiver.
+ * Errors are `Result`s: every `async fn` returns one, and so does what the front-end found can throw
+ * (functions, methods, accessors, constructors, closures; array methods have `try_` forms); a `try`
+ * block is a labelled block that a failing call breaks out of.
  */
-import type { BinOp, ClassDecl, Expr, FnDecl, ObjectClassDecl, Op, Param, Program, ProtocolDecl, Stmt, Ty } from "./ir.ts";
+import type { BinOp, ClassDecl, Expr, FnDecl, ObjectClassDecl, Op, Param, Program, ProtocolDecl, Stmt, Ty, UnionDecl } from "./ir.ts";
+import { gcLeaf, gcWalks } from "./cycles.ts";
 import { INDENT, Printer } from "./printer.ts";
 
 // Strict and reserved words. `self`, `Self`, `super` and `crate` can't be raw identifiers: they get a suffix.
@@ -28,9 +31,10 @@ const KEYWORDS = new Set([
 ]);
 const UNRAWABLE = new Set(["self", "Self", "super", "crate", "_"]);
 
-const RUNTIME_TYPES: Record<string, string> = { NodeMod: "Mod", Outlet: "Router", Error: "JsError" };
+const RUNTIME_TYPES: Record<string, string> = { NodeMod: "Mod", Outlet: "Router", Error: "JsError", BigInt: "JsBigInt", Symbol: "JsSymbol", Date: "JsDate" };
 
 /** Runtime types read without a clone. */
+const RUST_SIZED = { Int8: "i8", Int16: "i16", Int32: "i32", Int64: "i64", UInt8: "u8", UInt16: "u16", UInt32: "u32", Float32: "f32" } as const;
 const COPY_RUNTIME_TYPES = new Set(["Style", "NativeElement", "PointerEvent", "ScrollEvent"]);
 
 /** The Style properties, and how a value is written: a number, a parsed colour or font, an enum, a nested style, media rules, keyframes. */
@@ -80,6 +84,8 @@ interface TraitMember {
   name: string;
   params: Param[];
   ret: Ty;
+  /** It can throw: it returns a `Result`. */
+  throws?: boolean;
 }
 
 /** What the printer knows about a name. */
@@ -140,12 +146,23 @@ class RustPrinter extends Printer {
   protected readonly keywords = KEYWORDS;
   private classes = new Map<string, ClassDecl>();
   private objects = new Map<string, ObjectClassDecl>();
+  /** A class's free functions (`init__C`, `m__C__x`): `this` is borrowed (`&Rc<C>`), so a call clones nothing. */
+  private byRef = new Set<FnDecl>();
   private protocols = new Map<string, ProtocolDecl>();
   private scopes: Map<string, Binding>[] = [new Map()];
   /** The function being printed: its return type, whether it returns a `Result`, the names its closures capture. */
   private frame = { ret: { k: "void" } as Ty, result: false, captured: new Set<string>() };
+  /** The globals `nuclo_main` initializes in place. */
+  private placed = new Map<string, Extract<Stmt, { s: "let" }>>();
   /** The innermost `try` block's label: where a failing call goes. */
   private tryLabel: string | undefined;
+  /**
+   * The loops being printed, innermost last, and how many labelled blocks (try blocks) are open: Rust
+   * wants a label on a `break` / `continue` that leaves one, so such a loop gets one (`'loop3:`).
+   */
+  private loops: { label: string; blocks: number; used: boolean }[] = [];
+  private blocks = 0;
+  private loopCount = 0;
   private tryCount = 0;
   private warned = new Set<string>();
   /**
@@ -173,7 +190,11 @@ class RustPrinter extends Printer {
   // The program
   // ---------------------------------------------------------------------------
 
+  /** How the cycle collector sees a class or interface (cycles.ts rule 6). */
+  private gcLeaf: (name: string) => "node" | "obj" | undefined = () => undefined;
+
   print(program: Program): string {
+    this.gcLeaf = gcLeaf(program);
     for (const cls of program.classes) this.classes.set(cls.name, cls);
     const top = (name: string, binding: Binding) => {
       this.overloads.set(name, [...(this.overloads.get(name) ?? []), binding]);
@@ -189,6 +210,7 @@ class RustPrinter extends Printer {
     for (const c of program.objectClasses ?? []) this.objects.set(c.name, c);
     const classFns = (program.objectClasses ?? []).flatMap((c) => this.classFns(c));
     for (const fn of classFns) top(fn.name, { kind: "fn", decl: fn, captures: new Map() });
+    for (const fn of classFns) if (!fn.async) this.byRef.add(fn);
     for (const [name, bindings] of this.overloads) if (bindings.length < 2) this.overloads.delete(name);
     for (const fn of program.natives ?? []) {
       this.declare(fn.name, { kind: "fn", decl: fn, captures: new Map(), native: true });
@@ -205,7 +227,8 @@ class RustPrinter extends Printer {
       "",
     ];
     for (const cls of program.classes) out.push(...this.classDecl(cls), "");
-    if (program.objectClasses?.length) {
+    for (const u of program.unions ?? []) out.push(...this.unionDecl(u), "");
+    if (program.objectClasses?.length || program.protocols?.length) {
       // What `instanceof` and downcasts need: any object as `Rc<dyn Any>`, which every trait reaches through its root.
       out.push(
         "/// Any object as `Rc<dyn Any>`: `instanceof` and downcasts test its struct.",
@@ -229,19 +252,38 @@ class RustPrinter extends Printer {
     for (const c of program.objectClasses ?? []) out.push(...this.castFn(c), "");
     for (const fn of classFns) out.push(...this.fn(fn, "", new Map()), "");
     if (program.globals.length) {
-      out.push("/// The app's top-level variables. `nuclo_main` runs their initializers in order.", "mod g {", `${INDENT}use super::*;`, `${INDENT}thread_local! {`);
+      out.push("/// The app's top-level variables. `nuclo_main` runs their initializers in JavaScript's order.", "mod g {", `${INDENT}use super::*;`, `${INDENT}thread_local! {`);
       for (const g of program.globals) out.push(`${INDENT}${INDENT}pub static ${this.name(g.name)}: Var<${this.ty(g.ty)}> = const { Var::empty() };`);
       out.push(`${INDENT}}`, "}", "");
     }
     for (const fn of program.functions) out.push(...this.fn(fn, "", new Map()), "");
+    for (const j of program.jsonClasses ?? []) out.push(...this.jsonWriter(j, program), "");
     out.push("pub fn nuclo_main() {");
-    for (const g of program.globals) {
-      const init = g.init ? this.coerce(g.init, g.ty, INDENT) : "None";
-      out.push(`${INDENT}g::${this.name(g.name)}.set(${init});`);
-    }
+    // A `global` statement of main sets its global in place; the others are set first.
+    this.placed = this.placedGlobals(program);
+    for (const g of program.globals) if (!this.placed.has(g.name)) out.push(`${INDENT}${this.globalInit(g, INDENT)}`);
     this.frame = { ret: { k: "void" }, result: false, captured: captured(program.main) };
-    out.push(...this.scoped(() => this.body(program.main, INDENT)), "}", "");
+    // The microtasks the top level queued run when it is done, before any timer (as after a script in JavaScript).
+    out.push(...this.scoped(() => this.body(program.main, INDENT)), `${INDENT}drain_microtasks();`, "}", "");
     return out.join("\n");
+  }
+
+  private globalInit(g: Extract<Stmt, { s: "let" }>, ind: string): string {
+    return `g::${this.name(g.name)}.set(${g.init ? this.coerce(g.init, g.ty, ind) : "None"});`;
+  }
+
+  /** A union: an enum with a variant per member, a tag test and a checked read (a clone of the member) each. */
+  private unionDecl(u: UnionDecl): string[] {
+    const i1 = INDENT;
+    const lines = ["#[derive(Clone)]", `pub enum ${u.name} {`, ...u.members.map((m) => `${i1}${m.tag}${m.ty.k === "void" ? "" : `(${this.ty(m.ty)})`},`), "}", "", `impl ${u.name} {`];
+    for (const m of u.members) {
+      lines.push(`${i1}pub fn is_${m.tag}(&self) -> bool {`, `${i1}${i1}matches!(self, Self::${m.tag}${m.ty.k === "void" ? "" : "(..)"})`, `${i1}}`);
+      if (m.ty.k !== "void") {
+        lines.push(`${i1}pub fn as_${m.tag}(&self) -> ${this.ty(m.ty)} {`, `${i1}${i1}match self { Self::${m.tag}(v) => v.clone(), _ => unreachable!() }`, `${i1}}`);
+      }
+    }
+    lines.push("}");
+    return lines;
   }
 
   private classDecl(cls: ClassDecl): string[] {
@@ -249,14 +291,31 @@ class RustPrinter extends Printer {
     const lines = [`pub struct ${cls.name} {`, ...cls.fields.map((f) => `${i1}pub ${this.name(f.name)}: Var<${this.ty(f.ty)}>,`), "}", ""];
     // `===` is identity: two objects with the same fields are different objects.
     lines.push(`impl PartialEq for ${cls.name} {`, `${i1}fn eq(&self, other: &Self) -> bool {`, `${i1}${i1}std::ptr::eq(self, other)`, `${i1}}`, "}");
+    if (cls.gc) lines.push("", ...this.gcImpl(cls.name, cls.fields.filter((f) => cls.gc!.includes(f.name))));
+    // The shape protocols it conforms to, and their bases: each field's getter and setter.
+    const traits = new Set<string>();
+    const visit = (t: string) => {
+      if (traits.has(t)) return;
+      traits.add(t);
+      this.supertraits(t).forEach(visit);
+    };
+    (cls.protocols ?? []).forEach(visit);
+    for (const t of traits) {
+      lines.push("", `impl ${t} for ${cls.name} {`);
+      for (const m of this.traitMembers(t)) {
+        const body = m.kind === "set" ? `${this.gcTracked(cls.name, m.name) ? `gc_write(&self.${this.name(m.name)}); ` : ""}self.${this.name(m.name)}.set(value)` : `self.${this.name(m.name)}.get()`;
+        lines.push(`${i1}${this.traitSignature(m)} {`, `${i1}${i1}${body}`, `${i1}}`);
+      }
+      lines.push("}");
+    }
     if (cls.decodable) {
       lines.push(
         "",
         `impl ${cls.name} {`,
-        `${i1}pub fn from_json(json: &Json) -> Result<Rc<${cls.name}>, JsError> {`,
-        `${i1}${i1}Ok(Rc::new(${cls.name} {`,
+        `${i1}pub fn from_json<J: json::JsonValue>(json: &J) -> Result<Rc<${cls.name}>, JsError> {`,
+        `${i1}${i1}Ok(${cls.gc ? "gc_track(" : ""}Rc::new(${cls.name} {`,
         ...cls.fields.map((f) => `${i1}${i1}${i1}${this.name(f.name)}: Var::new(${this.decode(f.ty, `json::field(json, ${this.str(f.name)})?`, 0)}?),`),
-        `${i1}${i1}}))`,
+        `${i1}${i1}})${cls.gc ? ")" : ""})`,
         `${i1}}`,
         "}",
       );
@@ -279,6 +338,11 @@ class RustPrinter extends Printer {
   }
 
   /** A class and its bases, the class first. */
+  /** A field the cycle collector traverses (cycles.ts rule 6): its stores get the write barrier. */
+  private gcTracked(cls: string, field: string): boolean {
+    return !!this.classes.get(cls)?.gc?.includes(field) || this.chain(cls).some((c) => c.gc?.includes(field));
+  }
+
   private chain(name: string): ObjectClassDecl[] {
     const out: ObjectClassDecl[] = [];
     for (let c = this.objects.get(name); c; c = c.base ? this.objects.get(c.base) : undefined) out.push(c);
@@ -311,21 +375,21 @@ class RustPrinter extends Printer {
     };
     visit(name);
     const own: TraitMember[] = [];
-    const field = (f: { name: string; ty: Ty }, settable: boolean) => {
-      own.push({ rust: `get_${f.name}`, kind: "get", name: f.name, params: [], ret: f.ty });
-      if (settable) own.push({ rust: `set_${f.name}`, kind: "set", name: f.name, params: [{ name: "value", ty: f.ty }], ret: { k: "void" } });
+    const field = (f: { name: string; ty: Ty }, settable: boolean, throws?: boolean) => {
+      own.push({ rust: `get_${f.name}`, kind: "get", name: f.name, params: [], ret: f.ty, throws });
+      if (settable) own.push({ rust: `set_${f.name}`, kind: "set", name: f.name, params: [{ name: "value", ty: f.ty }], ret: { k: "void" }, throws });
     };
     const p = this.protocols.get(name);
     const c = this.objects.get(name);
     if (p) {
       for (const f of p.fields) field(f, !f.readonly);
-      for (const m of p.methods) own.push({ rust: m.name, kind: "method", name: m.name, params: m.params, ret: m.ret });
+      for (const m of p.methods) own.push({ rust: m.name, kind: "method", name: m.name, params: m.params, ret: m.ret, throws: m.throws });
     } else if (c) {
       // A class's own fields are set through its trait by its constructor.
       for (const f of c.fields) field(f, true);
       for (const m of c.methods) {
-        if (m.getter) field({ name: m.name, ty: m.ret }, c.methods.some((x) => x.setter && x.name === m.name));
-        else if (!m.setter) own.push({ rust: m.name, kind: "method", name: m.name, params: m.params, ret: m.ret });
+        if (m.getter) field({ name: m.name, ty: m.ret }, c.methods.some((x) => x.setter && x.name === m.name), m.throws);
+        else if (!m.setter) own.push({ rust: m.name, kind: "method", name: m.name, params: m.params, ret: m.ret, throws: m.throws });
       }
     }
     return own.filter((m) => !inherited.has(m.rust));
@@ -364,12 +428,14 @@ class RustPrinter extends Printer {
   /** A class's constructor (`init__C`), methods and getters (`m__C__name`) and setters (`m__C__set_name`) as free functions of `this`. */
   private classFns(c: ObjectClassDecl): FnDecl[] {
     const self: Param = { name: "this", ty: { k: "class", name: c.name } };
+    // A hierarchy's constructors throw together (the front-end's families), so the base's does when this one does.
+    const throws = c.ctor.throws ? { throws: true } : {};
     const base: Stmt[] = c.base
-      ? [{ s: "expr", x: { e: "call", callee: { e: "id", name: `init__${c.base}` }, args: [{ e: "id", name: "this" }, ...(c.ctor.superArgs ?? [])] } }]
+      ? [{ s: "expr", x: { e: "call", callee: { e: "id", name: `init__${c.base}` }, args: [{ e: "id", name: "this" }, ...(c.ctor.superArgs ?? [])], ...throws } }]
       : [];
     return [
-      { name: `init__${c.name}`, params: [self, ...c.ctor.params], ret: { k: "void" }, async: false, body: [...base, ...c.ctor.body] },
-      ...c.methods.filter((m) => !m.abstract).map((m): FnDecl => ({ name: `m__${c.name}__${m.setter ? "set_" : ""}${m.name}`, params: [self, ...m.params], ret: m.ret, async: false, body: m.body })),
+      { name: `init__${c.name}`, params: [self, ...c.ctor.params], ret: { k: "void" }, async: false, body: [...base, ...c.ctor.body], ...throws },
+      ...c.methods.filter((m) => !m.abstract).map((m): FnDecl => ({ name: `m__${c.name}__${m.setter ? "set_" : ""}${m.name}`, params: [self, ...m.params], ret: m.ret, async: false, body: m.body, throws: m.throws })),
     ];
   }
 
@@ -398,7 +464,8 @@ class RustPrinter extends Printer {
   }
 
   private traitSignature(m: TraitMember): string {
-    const params = ["self: Rc<Self>", ...m.params.map((p) => `${this.name(p.name)}: ${this.ty(p.ty)}`)].join(", ");
+    const params = ["&self", ...m.params.map((p) => `${this.name(p.name)}: ${this.ty(p.ty)}`)].join(", ");
+    if (m.throws) return `fn ${this.name(m.rust)}(${params}) -> Result<${this.ty(m.ret)}, JsError>`;
     return `fn ${this.name(m.rust)}(${params})${m.ret.k === "void" ? "" : ` -> ${this.ty(m.ret)}`}`;
   }
 
@@ -407,19 +474,26 @@ class RustPrinter extends Printer {
     const [i1, i2, i3] = [INDENT, INDENT + INDENT, INDENT + INDENT + INDENT];
     const name = this.structName(c);
     const fields = this.allFields(c);
-    const lines = [`pub struct ${name} {`, ...fields.map((f) => `${i1}pub ${this.name(f.name)}: Var<${this.ty(f.ty)}>,`), "}", ""];
+    // A back-pointer (cycles.ts) is a `WeakVar`: the same get / set, on a `Weak` it upgrades.
+    const cell = (f: ObjectClassDecl["fields"][number]) => (f.weak && f.ty.k === "optional" && f.ty.of.k === "class" ? `WeakVar<${this.isTrait(f.ty.of.name) ? `dyn ${f.ty.of.name}` : f.ty.of.name}>` : `Var<${this.ty(f.ty)}>`);
+    const lines = [`pub struct ${name} {`, ...fields.map((f) => `${i1}pub ${this.name(f.name)}: ${cell(f)},`), "}", ""];
     lines.push(`impl PartialEq for ${name} {`, `${i1}fn eq(&self, other: &Self) -> bool {`, `${i2}std::ptr::eq(self, other)`, `${i1}}`, "}", "");
     const params = c.ctor.params.map((p) => `${this.name(p.name)}: ${this.ty(p.ty)}`).join(", ");
-    const values = fields.map((f) => `${this.name(f.name)}: ${f.init ? `Var::new(${this.coerce(f.init, f.ty, i3)})` : f.ty.k === "optional" ? "Var::new(None)" : "Var::empty()"}`);
+    const values = fields.map((f) => `${this.name(f.name)}: ${f.weak ? "Weak" : ""}${f.init ? `Var::new(${this.coerce(f.init, f.ty, i3)})` : f.ty.k === "optional" ? "Var::new(None)" : "Var::empty()"}`);
+    const throws = !!c.ctor.throws;
     lines.push(
       `impl ${name} {`,
-      `${i1}pub fn new(${params}) -> Rc<${name}> {`,
-      `${i2}let this = Rc::new(${this.layout(`${name} `, values, i2, "{}")});`,
-      `${i2}init__${c.name}(${["this.clone()", ...c.ctor.params.map((p) => this.name(p.name))].join(", ")});`,
-      `${i2}this`,
+      `${i1}pub fn new(${params}) -> ${throws ? `Result<Rc<${name}>, JsError>` : `Rc<${name}>`} {`,
+      `${i2}let this = ${c.gc ? "gc_track(" : ""}Rc::new(${this.layout(`${name} `, values, i2, "{}")})${c.gc ? ")" : ""};`,
+      `${i2}init__${c.name}(${[this.isTrait(c.name) ? `&(this.clone() as Rc<dyn ${c.name}>)` : "&this", ...c.ctor.params.map((p) => this.name(p.name))].join(", ")})${throws ? "?" : ""};`,
+      `${i2}${throws ? "Ok(this)" : "this"}`,
       `${i1}}`,
       "}",
     );
+    if (c.gc) {
+      const tracked = new Set(this.chain(c.name).flatMap((k) => k.gc ?? []));
+      lines.push("", ...this.gcImpl(name, fields.filter((f) => tracked.has(f.name))));
+    }
     // Every trait of the class, its bases and its protocols.
     const traits = new Set<string>();
     const visit = (t: string) => {
@@ -435,11 +509,14 @@ class RustPrinter extends Printer {
         const args = m.params.map((p) => this.name(p.name));
         const definer = this.definer(c.name, m.name);
         const isField = fields.some((f) => f.name === m.name);
+        // `&self` as the `Rc` that holds it (every object lives in one), its count untouched, typed as the
+        // definer's `this`: a free function borrows it.
+        const rc = (d: string) => `let this = std::mem::ManuallyDrop::new(unsafe { Rc::from_raw(self as *const Self) } as ${this.ty({ k: "class", name: d })}); `;
         const body =
-          m.kind === "set" && !isField ? `m__${this.definer(c.name, m.name, true)}__set_${m.name}(self, value)`
-          : m.kind === "set" ? `self.${this.name(m.name)}.set(value)`
+          m.kind === "set" && !isField ? `${rc(this.definer(c.name, m.name, true)!)}m__${this.definer(c.name, m.name, true)}__set_${m.name}(&this, value)`
+          : m.kind === "set" ? `${this.gcTracked(c.name, m.name) ? `gc_write(&self.${this.name(m.name)}); ` : ""}self.${this.name(m.name)}.set(value)`
           : m.kind === "get" && isField ? `self.${this.name(m.name)}.get()`
-          : `m__${definer}__${m.name}(${["self", ...args].join(", ")})`;
+          : `${rc(definer!)}m__${definer}__${m.name}(${["&this", ...args].join(", ")})`;
         lines.push(`${i1}${this.traitSignature(m)} {`, `${i2}${body}`, `${i1}}`);
       }
       lines.push("}");
@@ -454,14 +531,101 @@ class RustPrinter extends Printer {
     if (!cls) return `/* invoke on ${objTy?.k} */`;
     if (x.sup || !this.isTrait(cls)) {
       const definer = x.sup ?? this.definer(cls, x.name);
-      return this.callExpr({ e: "call", callee: { e: "id", name: `m__${definer}__${x.name}` }, args: [x.obj, ...x.args] }, ind);
+      return this.callExpr({ e: "call", callee: { e: "id", name: `m__${definer}__${x.name}` }, args: [x.obj, ...x.args], throws: x.throws }, ind);
     }
     const params = this.member(cls, x.name)?.params ?? [];
     const args = params.map((p, i) => {
       const arg = x.args[i] ?? p.default;
       return arg ? this.coerce(arg, p.ty, ind + INDENT) : "None";
     });
-    return this.layout(`${this.atom(x.obj, ind)}.${this.name(x.name)}`, args, ind);
+    const call = this.layout(`${this.receiver(x.obj, ind)}.${this.name(x.name)}`, args, ind);
+    return x.throws ? this.fail(call) : call;
+  }
+
+  /** `jsonw__Name(o, v)`: JSON.stringify of a class (its fields in JavaScript's key order) or a union (its member's). */
+  private jsonWriter(j: NonNullable<Program["jsonClasses"]>[number], program: Program): string[] {
+    const [i1, i2] = [INDENT, INDENT + INDENT];
+    const lines = [`fn jsonw__${j.name}(o: &mut JsonOut, v: &${this.ty({ k: j.fields ? "class" : "union", name: j.name } as Ty)}) {`];
+    if (!j.fields) {
+      lines.push(`${i1}match v {`);
+      for (const m of program.unions!.find((u) => u.name === j.name)!.members) {
+        lines.push(m.ty.k === "void" ? `${i2}${j.name}::${m.tag} => o.null(),` : `${i2}${j.name}::${m.tag}(x) => { let x = x.clone(); ${this.jsonEnc(m.ty, "x", 0)} }`);
+      }
+      return [...lines, `${i1}}`, "}"];
+    }
+    lines.push(`${i1}o.obj(|o| {`);
+    for (const f of j.fields) {
+      const read = `v.${this.name(f.name)}.get()`;
+      if (f.ty.k !== "optional" || f.nil) lines.push(`${i2}o.key(${this.str(f.name)});`, `${i2}${this.jsonEnc(f.ty, read, 0)};`);
+      else lines.push(`${i2}o.field(${this.str(f.name)}, ${read}, |o, x0| ${this.jsonEnc(f.ty.of, "x0", 1)});`);
+    }
+    return [...lines, `${i1}});`, "}"];
+  }
+
+  /** A statement writing `v` (an owned `ty`) into the JsonOut `o`. */
+  private jsonEnc(ty: Ty, v: string, d: number): string {
+    const x = `x${d}`;
+    switch (ty.k) {
+      case "string":
+        return `o.str(&${v})`;
+      case "int":
+      case "double":
+      case "num":
+        return `o.num(${v} as f64)`;
+      case "bool":
+        return `o.bool(${v})`;
+      case "class":
+      case "union":
+        return `jsonw__${ty.name}(o, &${v})`;
+      case "array":
+        return `o.arr(&${v}, |o, ${x}| ${this.jsonEnc(ty.of, x, d + 1)})`;
+      case "map":
+        return `o.map(&${v}, |o, ${x}| ${this.jsonEnc(ty.of, x, d + 1)})`;
+      case "optional":
+        return `o.opt(${v}, |o, ${x}| ${this.jsonEnc(ty.of, x, d + 1)})`;
+      default:
+        return `o.date(&${v})`;
+    }
+  }
+
+  /** JSON.parse / JSON.stringify and Date (jsondate.rs). */
+  private jsonDateOp(op: Op, args: Expr[], ind: string): string | undefined {
+    const [a, b, ...rest] = args;
+    const e = (x: Expr) => this.expr(x, ind);
+    const what = (x: Expr | undefined) => (x as Extract<Expr, { e: "str" }>).v;
+    const doubles = (xs: Expr[]) => `&[${xs.map(e).join(", ")}]`;
+    switch (op) {
+      case "json.parse":
+        return this.fail(`js_json_decode(${this.strRef(a!, ind)}, ${e(b!)})`);
+      case "json.stringify": {
+        const ty = (rest[0] as Extract<Expr, { e: "decoder" }>).ty;
+        return `{ let v__ = ${this.coerce(a!, ty, ind)}; js_json_stringify(${e(b!)}, move |o| ${this.jsonEnc(ty, "v__", 0)}) }`;
+      }
+      case "json.gap":
+        return what(a) === "num" ? `js_json_gap(${e(b!)})` : `js_json_gap_str(${this.strRef(b!, ind)})`;
+      case "date.utc":
+        return `js_date_utc(${doubles(args)})`;
+      case "date.parse":
+        return `js_date_parse(${this.strRef(a!, ind)})`;
+      case "date.new": {
+        const form = what(a);
+        if (form === "now") return "JsDate::now()";
+        if (form === "parts") return `JsDate::parts(${doubles([b!, ...rest])})`;
+        if (form === "copy") return `JsDate::new(${this.receiver(b!, ind)}.time())`;
+        return form === "str" ? `JsDate::new(js_date_parse(${this.strRef(b!, ind)}))` : `JsDate::new(${e(b!)})`;
+      }
+      case "date.call": {
+        const d = this.receiver(a!, ind);
+        const [kind, field, local] = what(b).split(" ");
+        if (kind === "get") return `${d}.get(${field}, ${local === "1"})`;
+        if (kind === "set") return `${d}.set(${field}, ${local === "1"}, ${doubles(rest)})`;
+        if (kind === "iso") return this.fail(`${d}.to_iso_string()`);
+        const calls: Record<string, string> = { time: "time()", setTime: `set_time(${rest.map(e).join("")})`, tzOffset: "timezone_offset()", utc: "to_utc_string()", dateString: "to_date_string()" };
+        return `${d}.${calls[kind!]}`;
+      }
+      default:
+        return undefined;
+    }
   }
 
   /** A `Result` decoding `value` (a `&Json`) into `ty`. */
@@ -489,18 +653,21 @@ class RustPrinter extends Printer {
 
   /** A function item. `captures` are an enclosing function's locals, appended to the parameters. */
   private fn(fn: FnDecl, ind: string, captures: Map<string, Local>): string[] {
-    const saved = { frame: this.frame, tryLabel: this.tryLabel };
+    const saved = { frame: this.frame, tryLabel: this.tryLabel, loops: this.loops, blocks: this.blocks };
+    [this.loops, this.blocks] = [[], 0];
     const extra = [...captures].map(([name, binding]) => ({ name, binding, ty: binding.boxed ? `Rc<Var<${this.ty(binding.ty)}>>` : this.ty(binding.ty) }));
-    this.frame = { ret: fn.ret, result: fn.async, captured: captured(fn.body) };
+    // An async function, or one that can throw, returns a `Result`.
+    const result = fn.async || !!fn.throws;
+    this.frame = { ret: fn.ret, result, captured: captured(fn.body) };
     this.tryLabel = undefined;
     const lines = this.scoped(() => {
       for (const p of fn.params) this.declare(p.name, { kind: "local", ty: p.ty, boxed: false });
       for (const c of extra) this.declare(c.name, c.binding);
-      const params = [...fn.params.map((p) => `${this.name(p.name)}: ${this.ty(p.ty)}`), ...extra.map((c) => `${this.name(c.name)}: ${c.ty}`)].join(", ");
+      const params = [...fn.params.map((p, i) => `${this.name(p.name)}: ${i === 0 && this.byRef.has(fn) ? "&" : ""}${this.ty(p.ty)}`), ...extra.map((c) => `${this.name(c.name)}: ${c.ty}`)].join(", ");
       const value = fn.ret.k === "void" ? "()" : this.ty(fn.ret);
-      const ret = fn.async ? ` -> Result<${value}, JsError>` : fn.ret.k === "void" ? "" : ` -> ${value}`;
+      const ret = result ? ` -> Result<${value}, JsError>` : fn.ret.k === "void" ? "" : ` -> ${value}`;
       const body = this.body(fn.body, ind + INDENT);
-      if (fn.async && fn.ret.k === "void") body.push(`${ind + INDENT}Ok(())`);
+      if (result && fn.ret.k === "void") body.push(`${ind + INDENT}Ok(())`);
       // A value on every path, but not one Rust sees after a loop or a try.
       else if (fn.ret.k !== "void" && ["try", "while", "forOf", "forRange"].includes(fn.body.at(-1)?.s ?? "")) body.push(`${ind + INDENT}unreachable!()`);
       const head = `${ind}${ind ? "" : "pub "}`;
@@ -514,6 +681,7 @@ class RustPrinter extends Printer {
     });
     this.frame = saved.frame;
     this.tryLabel = saved.tryLabel;
+    [this.loops, this.blocks] = [saved.loops, saved.blocks];
     return lines;
   }
 
@@ -609,6 +777,8 @@ class RustPrinter extends Printer {
 
   protected ty(t: Ty): string {
     switch (t.k) {
+      case "num":
+        return RUST_SIZED[t.n];
       case "int":
         return "i64";
       case "double":
@@ -628,10 +798,122 @@ class RustPrinter extends Printer {
       case "class":
         return this.isTrait(t.name) ? `Rc<dyn ${t.name}>` : `Rc<${t.name}>`;
       case "fn":
+        if (t.throws) return `Rc<dyn Fn(${t.params.map((p) => this.ty(p)).join(", ")}) -> Result<${this.ty(t.ret)}, JsError>>`;
         return `Rc<dyn Fn(${t.params.map((p) => this.ty(p)).join(", ")})${t.ret.k === "void" ? "" : ` -> ${this.ty(t.ret)}`}>`;
       case "rt":
         return RUNTIME_TYPES[t.name] ?? t.name;
+      case "union":
+        return t.name;
+      case "promise":
+        return `Promise<${this.ty(t.of)}>`;
+      case "settled":
+        return `JsSettled<${this.ty(t.of)}>`;
+      case "jsmap":
+        return `${t.weak ? "JsWeakMap" : "JsOMap"}<${this.ty(t.key)}, ${this.ty(t.of)}>`;
+      case "jsset":
+        return t.ref ? `JsWeakRef<${this.ty(t.of)}>` : `${t.weak ? "JsWeakMap" : "JsOMap"}<${this.ty(t.of)}, ()>`;
     }
+  }
+
+  /** Map / Set (mapset.rs `JsOMap`): keys are borrowed for lookups, owned (and coerced) when stored. */
+  private mapSetOp(x: Extract<Expr, { e: "op" }>, ind: string): string {
+    if (x.op === "mc.new") return `${this.ty(x.ty!).replace("<", "::<")}::new(${x.args[0] && x.ty?.k === "jsset" ? this.coerce(x.args[0], x.ty.of, ind) : ""})`;
+    const [a, b, ...rest] = x.args;
+    const name = (b as Extract<Expr, { e: "str" }>).v;
+    const t = this.typeOf(a!);
+    const key: Typ = t.k === "jsmap" ? t.key : t.k === "jsset" ? t.of : UNKNOWN;
+    const arg = (v: Expr, i: number): string => {
+      if (["get", "has", "delete"].includes(name)) return `&${this.receiver(v, ind)}`;
+      if (name === "set" || name === "add") return this.coerce(v, i === 0 ? key : t.k === "jsmap" ? t.of : UNKNOWN, ind);
+      if (v.e === "lambda") return this.callback(v, ind);
+      return this.expr(v, ind);
+    };
+    return `${this.receiver(a!, ind)}.${snake(name)}(${rest.map(arg).join(", ")})`;
+  }
+
+  /** Promises (task.rs `Promise`) and async functions' state machines (asyncLower.ts). */
+  private promiseOp(x: Extract<Expr, { e: "op" }>, ind: string): string | undefined {
+    if (!/^(promise|async|settled|error)\./.test(x.op)) return undefined;
+    const [a, b, c] = x.args;
+    const of = x.ty?.k === "promise" ? x.ty.of : undefined;
+    const r = () => this.receiver(a!, ind);
+    const v = (e: Expr) => `${this.atom(e, ind)}.clone()`;
+    const fn = (e: Expr) => (e.e === "lambda" ? this.lambda(e, ind) : this.expr(e, ind));
+    const co = () => {
+      const t = this.typeOf(a!);
+      return t.k === "promise" ? t.of : ({ k: "void" } as Ty);
+    };
+    switch (x.op as string) {
+      case "promise.new":
+        return of?.k === "void" ? `Promise::<()>::create_void(${fn(a!)})` : `Promise::<${this.ty(of!)}>::create(${fn(a!)})`;
+      case "promise.resolve":
+        return `Promise::<${this.ty(of!)}>::resolved(${a ? this.coerce(a, of!, ind) : "()"})`;
+      case "promise.reject":
+        return `Promise::<${this.ty(of!)}>::rejected(${this.expr(a!, ind)})`;
+      case "promise.then":
+      case "promise.thenP":
+      case "promise.catch":
+      case "promise.catchP":
+      case "promise.finally":
+      case "promise.finallyP": {
+        const name = { "promise.then": "then", "promise.thenP": "then_p", "promise.catch": "catch", "promise.catchP": "catch_p", "promise.finally": "finally", "promise.finallyP": "finally_p" }[x.op as string]!;
+        return `${r()}.${name}(${fn(b!)})`;
+      }
+      case "promise.then2":
+      case "promise.then2P":
+        return `${r()}.${x.op === "promise.then2" ? "then2" : "then2_p"}(${fn(b!)}, ${fn(c!)})`;
+      case "promise.all":
+      case "promise.allSettled":
+      case "promise.race":
+      case "promise.any": {
+        const t = this.typeOf(a!);
+        const elem = t.k === "array" && t.of.k === "promise" ? t.of.of : ({ k: "void" } as Ty);
+        const name = { "promise.all": "all", "promise.allSettled": "all_settled", "promise.race": "race", "promise.any": "any" }[x.op as string]!;
+        return `Promise::<${this.ty(elem)}>::${name}(${this.coerce(a!, t as Ty, ind)})`;
+      }
+      case "promise.delay":
+        return `js_delay(${this.coerce(a!, { k: "double" }, ind)})`;
+      case "promise.native": {
+        // The call runs in an async block polled at once: its arguments are evaluated now, as JavaScript does.
+        const saved = { frame: this.frame, tryLabel: this.tryLabel };
+        this.frame = { ...this.frame, result: true };
+        this.tryLabel = undefined;
+        const call = this.expr(a!, ind + INDENT);
+        [this.frame, this.tryLabel] = [saved.frame, saved.tryLabel];
+        const clones = this.captureClones(names(a), new Set());
+        const value = of && of.k !== "void" ? this.ty(of) : "()";
+        const block = `Promise::<${value}>::native(async move { Ok::<${value}, JsError>(${call}) })`;
+        return clones.length ? `{ ${clones.join(" ")} ${block} }` : block;
+      }
+      case "settled.status":
+        return `${r()}.status.clone()`;
+      case "settled.value":
+        return `${r()}.value.clone().unwrap()`;
+      case "settled.reason":
+        return `${r()}.reason.clone().unwrap()`;
+      case "error.new":
+        return `JsError::new(${this.expr(a!, ind)})`;
+      // An object of an app's error class thrown (`throw new E()`): its name and message, and the object.
+      case "error.wrap":
+        return `JsError::wrap(${this.expr(b!, ind)}, ${this.expr(c!, ind)}, ${v(a!)}.as_any())`;
+      case "error.obj":
+        return `${r()}.obj.clone().and_then(cast__${(b as { v: string }).v})`;
+      case "error.name":
+        return `${r()}.name.to_string()`;
+      case "async.run":
+        return `js_async(${fn(a!)})`;
+      case "async.await":
+        return c ? `${r()}.await_with(&${this.atom(b!, ind)}, ${fn(c)})` : `${r()}.await_on(&${this.atom(b!, ind)})`;
+      case "async.check":
+        return this.fail(`${r()}.check()`);
+      case "async.resolve":
+        return `${r()}.resolve(${b ? this.coerce(b, co(), ind) : "()"})`;
+      case "async.adopt":
+        return `${r()}.adopt(${v(b!)})`;
+      case "async.reject":
+        return `${r()}.reject(${v(b!)})`;
+    }
+    return undefined;
   }
 
   /** A builder's children: `Vec<Mod>`, each child converted with `Mod::from`. */
@@ -644,7 +926,7 @@ class RustPrinter extends Printer {
   }
 
   private isCopy(t: Typ): boolean {
-    return t.k === "int" || t.k === "double" || t.k === "bool" || t.k === "void" || t.k === "enum" || (t.k === "rt" && COPY_RUNTIME_TYPES.has(t.name));
+    return t.k === "int" || t.k === "double" || t.k === "num" || t.k === "bool" || t.k === "void" || t.k === "enum" || (t.k === "rt" && COPY_RUNTIME_TYPES.has(t.name));
   }
 
   private isRt(t: Typ, name: string): boolean {
@@ -660,6 +942,8 @@ class RustPrinter extends Printer {
         return { k: "double" };
       case "toInt":
         return { k: "int" };
+      case "numCast":
+        return x.to;
       case "str":
       case "tpl":
       case "toStr":
@@ -700,6 +984,8 @@ class RustPrinter extends Printer {
         return { k: "void" };
       }
       case "op": {
+        if (x.ty) return x.ty;
+        if (x.op.startsWith("async.") || x.op === "promise.adopt") return { k: "void" };
         const ty = this.opType(x.op, x.args);
         return x.chain && ty.k !== "optional" && ty.k !== "unknown" ? { k: "optional", of: ty as Ty } : ty;
       }
@@ -717,10 +1003,16 @@ class RustPrinter extends Printer {
         const inner = this.typeOf(x.x);
         return inner.k === "optional" ? inner.of : inner;
       }
+      case "with":
+        return this.scoped(() => (this.declare(x.name, { kind: "local", ty: x.ty, boxed: false }), this.typeOf(x.body)));
+      case "seq":
+        return x.ty;
       case "coalesce": {
         const r = this.typeOf(x.r);
         if (r.k !== "nil" && r.k !== "unknown") return r;
-        return this.typeOf(x.l);
+        const l = this.typeOf(x.l);
+        // `x ?? nil` of an `Option<Option<T>>` (a missing optional element): flattened.
+        return l.k === "optional" && l.of.k === "optional" ? l.of : l;
       }
       case "lambda":
         return { k: "fn", params: x.params.map((p) => p.ty), ret: x.ret };
@@ -731,6 +1023,12 @@ class RustPrinter extends Printer {
         return { k: "bool" };
       case "downcast":
         return { k: "class", name: x.cls };
+      case "uwrap":
+        return { k: "union", name: x.u };
+      case "uis":
+        return { k: "bool" };
+      case "uget":
+        return x.ty;
       case "invoke": {
         const obj = x.sup ? ({ k: "class", name: x.sup } as Typ) : this.typeOf(x.obj);
         return obj.k === "class" ? (this.member(obj.name, x.name)?.ty ?? UNKNOWN) : UNKNOWN;
@@ -745,6 +1043,8 @@ class RustPrinter extends Printer {
         return { k: "enum" };
       case "launch":
         return { k: "void" };
+      case "await":
+        return x.ty;
       case "incr":
         return this.typeOf(x.target);
       case "decoder":
@@ -823,6 +1123,10 @@ class RustPrinter extends Printer {
     };
     switch (op) {
       case "arr.length":
+      case "int.wideRem":
+      case "arr.pushLen":
+      case "arr.pushAllLen":
+      case "arr.unshiftLen":
       case "arr.indexOf":
       case "arr.findIndex":
       case "str.length":
@@ -830,7 +1134,6 @@ class RustPrinter extends Printer {
       case "math.ceil":
       case "math.round":
       case "math.trunc":
-      case "int.parse":
         return { k: "int" };
       case "arr.at":
       case "arr.pop":
@@ -878,6 +1181,7 @@ class RustPrinter extends Printer {
       case "math.pi":
       case "date.now":
       case "num.parse":
+      case "int.parse":
       case "bit.ushr":
         return { k: "double" };
       case "arr.concat":
@@ -900,6 +1204,8 @@ class RustPrinter extends Printer {
       case "bit.shl":
       case "bit.shr":
       case "bit.not":
+      case "bit.imul":
+      case "bit.clz32":
         return { k: "int" };
       case "arr.reduce": {
         const fn = args[1] ? this.typeOf(args[1]) : UNKNOWN;
@@ -917,7 +1223,12 @@ class RustPrinter extends Printer {
       case "map.delete":
         return { k: "void" };
       case "str.split":
+      case "map.keys":
         return { k: "array", of: { k: "string" } };
+      case "map.values": {
+        const t = receiver();
+        return t.k === "map" ? { k: "array", of: t.of } : UNKNOWN;
+      }
       case "str.replace":
       case "str.replaceAll":
       case "str.padStart":
@@ -928,8 +1239,18 @@ class RustPrinter extends Printer {
         return { k: "string" };
       case "math.fn": {
         const name = args[0]?.e === "str" ? args[0].v : "";
-        return name === "sign" ? { k: "int" } : ["isInteger", "isNaN", "isFinite"].includes(name) ? { k: "bool" } : { k: "double" };
+        return ["isInteger", "isNaN", "isFinite"].includes(name) ? { k: "bool" } : { k: "double" };
       }
+      case "big.toNumber":
+        return { k: "double" };
+      case "big.str":
+        return { k: "string" };
+      case "sym.new":
+        return rt("Symbol");
+      case "sym.description":
+        return { k: "optional", of: { k: "string" } };
+      default:
+        return op.startsWith("big.") ? rt("BigInt") : UNKNOWN;
     }
   }
 
@@ -983,7 +1304,8 @@ class RustPrinter extends Printer {
       case "method":
         return this.method(x, ind);
       case "op":
-        return this.op(x.op, x.args, ind, !!x.await, !!x.chain);
+        if (x.op === "mc.new" || x.op === "mc.call") return this.mapSetOp(x, ind);
+        return this.promiseOp(x, ind) ?? this.op(x.op, x.args, ind, !!x.await, !!x.chain, !!x.throws);
       case "bin":
         return this.binary(x, ind);
       case "not":
@@ -993,18 +1315,34 @@ class RustPrinter extends Printer {
       case "cond":
         return `if ${this.expr(x.c, ind)} { ${this.coerce(x.a, this.typeOf(x), ind)} } else { ${this.coerce(x.b, this.typeOf(x), ind)} }`;
       case "unwrap":
-        return `${this.atom(x.x, ind)}.unwrap()`;
+        // A trap that says which JavaScript operation failed (the other targets' words).
+        return `${this.atom(x.x, ind)}.expect("nuclo: a \`!\` assertion found null or undefined")`;
+      // A block: the assignments, then the value.
+      case "seq": {
+        const i2 = ind + INDENT;
+        return this.scoped(() => `{\n${this.body(x.body, i2).join("\n")}\n${i2}${this.coerce(x.x, x.ty, i2)}\n${ind}}`);
+      }
+      case "with": {
+        const init = this.coerce(x.init, x.ty, ind);
+        return this.scoped(() => {
+          this.declare(x.name, { kind: "local", ty: x.ty, boxed: false });
+          return `{ let ${this.name(x.name)}: ${this.ty(x.ty)} = ${init}; ${this.expr(x.body, ind)} }`;
+        });
+      }
       case "coalesce": {
         // A match, not `unwrap_or_else`: the fallback may await or fail, which a closure can't.
         const [l, want] = [this.typeOf(x.l), this.typeOf(x)];
         if (l.k !== "optional") return this.expr(x.l, ind);
-        const some = want.k === "optional" ? "Some(v__)" : "v__";
+        if (l.of.k === "optional" && x.r.e === "nil") return `${this.atom(x.l, ind)}.flatten()`;
+        const some =want.k === "optional" ? "Some(v__)" : "v__";
         return `match ${this.expr(x.l, ind)} { Some(v__) => ${some}, None => ${this.coerce(x.r, want, ind)} }`;
       }
       case "toDouble":
         return `(${this.atom(x.x, ind)} as f64)`;
       case "toInt":
         return `(${this.atom(x.x, ind)} as i64)`;
+      case "numCast":
+        return `(${this.atom(x.x, ind)} as ${this.ty(x.to)})`;
       case "toStr":
         return x.from.k === "double" ? `js_num(${this.expr(x.x, ind)})` : x.from.k === "string" ? this.expr(x.x, ind) : `${this.atom(x.x, ind)}.to_string()`;
       case "lambda":
@@ -1017,7 +1355,8 @@ class RustPrinter extends Printer {
           const arg = x.args[i] ?? p.default;
           return arg ? this.coerce(arg, p.ty, ind + INDENT) : "None";
         });
-        return this.layout(`${this.structName(c)}::new`, args, ind);
+        const made = this.layout(`${this.structName(c)}::new`, args, ind);
+        return x.throws ? this.fail(made) : made;
       }
       case "invoke":
         return this.invoke(x, ind);
@@ -1025,6 +1364,12 @@ class RustPrinter extends Printer {
         return `cast__${x.cls}(${this.atom(x.x, ind)}.as_any()).is_some()`;
       case "downcast":
         return `cast__${x.cls}(${this.atom(x.x, ind)}.as_any()).unwrap()`;
+      case "uwrap":
+        return x.ty.k === "void" ? `${x.u}::${x.tag}` : `${x.u}::${x.tag}(${this.coerce(x.x, x.ty, ind)})`;
+      case "uis":
+        return `${this.receiver(x.x, ind)}.is_${x.tag}()`;
+      case "uget":
+        return `${this.receiver(x.x, ind)}.as_${x.tag}()`;
       case "arr": {
         const of = x.of.k === "class" && !this.classes.has(x.of.name) && !this.objects.has(x.of.name) && !this.protocols.has(x.of.name) ? undefined : x.of;
         if (!of || this.isMods({ k: "array", of })) {
@@ -1057,6 +1402,8 @@ class RustPrinter extends Printer {
         const callee = x.call.e === "call" && x.call.callee.e === "id" ? this.lookup(x.call.callee.name, x.call.args) : undefined;
         return callee?.kind === "fn" && callee.native ? `launch(async move { Ok::<_, JsError>(${call}.await) })` : `launch(${call})`;
       }
+      case "await":
+        throw new Error("an `await` reached the Rust printer (asyncLower.ts takes them apart)");
     }
   }
 
@@ -1130,7 +1477,7 @@ class RustPrinter extends Printer {
   }
 
   private prop(x: Extract<Expr, { e: "prop" }>, ind: string): string {
-    if (x.sup) return this.callExpr({ e: "call", callee: { e: "id", name: `m__${x.sup}__${x.name}` }, args: [x.obj] }, ind);
+    if (x.sup) return this.callExpr({ e: "call", callee: { e: "id", name: `m__${x.sup}__${x.name}` }, args: [x.obj], throws: x.throws }, ind);
     const obj = this.typeOf(x.obj);
     if ((x.optional || x.chain) && obj.k === "optional") {
       // `a?.b`: the access runs on the value inside the optional.
@@ -1142,9 +1489,12 @@ class RustPrinter extends Printer {
         return `${local ? `${local}.as_ref()` : this.atom(x.obj, ind)}.${flat ? "and_then" : "map"}(|o__| ${access})`;
       });
     }
-    if (obj.k === "class" && this.isTrait(obj.name)) return `${this.atom(x.obj, ind)}.get_${x.name}()`;
+    if (obj.k === "class" && this.isTrait(obj.name)) {
+      const get = `${this.receiver(x.obj, ind)}.get_${x.name}()`;
+      return x.throws ? this.fail(get) : get;
+    }
     if (obj.k === "class" && this.member(obj.name, x.name)?.kind === "getter") {
-      return this.callExpr({ e: "call", callee: { e: "id", name: `m__${this.definer(obj.name, x.name)}__${x.name}` }, args: [x.obj] }, ind);
+      return this.callExpr({ e: "call", callee: { e: "id", name: `m__${this.definer(obj.name, x.name)}__${x.name}` }, args: [x.obj], throws: x.throws }, ind);
     }
     const on = this.receiver(x.obj, ind);
     if (obj.k === "class") return `${on}.${this.name(x.name)}.get()`;
@@ -1194,7 +1544,10 @@ class RustPrinter extends Printer {
     const [lt, rt_] = [this.typeOf(x.l), this.typeOf(x.r)];
     // Two objects of the app's classes or protocols, maybe of different types: the same object or not.
     const isObject = (t: Typ) => t.k === "class" && (this.objects.has(t.name) || this.protocols.has(t.name));
-    if (isObject(lt) && isObject(rt_)) return `${not ? "!" : ""}std::ptr::addr_eq(Rc::as_ptr(&${this.atom(x.l, ind)}), Rc::as_ptr(&${this.atom(x.r, ind)}))`;
+    // A record and a shape protocol it conforms to (or two records): the same object or not.
+    const isRecord = (t: Typ) => t.k === "class" && this.classes.has(t.name);
+    const sameRecord = isRecord(lt) && isRecord(rt_) && JSON.stringify(lt) === JSON.stringify(rt_);
+    if ((isObject(lt) || isRecord(lt)) && (isObject(rt_) || isRecord(rt_)) && !sameRecord) return `${not ? "!" : ""}std::ptr::addr_eq(Rc::as_ptr(&${this.atom(x.l, ind)}), Rc::as_ptr(&${this.atom(x.r, ind)}))`;
     const side = (value: Expr, own: Typ, other: Typ, opposite: Expr) => {
       // A string literal compares as a `&str`: no allocation.
       if (value.e === "str" && own.k === other.k && opposite.e !== "str") return this.str(value.v);
@@ -1237,7 +1590,47 @@ class RustPrinter extends Printer {
       const value = given.get(f.name);
       return `${this.name(f.name)}: Var::new(${value ? this.coerce(value, f.ty, ind + INDENT) : "None"})`;
     });
-    return `Rc::new(${this.layout(`${x.cls} `, fields, ind, "{}")})`;
+    const made = `Rc::new(${this.layout(`${x.cls} `, fields, ind, "{}")})`;
+    return cls.gc ? `gc_track(${made})` : made;
+  }
+
+  /**
+   * A tracked struct's `GcNode` (cycles.ts rule 6): `gc_traverse` reports each tracked object its fields hold, as
+   * references (borrowed: no count changes), `gc_clear` empties those fields.
+   */
+  private gcImpl(name: string, fields: { name: string; ty: Ty }[]): string[] {
+    const [i1, i2] = [INDENT, INDENT + INDENT];
+    return [
+      `impl GcNode for ${name} {`,
+      `${i1}fn gc_traverse(&self, s: &mut GcScan) {`,
+      ...fields.map((f) => `${i2}self.${this.name(f.name)}.gc_peek(|v| ${this.gcVisit(f.ty, "v", 0)});`),
+      `${i1}}`,
+      `${i1}fn gc_clear(&self) {`,
+      ...fields.map((f) => `${i2}self.${this.name(f.name)}.gc_clear();`),
+      `${i1}}`,
+      "}",
+    ];
+  }
+
+  /** An expression reporting `v` (a `&` of a `ty`) to the scan `s`: the tracked objects in it. */
+  private gcVisit(ty: Ty, v: string, d: number): string {
+    const inner = (t: Ty, x: string) => (gcWalks(this.gcLeaf, t) ? this.gcVisit(t, x, d + 1) : "{}");
+    switch (ty.k) {
+      case "class":
+        return `s.rc(${v})`;
+      case "optional":
+        return `if let Some(x${d}) = ${v} { ${this.gcVisit(ty.of, `x${d}`, d + 1)} }`;
+      case "array":
+        return `s.arr(${v}, |s, e${d}| ${inner(ty.of, `e${d}`)})`;
+      case "map":
+        return `s.map(${v}, |s, e${d}| ${inner(ty.of, `e${d}`)})`;
+      case "jsmap":
+        return `s.omap(${v}, |s, k${d}| ${inner(ty.key, `k${d}`)}, |s, e${d}| ${inner(ty.of, `e${d}`)})`;
+      case "jsset":
+        return `s.omap(${v}, |s, e${d}| ${inner(ty.of, `e${d}`)}, |_, _| {})`;
+      default:
+        return "{}";
+    }
   }
 
   private style(x: Extract<Expr, { e: "style" }>, ind: string): string {
@@ -1267,24 +1660,30 @@ class RustPrinter extends Printer {
 
   /** A closure: `move`, over clones of the locals it uses, so it can outlive the function that made it. */
   protected lambda(x: Lambda, ind: string): string {
-    const saved = { frame: this.frame, tryLabel: this.tryLabel };
+    const saved = { frame: this.frame, tryLabel: this.tryLabel, loops: this.loops, blocks: this.blocks };
+    [this.loops, this.blocks] = [[], 0];
     const clones = this.captureClones(names(x), new Set(x.params.map((p) => p.name)));
-    this.frame = { ret: x.ret, result: false, captured: captured(x.body) };
+    // A closure that can throw returns a `Result`.
+    const result = !!x.throws;
+    this.frame = { ret: x.ret, result, captured: captured(x.body) };
     this.tryLabel = undefined;
     const closure = this.scoped(() => {
       for (const p of x.params) this.declare(p.name, { kind: "local", ty: p.ty, boxed: false });
       const params = x.params.map((p) => `${p.unused ? "_" : this.name(p.name)}: ${this.ty(p.ty)}`).join(", ");
-      const head = `move |${params}|${x.ret.k === "void" ? "" : ` -> ${this.ty(x.ret)}`}`;
+      const head = `move |${params}|${result ? ` -> Result<${this.ty(x.ret)}, JsError>` : x.ret.k === "void" ? "" : ` -> ${this.ty(x.ret)}`}`;
       if (!Array.isArray(x.body)) {
-        const value = this.coerce(x.body, x.ret, ind + INDENT);
+        const coerced = this.coerce(x.body, x.ret, ind + INDENT);
+        const value = result ? `Ok(${coerced})` : coerced;
         return value.includes("\n") || value.length + ind.length > 90 ? `${head} {\n${ind + INDENT}${value}\n${ind}}` : `${head} { ${value} }`;
       }
       const lines = this.body(x.body, ind + INDENT);
+      if (result && x.ret.k === "void") lines.push(`${ind + INDENT}Ok(())`);
       if (lines.length === 1 && lines[0]!.length < 90 && !this.returns(x.body)) return `${head} { ${lines[0]!.trim()} }`;
       return `${head} {\n${lines.join("\n")}\n${ind}}`;
     });
     this.frame = saved.frame;
     this.tryLabel = saved.tryLabel;
+    [this.loops, this.blocks] = [saved.loops, saved.blocks];
     if (!clones.length) return closure;
     return `{\n${clones.map((c) => `${ind + INDENT}${c}`).join("\n")}\n${ind + INDENT}${closure.replace(/\n/g, `\n${INDENT}`)}\n${ind}}`;
   }
@@ -1311,20 +1710,20 @@ class RustPrinter extends Printer {
     if (x.e === "lambda") return `f${x.params.length}(${this.lambda(x, ind)})`;
     const b = x.e === "id" ? this.lookup(x.name, "fn") : undefined;
     if (x.e !== "id" || b?.kind !== "fn") return this.expr(x, ind);
-    const own: Ty = { k: "fn", params: b.decl.params.map((p) => p.ty), ret: b.decl.ret };
+    const own: Ty = { k: "fn", params: b.decl.params.map((p) => p.ty), ret: b.decl.ret, ...(b.decl.throws ? { throws: true } : {}) };
     if (!want || this.ty(own) === this.ty(want)) return `f${b.decl.params.length}(${this.fnItem(x.name, b, ind)})`;
     // The slot's signature differs (it returns `Node | null`, the function a `Node`): adapt.
     const params: Param[] = want.params.map((ty, i) => ({ name: `p${i}`, ty, unused: i >= b.decl.params.length }));
-    const call: Expr = { e: "call", callee: { e: "id", name: x.name }, args: b.decl.params.map((_, i) => ({ e: "id", name: `p${i}` })) };
-    return this.fnValue({ e: "lambda", params, ret: want.ret, body: want.ret.k === "void" ? [{ s: "expr", x: call }] : call }, ind);
+    const call: Expr = { e: "call", callee: { e: "id", name: x.name }, args: b.decl.params.map((_, i) => ({ e: "id", name: `p${i}` })), throws: b.decl.throws };
+    return this.fnValue({ e: "lambda", params, ret: want.ret, body: want.ret.k === "void" ? [{ s: "expr", x: call }] : call, throws: want.throws }, ind);
   }
 
   /** A declared function as something callable: its name, or a closure supplying what it captures. */
   private fnItem(name: string, b: Fn, ind: string): string {
     if (!b.captures.size && !b.decl.async) return this.fnName(name, b);
     const params: Param[] = b.decl.params.map((p) => ({ name: p.name, ty: p.ty }));
-    const call: Expr = { e: "call", callee: { e: "id", name }, args: params.map((p) => ({ e: "id", name: p.name })) };
-    return this.lambda({ e: "lambda", params, ret: b.decl.ret, body: b.decl.ret.k === "void" ? [{ s: "expr", x: call }] : call }, ind);
+    const call: Expr = { e: "call", callee: { e: "id", name }, args: params.map((p) => ({ e: "id", name: p.name })), throws: b.decl.throws };
+    return this.lambda({ e: "lambda", params, ret: b.decl.ret, body: b.decl.ret.k === "void" ? [{ s: "expr", x: call }] : call, throws: b.decl.throws }, ind);
   }
 
   /** A callback for an array method, called before the method returns: no `Rc` needed. */
@@ -1342,10 +1741,18 @@ class RustPrinter extends Printer {
     return `(${this.expr(x, ind)}).js_i32()`;
   }
 
-  /** `.await` and, for a call that can fail, what a failure does: leave the `try` block, or return the error. */
-  private finish(call: string, awaited: boolean | undefined, fallible: boolean): string {
+  /**
+   * `.await` and, for a call that can fail, what a failure does: leave the `try` block, or return the error.
+   * `fallible`: an awaited call can fail; `throws`: a synchronous one can (it returns a `Result`).
+   */
+  private finish(call: string, awaited: boolean | undefined, fallible: boolean, throws = false): string {
     const s = awaited ? `${call}.await` : call;
-    if (!awaited || !fallible) return s;
+    if ((!awaited || !fallible) && !throws) return s;
+    return this.fail(s);
+  }
+
+  /** A `Result` whose error leaves the innermost `try` block, or the function. */
+  private fail(s: string): string {
     if (this.tryLabel) return `(match ${s} { Ok(v__) => v__, Err(e__) => break ${this.tryLabel} Err(e__) })`;
     return this.frame.result ? `${s}?` : `${s}.unwrap()`;
   }
@@ -1356,12 +1763,13 @@ class RustPrinter extends Printer {
     if (x.callee.e === "id" && b?.kind === "fn") {
       const args = b.decl.params.map((p, i) => {
         const arg = x.args[i] ?? p.default;
+        if (i === 0 && arg && this.byRef.has(b.decl)) return this.thisRef(arg, p.ty, inner);
         return arg ? this.coerce(arg, p.ty, inner) : "None";
       });
       // What a local function captures travels with each call.
       for (const [capture, local] of b.captures) args.push(local.boxed || !this.isCopy(local.ty) ? `${this.name(capture)}.clone()` : this.name(capture));
       // The app's own async functions return a Result; a native one returns its value.
-      return this.finish(this.layout(this.fnName(x.callee.name, b), args, ind), x.await, b.decl.async && !b.native);
+      return this.finish(this.layout(this.fnName(x.callee.name, b), args, ind), x.await, b.decl.async && !b.native, x.throws);
     }
     const callee = this.typeOf(x.callee);
     if (this.isRt(callee, "Variants")) {
@@ -1371,7 +1779,14 @@ class RustPrinter extends Printer {
     const params = callee.k === "fn" ? callee.params : [];
     const args = x.args.map((arg, i) => (params[i] ? this.coerce(arg, params[i]!, inner) : this.expr(arg, inner)));
     // `(f)(…)`: the callee is an `Rc<dyn Fn>` in a variable, a field or an optional just unwrapped.
-    return this.finish(this.layout(`(${this.receiver(x.callee, ind)})`, args, ind), x.await, false);
+    return this.finish(this.layout(`(${this.receiver(x.callee, ind)})`, args, ind), x.await, false, x.throws);
+  }
+
+  /** `this` for a class's free function: the object borrowed, or as its base / protocol (a cast of a clone). */
+  private thisRef(x: Expr, want: Ty, ind: string): string {
+    const have = this.typeOf(x);
+    if (have.k === "class" && want.k === "class" && have.name === want.name) return `&${this.receiver(x, ind)}`;
+    return `&${this.coerce(x, want, ind)}`;
   }
 
   /** A value, or the function `update()` re-runs: the runtime has one entry point for each. */
@@ -1528,7 +1943,10 @@ class RustPrinter extends Printer {
     return `${this.receiver(x.obj, ind)}.${this.name(snake(x.name))}(${x.args.map((a) => this.strRef(a, ind)).join(", ")})`;
   }
 
-  protected op(op: Op, args: Expr[], ind: string, _awaited = false, chain = false): string {
+  /** `throws`: the callback can throw: the `try_` form of the array method, which returns a `Result`. */
+  protected op(op: Op, args: Expr[], ind: string, _awaited = false, chain = false, throws = false): string {
+    const jsonDate = this.jsonDateOp(op, args, ind);
+    if (jsonDate !== undefined) return jsonDate;
     const [a, b, c] = args;
     if (chain && a && this.typeOf(a).k === "optional") {
       // `a?.b.length`: the operation runs on the value inside the optional.
@@ -1536,7 +1954,7 @@ class RustPrinter extends Printer {
       const local = this.place(a);
       return this.scoped(() => {
         this.declare("o__", { kind: "local", ty: inside, boxed: false });
-        const rest = this.op(op, [{ e: "id", name: "o__" }, ...args.slice(1)], ind);
+        const rest = this.op(op, [{ e: "id", name: "o__" }, ...args.slice(1)], ind, false, false, throws);
         const flat = this.opType(op, [{ e: "id", name: "o__" }, ...args.slice(1)]).k === "optional";
         return `${local ? `${local}.as_ref()` : this.atom(a, ind)}.${flat ? "and_then" : "map"}(|o__| ${rest})`;
       });
@@ -1549,6 +1967,8 @@ class RustPrinter extends Printer {
       return t.k === "array" ? t.of : UNKNOWN;
     };
     const number = (x: Expr) => (this.typeOf(x).k === "int" ? "i64" : "f64");
+    // An array method taking a callback: its `try_` form when the callback can throw.
+    const each = (method: string, rest: string) => (throws ? this.fail(`${r()}.try_${method}(${rest})`) : `${r()}.${method}(${rest})`);
     switch (op) {
       case "arr.length":
         return `${r()}.len()`;
@@ -1564,12 +1984,44 @@ class RustPrinter extends Printer {
         return `${r()}.pop()`;
       case "arr.unshift":
         return `${r()}.unshift(${this.coerce(b!, elem(), ind)})`;
+      // As a value: the new length (the receiver read once, before the argument).
+      case "arr.pushLen":
+        return `{ let a__ = &${r()}; a__.push(${this.coerce(b!, elem(), ind)}); a__.len() }`;
+      case "arr.pushAllLen":
+        return `{ let a__ = &${r()}; a__.push_all(${e(b!)}); a__.len() }`;
+      case "arr.unshiftLen":
+        return `{ let a__ = &${r()}; a__.unshift(${this.coerce(b!, elem(), ind)}); a__.len() }`;
       case "arr.splice":
-        return `${r()}.splice(${e(b!)}, ${e(c!)})`;
+        return args[3] ? `${r()}.splice_items(${e(b!)}, ${e(c!)}, ${e(args[3])})` : `${r()}.splice(${e(b!)}, ${e(c!)})`;
       case "arr.indexOf":
-        return `${r()}.index_of(&${this.coerce(b!, elem(), ind)})`;
+        return c ? `${r()}.index_of_from(&${this.coerce(b!, elem(), ind)}, ${e(c)})` : `${r()}.index_of(&${this.coerce(b!, elem(), ind)})`;
       case "arr.includes":
-        return `${r()}.includes(&${this.coerce(b!, elem(), ind)})`;
+        return c ? `${r()}.includes_from(&${this.coerce(b!, elem(), ind)}, ${e(c)})` : `${r()}.includes(&${this.coerce(b!, elem(), ind)})`;
+      case "arr.fill":
+        return `${r()}.fill(${this.coerce(b!, elem(), ind)}, ${e(c!)}, ${args[3] ? `Some(${e(args[3])})` : "None"})`;
+      case "arr.copyWithin":
+        return `${r()}.copy_within(${e(b!)}, ${e(c!)}, ${args[3] ? `Some(${e(args[3])})` : "None"})`;
+      case "arr.filled": {
+        const of = (a as Extract<Expr, { e: "arr" }>).of;
+        const call = `Arr::<${this.ty(of)}>::${throws ? "try_" : ""}filled(${e(b!)}, ${this.coerce(c!, of, ind)})`;
+        return throws ? this.fail(call) : call;
+      }
+      case "arr.fromLength": {
+        const call = `Arr::<${this.ty((a as Extract<Expr, { e: "arr" }>).of)}>::${throws ? "try_" : ""}from_len(${e(b!)}, ${this.callback(c!, ind)})`;
+        return throws ? this.fail(call) : call;
+      }
+      case "arr.flat":
+        return `${r()}.flat()`;
+      case "arr.reduceRight":
+        return each("reduce_right", `${this.coerce(c!, this.typeOf(c!), ind)}, ${this.callback(b!, ind)}`);
+      case "arr.findLast":
+        return each("find_last_i", this.callback(b!, ind));
+      case "arr.findLastIndex":
+        return each("find_last_index_i", this.callback(b!, ind));
+      case "arr.toSpliced":
+        return `${r()}.to_spliced(${e(b!)}, ${e(c!)}, ${args[3] ? `Some(${e(args[3])})` : "None"})`;
+      case "arr.with":
+        return args[3] ? `${r()}.try_with(${e(b!)}, ${this.coerce(c!, elem(), ind)}).unwrap()` : this.fail(`${r()}.try_with(${e(b!)}, ${this.coerce(c!, elem(), ind)})`);
       case "arr.find":
       case "arr.findIndex":
       case "arr.filter":
@@ -1577,7 +2029,7 @@ class RustPrinter extends Printer {
       case "arr.some":
       case "arr.every":
       case "arr.forEach":
-        return `${r()}.${snake(op.slice(4))}(${this.callback(b!, ind)})`;
+        return each(snake(op.slice(4)), this.callback(b!, ind));
       case "arr.join":
         return `${r()}.join(${s(b!)})`;
       case "arr.slice":
@@ -1589,17 +2041,17 @@ class RustPrinter extends Printer {
       case "arr.concat":
         return `Arr::concat(${this.layout("vec!", args.map(e), ind, "[]")})`;
       case "arr.sort":
-        return `${r()}.sort(${this.callback(b!, ind)})`;
+        return each("sort", this.callback(b!, ind));
       case "arr.reverse":
         return `${r()}.reverse()`;
       case "arr.shift":
         return `${r()}.shift()`;
       case "arr.lastIndexOf":
-        return `${r()}.last_index_of(&${this.coerce(b!, elem(), ind)})`;
+        return c ? `${r()}.last_index_of_from(&${this.coerce(b!, elem(), ind)}, ${e(c)})` : `${r()}.last_index_of(&${this.coerce(b!, elem(), ind)})`;
       case "arr.atRel":
         return `${r()}.at_rel(${e(b!)})`;
       case "arr.reduce":
-        return `${r()}.reduce(${this.coerce(c!, this.opType(op, args), ind)}, ${this.callback(b!, ind)})`;
+        return each("reduce", `${this.coerce(c!, this.opType(op, args), ind)}, ${this.callback(b!, ind)}`);
       case "arr.mapI":
       case "arr.filterI":
       case "arr.forEachI":
@@ -1607,11 +2059,15 @@ class RustPrinter extends Printer {
       case "arr.everyI":
       case "arr.findI":
       case "arr.findIndexI":
-        return `${r()}.${snake(op.slice(4, -1))}_i(${this.callback(b!, ind)})`;
+        return each(`${snake(op.slice(4, -1))}_i`, this.callback(b!, ind));
       case "map.delete":
         return `${r()}.remove(${s(b!)})`;
       case "map.has":
         return `${r()}.has(${s(b!)})`;
+      case "map.keys":
+        return `${r()}.keys()`;
+      case "map.values":
+        return `${r()}.values()`;
       case "str.split":
         return `js_split(${s(a!)}, ${s(b!)})`;
       case "str.replace":
@@ -1632,12 +2088,17 @@ class RustPrinter extends Printer {
         return `js_trim_end(${s(a!)})`;
       case "str.compare":
         return `js_compare(${s(a!)}, ${s(b!)})`;
+      case "int.wideRem":
+        return `(${this.atom(a!, ind)} % ${this.atom(b!, ind)})`;
       case "math.fn": {
         const name = (a as Extract<Expr, { e: "str" }>).v;
+        // `%` binds tighter than `+`: the operands are atoms.
+        if (name === "fmod") return `(${this.atom(args[1]!, ind)} % ${this.atom(args[2]!, ind)})`;
         const x = args.slice(1).map(e);
         const special: Record<string, string> = {
           sign: `js_sign(${x[0]})`, isInteger: `js_is_integer(${x[0]})`, isNaN: `f64::is_nan(${x[0]})`, isFinite: `f64::is_finite(${x[0]})`,
-          Infinity: "f64::INFINITY", NaN: "f64::NAN", log: `f64::ln(${x[0]})`, log1p: `f64::ln_1p(${x[0]})`, expm1: `f64::exp_m1(${x[0]})`,
+          Infinity: "f64::INFINITY", NaN: "f64::NAN", log: `f64::ln(${x[0]})`, jsRound: `js_round_d(${x[0]})`, log1p: `f64::ln_1p(${x[0]})`, expm1: `f64::exp_m1(${x[0]})`,
+          fround: `((${x[0]}) as f64 as f32 as f64)`, asinh: `js_asinh(${x[0]})`, acosh: `js_acosh(${x[0]})`, atanh: `js_atanh(${x[0]})`,
         };
         return special[name] ?? `f64::${name}(${x.join(", ")})`;
       }
@@ -1654,6 +2115,22 @@ class RustPrinter extends Printer {
         return `((${this.i32(a!, ind)} as u32).wrapping_shr(${this.i32(b!, ind)} as u32) as f64)`;
       case "bit.not":
         return `(!${this.i32(a!, ind)} as i64)`;
+      case "bit.imul":
+        return `(${this.i32(a!, ind)}.wrapping_mul(${this.i32(b!, ind)}) as i64)`;
+      case "bit.clz32":
+        return `((${this.i32(a!, ind)} as u32).leading_zeros() as i64)`;
+      case "js.fn": {
+        const name = (a as Extract<Expr, { e: "str" }>).v;
+        const rest = args.slice(1);
+        // fromCharCode / fromCodePoint take a slice of their codes; an array of them (`...codes`) by reference.
+        const list = /^from(CharCode|CodePoint)!?$/.test(name);
+        const array = /^from(CharCodes|CodePoints)!?$/.test(name);
+        // ArrayBuffer / DataView / typed array arguments (lib4) by reference.
+        const byRef = (x: Expr) => { const t = this.typeOf(x); return t.k === "rt" && /Array$|^ArrayBuffer$|^DataView$/.test(t.name); };
+        const text = list ? `&[${rest.map(e).join(", ")}]` : rest.map((x) => (this.typeOf(x).k === "string" ? s(x) : array || byRef(x) ? `&${this.receiver(x, ind)}` : e(x))).join(", ");
+        const call = `js_${snake(name.replace("!", ""))}(${text})`;
+        return name.endsWith("!") ? `${call}.unwrap()` : throws ? this.fail(call) : call;
+      }
       case "str.upper":
         return `${r()}.to_uppercase()`;
       case "str.lower":
@@ -1686,7 +2163,7 @@ class RustPrinter extends Printer {
       case "math.sqrt":
         return `f64::sqrt(${e(a!)})`;
       case "math.pow":
-        return `f64::powf(${e(a!)}, ${e(b!)})`;
+        return `js_pow(${e(a!)}, ${e(b!)})`;
       case "math.random":
         return "js_random()";
       case "math.pi":
@@ -1698,11 +2175,78 @@ class RustPrinter extends Printer {
       case "num.parse":
         return `js_number(${s(a!)})`;
       case "int.parse":
-        return `js_parse_int(${s(a!)})`;
+        return `js_parse_int(${s(a!)}, ${e(b!)})`;
       case "error.message":
         return `js_error_message(&${r()})`;
       case "error.text":
         return `${r()}.message.clone()`;
+      default:
+        return op.startsWith("ta.") ? this.typedArrayOp(op, args, ind) : this.bigOp(op, args, ind);
+    }
+  }
+
+  /** Typed arrays (typedarray.rs: `TypedArray<K>` over shared `Rc<[Cell<_>]>`): callbacks are plain closures. */
+  private typedArrayOp(op: Op, args: Expr[], ind: string): string {
+    const [a, b, ...rest] = args;
+    const name = (b as Extract<Expr, { e: "str" }>).v;
+    if (op === "ta.new") {
+      const form = (a as Extract<Expr, { e: "str" }>).v;
+      const value = rest[0]!;
+      return form === "len" ? `${name}::new(${this.expr(value, ind)})` : form === "typed" ? `${name}::from_ta(&${this.receiver(value, ind)})` : `${name}::from_doubles(${this.expr(value, ind)})`;
+    }
+    if (op === "ta.prop") return `${this.receiver(a!, ind)}.${snake(name)}()`;
+    const arg = (x: Expr, i: number) => {
+      if (x.e === "lambda") return this.callback(x, ind);
+      if (name === "join") return this.strRef(x, ind);
+      if (name === "setFromTa" && i === 0) return `&${this.receiver(x, ind)}`;
+      return this.expr(x, ind);
+    };
+    return `${this.receiver(a!, ind)}.${snake(name)}(${rest.map(arg).join(", ")})`;
+  }
+
+  /** bigint and symbol operations (`JsBigInt`, `JsSymbol` in bigint.rs): owned operands; a throwing one returns a `Result`. */
+  private bigOp(op: Op, args: Expr[], ind: string): string {
+    const [a, b] = args;
+    const p = (x: Expr) => this.atom(x, ind);
+    const e = (x: Expr) => this.expr(x, ind);
+    // `/`, `%` and `**` by a literal the front-end checked can't throw; anything else is the checking function.
+    const throwing = !(b?.e === "op" && b.op === "big.lit");
+    const infix: Partial<Record<Op, string>> = { "big.add": "+", "big.sub": "-", "big.mul": "*", "big.and": "&", "big.or": "|", "big.xor": "^", "big.shl": "<<", "big.shr": ">>" };
+    if (infix[op]) return `(${p(a!)} ${infix[op]} ${p(b!)})`;
+    switch (op) {
+      case "big.lit": {
+        const v = (a as Extract<Expr, { e: "str" }>).v;
+        return BigInt(v) > 9223372036854775807n || BigInt(v) < -9223372036854775807n ? `JsBigInt::lit("${v}")` : `JsBigInt::from(${v}i64)`;
+      }
+      case "big.div":
+      case "big.mod":
+        return throwing ? this.fail(`js_big_${op.slice(4)}(${e(a!)}, ${e(b!)})`) : `(${p(a!)} ${op === "big.div" ? "/" : "%"} ${p(b!)})`;
+      case "big.pow":
+        return throwing ? this.fail(`js_big_pow(${e(a!)}, ${e(b!)})`) : `${p(a!)}.pow(&${p(b!)})`;
+      case "big.neg":
+        return `(-${p(a!)})`;
+      case "big.not":
+        return `(!${p(a!)})`;
+      case "big.from":
+        return `JsBigInt::from(${e(a!)})`;
+      case "big.fromDouble":
+        return this.fail(`js_big_from(${e(a!)})`);
+      case "big.parse":
+        return this.fail(`js_big_parse(${this.strRef(a!, ind)})`);
+      case "big.toNumber":
+        return `${this.receiver(a!, ind)}.to_f64()`;
+      case "big.str":
+        return b!.e === "int" ? `${this.receiver(a!, ind)}.to_string_radix(${b!.v})` : this.fail(`js_big_to_string(&${this.receiver(a!, ind)}, ${e(b!)})`);
+      case "big.asIntN":
+        return `JsBigInt::as_int_n(${e(a!)}, ${e(b!)})`;
+      case "big.asUintN":
+        return `JsBigInt::as_uint_n(${e(a!)}, ${e(b!)})`;
+      case "sym.new":
+        return `JsSymbol::new(${this.coerce(a!, { k: "optional", of: { k: "string" } }, ind)})`;
+      case "sym.description":
+        return `${this.receiver(a!, ind)}.description()`;
+      default:
+        return `/* ${op} */`;
     }
   }
 
@@ -1746,33 +2290,55 @@ class RustPrinter extends Printer {
         const head = `${ind}for ${this.name(s.name)} in ${this.receiver(s.of, ind)}.iter() {`;
         return this.scoped(() => {
           this.declare(s.name, { kind: "local", ty: of.k === "array" ? of.of : { k: "void" }, boxed: false });
-          return [head, ...this.body(s.body, i2), `${ind}}`];
+          return this.loop(head, () => this.body(s.body, i2), `${ind}}`, s.label);
         });
       }
       case "forRange": {
-        const head = `${ind}for ${this.name(s.name)} in ${this.atom(s.from, ind)}..${s.inclusive ? "=" : ""}${this.atom(s.to, ind)} {`;
+        // Int is i64: a literal-only range would infer i32 and wrap `i * 7919` (the bench's mapNum).
+        const from = this.atom(s.from, ind).replace(/^\d+$/, "$&i64");
+        const head = `${ind}for ${this.name(s.name)} in ${from}..${s.inclusive ? "=" : ""}${this.atom(s.to, ind)} {`;
         return this.scoped(() => {
           this.declare(s.name, { kind: "local", ty: { k: "int" }, boxed: false });
-          return [head, ...this.body(s.body, i2), `${ind}}`];
+          return this.loop(head, () => this.body(s.body, i2), `${ind}}`, s.label);
         });
       }
       case "while":
-        return [`${ind}while ${this.expr(s.c, ind)} {`, ...this.body(s.body, i2), `${ind}}`];
+        return this.loop(`${ind}while ${this.expr(s.c, ind)} {`, () => this.body(s.body, i2), `${ind}}`, s.label);
       case "return": {
         const value = s.x ? this.coerce(s.x, this.frame.ret, ind) : this.frame.result ? "()" : "";
         return [`${ind}return${this.frame.result ? ` Ok(${value})` : value ? ` ${value}` : ""};`];
       }
       case "break":
-        return [`${ind}break;`];
-      case "continue":
-        return [`${ind}continue;`];
+      case "continue": {
+        if (s.label) return [`${ind}${s.s} '${s.label};`];
+        // Out of a labelled block (a try block) to the loop around it: by the loop's label.
+        const loop = this.loops.at(-1);
+        if (!loop || this.blocks === loop.blocks) return [`${ind}${s.s};`];
+        loop.used = true;
+        return [`${ind}${s.s} ${loop.label};`];
+      }
+      case "block": {
+        this.blocks++;
+        const body = this.body(s.body, i2);
+        this.blocks--;
+        return [`${ind}'${s.label}: {`, ...body, `${ind}}`];
+      }
+      case "rethrow": {
+        const error = `Err(${this.expr(s.error, ind)})`;
+        if (this.tryLabel) return [`${ind}break ${this.tryLabel} ${error};`];
+        return [this.frame.result ? `${ind}return ${error};` : `${ind}panic!("{}", js_error_message(&${this.expr(s.error, ind)}));`];
+      }
       case "try": {
+        // No `finally` in Rust: what leaves the blocks is recorded, and taken after the finally block.
+        if (s.lowered) return this.body(s.lowered, ind);
         // A labelled block evaluating to a Result: a failing call inside breaks out with its
         // error, while `return`, `break` and `continue` keep meaning what they mean.
         const outer = this.tryLabel;
         const label = `'try${++this.tryCount}`;
         this.tryLabel = label;
+        this.blocks++;
         const body = this.body(s.body, i2);
+        this.blocks--;
         this.tryLabel = outer;
         const error = s.catchName ? this.name(s.catchName) : "_";
         const handler = this.scoped(() => {
@@ -1788,12 +2354,28 @@ class RustPrinter extends Printer {
       }
       case "unreachable":
         return [`${ind}unreachable!();`];
+      case "global": {
+        const g = this.placed.get(s.name);
+        return g ? [`${ind}${this.globalInit(g, ind)}`] : [];
+      }
       case "fn": {
         return this.fn(s.decl, ind, (this.lookup(s.decl.name) as Fn).captures);
       }
-      case "switch":
-        return this.switch(s, ind);
+      case "switch": {
+        const block = this.switchBlock(s);
+        return block.s === "block" ? this.stmt(block, ind) : this.switch(s, ind);
+      }
     }
+  }
+
+  /** A loop: labelled when a `break` / `continue` in it leaves a try block (see `loops`). */
+  private loop(head: string, body: () => string[], end: string, label?: string): string[] {
+    const loop = { label: label ? `'${label}` : `'loop${++this.loopCount}`, blocks: this.blocks, used: !!label };
+    this.loops.push(loop);
+    const lines = body();
+    this.loops.pop();
+    const labelled = loop.used ? head.replace(/^(\s*)/, `$1${loop.label}: `) : head;
+    return [labelled, ...lines, end];
   }
 
   private assign(s: Extract<Stmt, { s: "assign" }>, ind: string): string {
@@ -1813,27 +2395,37 @@ class RustPrinter extends Printer {
       if (s.op === "=") return `${name} = ${value}`;
       return ty.k === "string" ? `${name}.push_str(&${value})` : `${name} ${s.op} ${value}`;
     }
+    // An accessor that can throw returns a `Result`.
+    const f = (call: string) => (target.e === "prop" && target.throws ? this.fail(call) : call);
     if (target.e === "prop" && target.sup) {
       // `super.x = …`: the base's setter on `this`.
       const [set, get] = [`m__${target.sup}__set_${target.name}`, `m__${target.sup}__${target.name}`];
-      if (s.op === "=") return `${set}(${this.expr(target.obj, ind)}, ${value})`;
-      return `{ let o__ = ${this.expr(target.obj, ind)}; ${set}(o__.clone(), ${next(`${get}(o__.clone())`)}) }`;
+      const self: Ty = { k: "class", name: target.sup };
+      if (s.op === "=") return f(`${set}(${this.thisRef(target.obj, self, ind)}, ${value})`);
+      return `{ let o__ = ${this.thisRef(target.obj, self, ind)}; ${f(`${set}(o__, ${next(f(`${get}(o__)`))})`)} }`;
     }
     const objTy = target.e === "prop" ? this.typeOf(target.obj) : undefined;
     if (target.e === "prop" && objTy?.k === "class" && this.isTrait(objTy.name)) {
-      if (s.op === "=") return `${this.atom(target.obj, ind)}.set_${target.name}(${value})`;
-      return `{ let o__ = ${this.expr(target.obj, ind)}; o__.clone().set_${target.name}(${next(`o__.clone().get_${target.name}()`)}) }`;
+      if (s.op === "=") return f(`${this.receiver(target.obj, ind)}.set_${target.name}(${value})`);
+      return `{ let o__ = ${this.expr(target.obj, ind)}; ${f(`o__.set_${target.name}(${next(f(`o__.get_${target.name}()`))})`)} }`;
     }
     if (target.e === "prop" && objTy?.k === "class" && this.member(objTy.name, target.name)?.kind === "getter") {
       // A property with a setter, on a class without subclasses: its free functions.
-      const set = `m__${this.definer(objTy.name, target.name, true)}__set_${target.name}`;
-      const get = `m__${this.definer(objTy.name, target.name)}__${target.name}`;
-      if (s.op === "=") return `${set}(${this.expr(target.obj, ind)}, ${value})`;
-      return `{ let o__ = ${this.expr(target.obj, ind)}; ${set}(o__.clone(), ${next(`${get}(o__.clone())`)}) }`;
+      const [setter, getter] = [this.definer(objTy.name, target.name, true)!, this.definer(objTy.name, target.name)!];
+      const [set, get] = [`m__${setter}__set_${target.name}`, `m__${getter}__${target.name}`];
+      if (s.op === "=") return f(`${set}(${this.thisRef(target.obj, { k: "class", name: setter }, ind)}, ${value})`);
+      // `this` of each free function: the object, or (inherited) as the base that defines it.
+      const as = (d: string) => (d === objTy.name ? "&o__" : `&(o__.clone() as ${this.ty({ k: "class", name: d })})`);
+      return `{ let o__ = ${this.expr(target.obj, ind)}; ${f(`${set}(${as(setter)}, ${next(f(`${get}(${as(getter)})`))})`)} }`;
     }
     if (target.e === "prop") {
       const on = this.receiver(target.obj, ind);
       const field = this.name(target.name);
+      // A tracked field's store reports what it overwrites while the incremental collector marks (gc.rs `gc_write`).
+      if (objTy?.k === "class" && this.gcTracked(objTy.name, target.name)) {
+        if (s.op === "=") return `{ let o__ = &${on}; gc_write(&o__.${field}); o__.${field}.set(${value}) }`;
+        return `{ let o__ = ${this.expr(target.obj, ind)}; gc_write(&o__.${field}); o__.${field}.set(${next(`o__.${field}.get()`)}) }`;
+      }
       if (s.op === "=") return `${on}.${field}.set(${value})`;
       return `{ let o__ = ${this.expr(target.obj, ind)}; o__.${field}.set(${next(`o__.${field}.get()`)}) }`;
     }

@@ -1,2 +1,3 @@
-// expect: has no native equivalent
-export let value: string | number = 1;
+// expect: can't be a member of one
+// code: NUCLO1003
+export let value: string | (() => void) = "a";

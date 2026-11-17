@@ -1,4 +1,5 @@
 // expect: Override the getter and the setter together
+// code: NUCLO4004
 class Box {
   private size = 1;
   get value(): number {

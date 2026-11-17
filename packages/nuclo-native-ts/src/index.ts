@@ -23,6 +23,31 @@ export type Int = number;
 /** A number kept as a float natively (Swift and Kotlin `Double`). */
 export type Double = number;
 
+/*
+ * Sized numbers: the smallest native type that keeps JavaScript's results. They are plain numbers in TypeScript and on
+ * the web (no wrapping, no rounding), so the compiler only accepts a write it can prove fits: a literal, another value
+ * of a type that fits, `x & 0xff` / `x % 100` / `(x << 24) >> 24` / `x | 0` / `x >>> 0`, `Math.min`/`max` clamps, and
+ * for Float32 `Math.fround(x)`. Reads are ordinary numbers (Int, or Double for Int64 / UInt32 / Float32).
+ */
+/** -128…127 (Swift `Int8`, Kotlin `Byte`, Rust `i8`). */
+export type Int8 = number;
+/** -32768…32767 (Swift `Int16`, Kotlin `Short`, Rust `i16`). */
+export type Int16 = number;
+/** -2^31…2^31-1 (Swift `Int32`, Kotlin `Int`, Rust `i32`). */
+export type Int32 = number;
+/** A whole number of ±2^63 (Swift `Int64`, Kotlin `Long`, Rust `i64`); JavaScript is exact to 2^53 (`Number.MAX_SAFE_INTEGER`). */
+export type Int64 = number;
+/** 0…255 (Swift `UInt8`, Kotlin `UByte`, Rust `u8`). */
+export type UInt8 = number;
+/** 0…65535 (Swift `UInt16`, Kotlin `UShort`, Rust `u16`). */
+export type UInt16 = number;
+/** 0…2^32-1 (Swift `UInt32`, Kotlin `UInt`, Rust `u32`). */
+export type UInt32 = number;
+/** A value `Math.fround` returns (Swift `Float`, Kotlin `Float`, Rust `f32`). */
+export type Float32 = number;
+/** `Int64` by another name (`import { BigInt }` shadows the global type in that module; `bigint` stays arbitrary precision). */
+export type BigInt = number;
+
 declare const nodeBrand: unique symbol;
 declare const modifierBrand: unique symbol;
 declare const styleClassBrand: unique symbol;

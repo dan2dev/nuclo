@@ -12,7 +12,7 @@ case "$target" in
   macos) exec "$(host_exe "$example")" ;;
   linux) if [ "$HOST" = Darwin ]; then exec "$(gtk_exe "$example")"; else exec "$(host_exe "$example")"; fi ;;
   ios)
-    app=$(ios_app "$example"); ios_boot; open -a Simulator
+    app=$(ios_app "$example"); ios_boot; open "$(xcode-select -p)/../Applications/DeviceHub.app"
     xcrun simctl install "$SIM" "$app"; xcrun simctl launch "$SIM" "$IOS_ID" ;;
   android)
     android_boot; adb install -r "$(apk)"; adb shell am start -n "$ANDROID_ID/dev.nuclo.app.MainActivity" ;;

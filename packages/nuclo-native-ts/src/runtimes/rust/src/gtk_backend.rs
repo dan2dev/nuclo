@@ -1083,9 +1083,13 @@ impl Backend for Gtk {
     }
 
     fn waker(&self) -> Arc<dyn Fn() + Send + Sync> {
-        // Always through the main loop, never inline: a task may wake itself while it runs.
+        // Always through the main loop, never inline: a task may wake itself while it runs. At a high priority: the
+        // microtasks an event handler queued run right after it, before any timer that is due (as in JavaScript).
         Arc::new(|| {
-            glib::idle_add_once(host::wake);
+            glib::idle_add_full(glib::Priority::HIGH, || {
+                host::wake();
+                glib::ControlFlow::Break
+            });
         })
     }
 }

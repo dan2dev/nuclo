@@ -1,6 +1,8 @@
-// expect: Function overloads are not supported
-export function size(x: string): number;
-export function size(x: string[]): number;
-export function size(x: string | string[]): number {
-  return x.length;
+// expect: overloaded
+// code: NUCLO1003
+function size(x: string): number;
+function size(x: string[]): number;
+function size(x: string | string[]): number {
+  return typeof x === "string" ? x.length : x.length;
 }
+export const measure = size;

@@ -537,9 +537,16 @@ pub(crate) fn px(points: f64) -> f32 {
 }
 
 thread_local!(static GLOBAL_STYLES: RefCell<HashMap<String, Style>> = RefCell::default());
+thread_local!(static GLOBAL_STAMP: std::cell::Cell<u64> = const { std::cell::Cell::new(0) });
+
+/// Changes whenever globalStyle() does: a node's static style was computed against one value of it.
+pub(crate) fn global_stamp() -> u64 {
+    GLOBAL_STAMP.with(|stamp| stamp.get())
+}
 
 /// globalStyle(): by tag name, and "body" for the screens and what every root inherits.
 pub fn global_style(selector: &str, style: Style) {
+    GLOBAL_STAMP.with(|stamp| stamp.set(stamp.get() + 1));
     GLOBAL_STYLES.with(|styles| {
         let mut styles = styles.borrow_mut();
         for tag in selector.split(',').map(str::trim) {

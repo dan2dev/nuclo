@@ -1,7 +1,6 @@
-// expect: Declare generic functions at the top level
+// expect: Generic functions are supported at the top level of a module and as function declarations in a block
+// code: NUCLO4002
 export function outer(): number {
-  function inner<T>(x: T): T {
-    return x;
-  }
+  const inner = <T>(x: T): T => x;
   return inner(1);
 }
