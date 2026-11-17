@@ -1,4 +1,10 @@
-// expect: Classes are not supported
+// expect: Setters are not supported natively
 export class Counter {
-  count = 0;
+  private count = 0;
+  set value(v: number) {
+    this.count = v;
+  }
+  get value(): number {
+    return this.count;
+  }
 }

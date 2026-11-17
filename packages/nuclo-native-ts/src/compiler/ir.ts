@@ -63,7 +63,19 @@ export type Op =
   | "str.nonEmpty" | "str.or"
   | "num.toFixed" | "math.floor" | "math.ceil" | "math.round" | "math.trunc" | "math.abs" | "math.min" | "math.max"
   | "math.sqrt" | "math.pow" | "math.random" | "math.pi"
-  | "map.get" | "date.now" | "num.parse" | "int.parse" | "error.message";
+  | "map.get" | "date.now" | "num.parse" | "int.parse" | "error.message"
+  | "arr.concat" | "arr.sort" | "arr.reverse" | "arr.shift" | "arr.lastIndexOf" | "arr.reduce" | "arr.atRel"
+  /** Callbacks that take the index as well: `xs.map((x, i) => …)`. */
+  | "arr.mapI" | "arr.filterI" | "arr.forEachI" | "arr.someI" | "arr.everyI" | "arr.findI" | "arr.findIndexI"
+  | "map.delete" | "map.has"
+  | "str.split" | "str.replace" | "str.replaceAll" | "str.indexOf" | "str.lastIndexOf" | "str.padStart" | "str.padEnd"
+  | "str.repeat" | "str.trimStart" | "str.trimEnd"
+  /** `a < b` on strings: -1, 0 or 1 by UTF-16 units. */
+  | "str.compare"
+  /** A Math / Number function or constant by name: the first argument is its name as a string literal. */
+  | "math.fn"
+  /** The bitwise operators, on ToInt32 of their operands (`>>>` gives a Double: it is unsigned). */
+  | "bit.and" | "bit.or" | "bit.xor" | "bit.shl" | "bit.shr" | "bit.ushr" | "bit.not";
 
 export type Expr =
   | { e: "int"; v: string }
@@ -104,7 +116,16 @@ export type Expr =
   /** A JSON decoder for `res.json<T>()`. */
   | { e: "decoder"; ty: Ty }
   /** Starts an async call from synchronous code (Swift `Task {}`, Kotlin `launch {}`). */
-  | { e: "launch"; call: Expr };
+  | { e: "launch"; call: Expr }
+  /** `x++` / `--x` as a value: `target` is a variable, a property or an array element; `one` is 1 or 1.0. */
+  | { e: "incr"; target: Expr; op: "+=" | "-="; one: Expr; prefix: boolean }
+  /** `new C(…)` of one of the app's classes. Trailing arguments may be left out for parameters with defaults. */
+  | { e: "construct"; cls: string; args: Expr[] }
+  /**
+   * `obj.m(…)`, a method of a class or a protocol, dispatched on the object. `sup`: `super.m(…)`, and
+   * the class whose `m` runs. Getters are read with `prop`, as fields are.
+   */
+  | { e: "invoke"; obj: Expr; name: string; args: Expr[]; sup?: string };
 
 export type BinOp = "+" | "-" | "*" | "/" | "%" | "==" | "!=" | "===" | "!==" | "<" | "<=" | ">" | ">=" | "&&" | "||";
 
@@ -120,7 +141,8 @@ export interface Param {
 export type Stmt =
   | { s: "let"; name: string; ty: Ty; init?: Expr; mutable: boolean }
   | { s: "assign"; target: Expr; op: "=" | "+=" | "-=" | "*=" | "/=" | "%="; value: Expr }
-  | { s: "expr"; x: Expr }
+  /** `discard`: the value is a function, which Swift refuses to leave unused. */
+  | { s: "expr"; x: Expr; discard?: boolean }
   | { s: "if"; c: Expr; then: Stmt[]; else?: Stmt[] }
   | { s: "forOf"; name: string; of: Expr; body: Stmt[] }
   | { s: "forRange"; name: string; from: Expr; to: Expr; inclusive: boolean; body: Stmt[] }
@@ -130,6 +152,8 @@ export type Stmt =
   | { s: "continue" }
   | { s: "try"; body: Stmt[]; catchName?: string; catchBody: Stmt[]; finally?: Stmt[] }
   | { s: "throw"; message: Expr }
+  /** The default of a switch that covers every member of its literal union: TypeScript proved it is never reached. */
+  | { s: "unreachable" }
   | { s: "switch"; x: Expr; cases: { values: Expr[]; body: Stmt[] }[]; default?: Stmt[] }
   /** A local function (hoisted to the top of its block, as JavaScript does). */
   | { s: "fn"; decl: FnDecl };
@@ -146,6 +170,56 @@ export interface ClassDecl {
   fields: ClassField[];
   /** Every field is JSON-decodable: a decoder is generated. */
   decodable: boolean;
+}
+
+/** A method of a class (or, without a body, of a protocol or an abstract class). */
+export interface MethodDecl extends FnDecl {
+  /** `get name()`: read as a property. */
+  getter?: boolean;
+  abstract?: boolean;
+  /** A base class declares it too (Swift and Kotlin `override`). */
+  overrides?: boolean;
+  /** A protocol the class conforms to declares it (Kotlin `override`). */
+  implements?: boolean;
+}
+
+export interface ObjectField extends ClassField {
+  /** A literal it starts with. A field without one is set by the constructor (until then it holds a zero value). */
+  init?: Expr;
+  overrides?: boolean;
+  implements?: boolean;
+}
+
+/**
+ * A class of the app: a Swift class, a Kotlin class, a Rust struct. `this` is the id `this`.
+ * Static members are globals and functions named `Class__member`.
+ */
+export interface ObjectClassDecl {
+  name: string;
+  base?: string;
+  /** The protocols it declares it implements. */
+  protocols: string[];
+  abstract: boolean;
+  /** Some class extends it. */
+  open: boolean;
+  /** Its own fields (parameter properties included); inherited ones are the base's. */
+  fields: ObjectField[];
+  /**
+   * The constructor: the base's runs first with `superArgs`, then `body`, which starts with the
+   * field initializers and parameter properties, as in JavaScript. A class without one gets its base's parameters.
+   */
+  ctor: { params: Param[]; superArgs?: Expr[]; body: Stmt[] };
+  /** Its own methods and getters. */
+  methods: MethodDecl[];
+}
+
+/** An interface some class implements: a Swift protocol, a Kotlin interface, a Rust trait. */
+export interface ProtocolDecl {
+  name: string;
+  /** The protocols it extends. */
+  bases: string[];
+  fields: ClassField[];
+  methods: { name: string; params: Param[]; ret: Ty }[];
 }
 
 export interface FnDecl {
@@ -170,4 +244,7 @@ export interface Program {
   natives?: FnDecl[];
   /** The native components the app uses (`native<P>("Name")`) and the class their props are. */
   components?: { name: string; props: string }[];
+  protocols?: ProtocolDecl[];
+  /** The app's classes, each after its base. */
+  objectClasses?: ObjectClassDecl[];
 }

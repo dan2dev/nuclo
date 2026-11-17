@@ -3,7 +3,7 @@
  * Targets: ios, macos (shell scripts, macOS only), android (Gradle; installs and launches when adb sees a device), linux, linux-gpui, macos-gpui (cargo), web, wasm (served).
  * With no target, it lists the ones this machine runs and asks which; with no example, the examples that build for the target.
  */
-import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, watch } from "node:fs";
 import * as path from "node:path";
 
 const root = path.resolve(import.meta.dirname, "..");
@@ -99,9 +99,34 @@ const android = () => {
   else console.log("No device for adb: built hosts/android/app/build/outputs/apk/release/app-release.apk");
 };
 
+// Rebuilds on any change under examples/ or src/ until Ctrl-C; ios-run.sh relaunches only when new Swift transpiled and compiled.
+const ios = () => {
+  let building = false;
+  let again = false;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const build = async () => {
+    if (building) return void (again = true);
+    building = true;
+    do {
+      again = false;
+      await Bun.spawn(["sh", "scripts/ios-run.sh", example], { cwd: root, stdout: "inherit", stderr: "inherit" }).exited;
+    } while (again);
+    building = false;
+    console.log("Watching examples/ and src/ (Ctrl-C to stop)");
+  };
+  for (const dir of ["examples", "src"]) {
+    watch(path.join(root, dir), { recursive: true }, () => {
+      clearTimeout(timer);
+      timer = setTimeout(build, 150);
+    });
+  }
+  void build();
+};
+
 switch (target) {
   case "android": android(); break;
-  case "ios": case "macos": sh(["sh", `scripts/${target}-run.sh`, example]); break;
+  case "ios": ios(); break;
+  case "macos": sh(["sh", `scripts/${target}-run.sh`, example]); break;
   case "linux": case "linux-gpui": cargo(target); break;
   case "macos-gpui": cargo("linux-gpui"); break;
   case "web": case "wasm": sh(["bun", "scripts/examples.ts", target]); sh(["bun", "scripts/serve.ts", `build/${target}`]); break;

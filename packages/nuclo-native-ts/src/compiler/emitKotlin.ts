@@ -1,5 +1,5 @@
 /** IR → Kotlin for Android Views, against src/runtimes/android/NucloRuntime.kt. */
-import type { ClassDecl, Expr, FnDecl, Op, Program, Stmt, Ty } from "./ir.ts";
+import type { ClassDecl, Expr, FnDecl, MethodDecl, ObjectClassDecl, Op, Program, ProtocolDecl, Stmt, Ty } from "./ir.ts";
 import { INDENT, Printer } from "./printer.ts";
 
 const KEYWORDS = new Set([
@@ -31,6 +31,8 @@ export function emitKotlin(program: Program): string {
 
 class KotlinPrinter extends Printer {
   protected readonly keywords = KEYWORDS;
+  /** The class whose members are being printed: `this` is `this@Name` (a lambda inside a method may have a receiver of its own). */
+  private self?: ObjectClassDecl;
 
   print(program: Program): string {
     const out = [
@@ -44,6 +46,8 @@ class KotlinPrinter extends Printer {
       "",
     ];
     for (const cls of program.classes) out.push(...this.classDecl(cls), "");
+    for (const p of program.protocols ?? []) out.push(...this.protocolDecl(p), "");
+    for (const cls of program.objectClasses ?? []) out.push(...this.objectClassDecl(cls), "");
     // Fields, not properties: a property `count` would get a JVM setter named like a function `setCount`.
     for (const g of program.globals) out.push(...this.stmt(g, "").map((line, at) => (at === 0 ? `@JvmField ${line}` : line)));
     if (program.globals.length) out.push("");
@@ -100,12 +104,82 @@ class KotlinPrinter extends Printer {
   }
 
   private fn(fn: FnDecl, ind = ""): string[] {
+    return [`${ind}${fn.async ? "suspend " : ""}${this.signature(fn.name, fn.params, fn.ret, ind)} {`, ...this.block(fn.body, ind + INDENT), `${ind}}`];
+  }
+
+  private signature(name: string, params: FnDecl["params"], ret: Ty, ind: string): string {
+    return `fun ${this.name(name)}(${this.params(params, ind)})${ret.k === "void" ? "" : `: ${this.ty(ret)}`}`;
+  }
+
+  private params(params: FnDecl["params"], ind: string): string {
     // Kotlin reserves `_`, `__`… as parameter names of a declared function.
-    const params = fn.params
-      .map((p, i) => `${/^_+$/.test(p.name) ? `unused${i}` : this.name(p.name)}: ${this.ty(p.ty)}${p.default ? ` = ${this.expr(p.default, ind)}` : ""}`)
-      .join(", ");
-    const ret = fn.ret.k === "void" ? "" : `: ${this.ty(fn.ret)}`;
-    return [`${ind}${fn.async ? "suspend " : ""}fun ${this.name(fn.name)}(${params})${ret} {`, ...this.block(fn.body, ind + INDENT), `${ind}}`];
+    return params.map((p, i) => `${/^_+$/.test(p.name) ? `unused${i}` : this.name(p.name)}: ${this.ty(p.ty)}${p.default ? ` = ${this.expr(p.default, ind)}` : ""}`).join(", ");
+  }
+
+  private protocolDecl(p: ProtocolDecl): string[] {
+    const lines = [`interface ${p.name}${p.bases.length ? ` : ${p.bases.join(", ")}` : ""} {`];
+    for (const f of p.fields) lines.push(`${INDENT}${f.readonly ? "val" : "var"} ${this.name(f.name)}: ${this.ty(f.ty)}`);
+    for (const m of p.methods) lines.push(`${INDENT}${this.signature(m.name, m.params, m.ret, INDENT)}`);
+    lines.push("}");
+    return lines;
+  }
+
+  /**
+   * A class with a secondary constructor, which runs the base's first, as JavaScript does. Fields
+   * start at a zero value (`lateinit` when their type has none) and the constructor sets them.
+   */
+  private objectClassDecl(cls: ObjectClassDecl): string[] {
+    const i1 = INDENT;
+    const i2 = INDENT + INDENT;
+    this.self = cls;
+    const supers = [...(cls.base ? [cls.base] : []), ...cls.protocols];
+    const lines = [`${cls.abstract ? "abstract " : cls.open ? "open " : ""}class ${cls.name}${supers.length ? ` : ${supers.join(", ")}` : ""} {`];
+    const open = cls.open ? "open " : "";
+    for (const f of cls.fields) {
+      const zero = f.init ? this.expr(f.init, i1) : this.zero(f.ty);
+      const override = f.overrides || f.implements ? "override " : open;
+      lines.push(`${i1}${override}${zero === undefined ? "lateinit " : ""}var ${this.name(f.name)}: ${this.ty(f.ty)}${zero === undefined ? "" : ` = ${zero}`}`);
+    }
+    if (cls.fields.length) lines.push("");
+    const delegate = cls.ctor.superArgs ? ` : ${this.call("super", cls.ctor.superArgs, [], i1, (l) => `${l} = `, false)}` : "";
+    lines.push(`${i1}constructor(${this.params(cls.ctor.params, i1)})${delegate} {`, ...this.block(cls.ctor.body, i2), `${i1}}`);
+    for (const m of cls.methods) lines.push("", ...this.method(m, open));
+    lines.push("}");
+    this.self = undefined;
+    return lines;
+  }
+
+  private method(m: MethodDecl, open: string): string[] {
+    const i1 = INDENT;
+    const modifiers = `${m.abstract ? "abstract " : m.overrides || m.implements ? "" : open}${m.overrides || m.implements ? "override " : ""}`;
+    if (m.getter) {
+      const head = `${i1}${modifiers}val ${this.name(m.name)}: ${this.ty(m.ret)}`;
+      return m.abstract ? [head] : [head, `${i1}${i1}get() {`, ...this.block(m.body, i1 + i1 + i1), `${i1}${i1}}`];
+    }
+    const head = `${i1}${modifiers}${this.signature(m.name, m.params, m.ret, i1)}`;
+    return m.abstract ? [head] : [`${head} {`, ...this.block(m.body, i1 + i1), `${i1}}`];
+  }
+
+  /** The value a field holds until the constructor sets it; undefined when its type has none. */
+  private zero(t: Ty): string | undefined {
+    switch (t.k) {
+      case "int":
+        return "0";
+      case "double":
+        return "0.0";
+      case "string":
+        return '""';
+      case "bool":
+        return "false";
+      case "optional":
+        return "null";
+      case "array":
+        return `mutableListOf<${this.ty(t.of)}>()`;
+      case "map":
+        return `mutableMapOf<String, ${this.ty(t.of)}>()`;
+      default:
+        return undefined;
+    }
   }
 
   protected ty(t: Ty): string {
@@ -150,7 +224,19 @@ class KotlinPrinter extends Printer {
       case "tpl":
         return `"${x.parts.map((p) => (typeof p === "string" ? this.escape(p) : `\${${this.interpolated(p, ind)}}`)).join("")}"`;
       case "id":
+        if (x.name === "this") return this.self ? `this@${this.self.name}` : "this";
         return x.fnRef ? `::${this.name(x.name)}` : this.name(x.name);
+      case "construct":
+        return this.call(x.cls, x.args, [], ind, (l) => `${l} = `, false);
+      case "invoke": {
+        // `super<Base>`: the base class, even when a protocol declares the method too.
+        const on = x.sup ? `super<${this.self?.base ?? x.sup}>` : this.postfixOperand(x.obj, ind);
+        return this.call(`${on}.${this.name(x.name)}`, x.args, [], ind, (l) => `${l} = `, false);
+      }
+      case "incr": {
+        const sign = x.op === "+=" ? "++" : "--";
+        return x.prefix ? `(${sign}${this.expr(x.target, ind)})` : `(${this.expr(x.target, ind)}${sign})`;
+      }
       case "call":
         // No trailing lambda: it would bind to the last parameter, and an app function's may be a defaulted one after the lambda.
         return this.call(this.callee(x.callee, ind), x.args, [], ind, (l) => `${l} = `, false);
@@ -248,7 +334,8 @@ class KotlinPrinter extends Printer {
     const [a, b, c] = args;
     const r = () => this.postfixOperand(a!, ind);
     const e = (x: Expr) => this.expr(x, ind);
-    const fn = (x: Expr) => (this.canTrail(x as Extract<Expr, { e: "lambda" }>) ? ` ${e(x)}` : `(${e(x)})`);
+    // A lambda trails; a function reference (`::format`) is an argument.
+    const fn = (x: Expr) => (x.e === "lambda" && this.canTrail(x) ? ` ${e(x)}` : `(${e(x)})`);
     switch (op) {
       case "arr.length":
         return `${r()}.size`;
@@ -290,7 +377,72 @@ class KotlinPrinter extends Printer {
       case "str.slice":
         return `${r()}.jsSlice(${e(b!)}, ${e(c!)})`;
       case "str.trim":
-        return `${r()}.trim()`;
+        return `${r()}.jsTrim()`;
+      case "arr.concat":
+        return `${r()}.jsConcat(${args.slice(1).map(e).join(", ")})`;
+      case "arr.sort":
+        return `${r()}.jsSort${fn(b!)}`;
+      case "arr.reverse":
+        return `${r()}.jsReverse()`;
+      case "arr.shift":
+        return `${r()}.jsShift()`;
+      case "arr.lastIndexOf":
+        return `${r()}.lastIndexOf(${e(b!)})`;
+      case "arr.atRel":
+        return `${r()}.jsAtRel(${e(b!)})`;
+      case "arr.reduce":
+        return `${r()}.fold(${e(c!)})${fn(b!)}`;
+      case "arr.mapI":
+      case "arr.filterI":
+      case "arr.forEachI":
+      case "arr.someI":
+      case "arr.everyI":
+      case "arr.findI":
+      case "arr.findIndexI":
+        return `${r()}.js${op[4]!.toUpperCase()}${op.slice(5)}${fn(b!)}`;
+      case "map.delete":
+        return `${r()}.remove(${e(b!)})`;
+      case "map.has":
+        return `${r()}.containsKey(${e(b!)})`;
+      case "str.split":
+        return `${r()}.jsSplit(${e(b!)})`;
+      case "str.replace":
+      case "str.replaceAll":
+        return `${r()}.jsReplace(${e(b!)}, ${e(c!)}, ${op === "str.replaceAll"})`;
+      case "str.indexOf":
+        return `${r()}.jsIndexOf(${e(b!)}, ${e(c!)})`;
+      case "str.lastIndexOf":
+        return `${r()}.lastIndexOf(${e(b!)})`;
+      case "str.padStart":
+      case "str.padEnd":
+        return `${r()}.jsPad(${e(b!)}, ${e(c!)}, ${op === "str.padStart"})`;
+      case "str.repeat":
+        return `${r()}.jsRepeat(${e(b!)})`;
+      case "str.trimStart":
+        return `${r()}.jsTrimStart()`;
+      case "str.trimEnd":
+        return `${r()}.jsTrimEnd()`;
+      case "str.compare":
+        return `jsCompare(${e(a!)}, ${e(b!)})`;
+      case "math.fn": {
+        const name = (a as Extract<Expr, { e: "str" }>).v;
+        const x = args.slice(1).map(e);
+        const special: Record<string, string> = {
+          sign: `jsSign(${x[0]})`, isInteger: `jsIsInteger(${x[0]})`, isNaN: `(${x[0]}).isNaN()`, isFinite: `(${x[0]}).isFinite()`,
+          Infinity: "Double.POSITIVE_INFINITY", NaN: "Double.NaN", log: `kotlin.math.ln(${x[0]})`, log1p: `kotlin.math.ln1p(${x[0]})`,
+        };
+        return special[name] ?? `kotlin.math.${name}(${x.join(", ")})`;
+      }
+      case "bit.and":
+      case "bit.or":
+      case "bit.xor":
+      case "bit.shl":
+      case "bit.shr":
+        return `(jsI32(${e(a!)}) ${op.slice(4)} jsI32(${e(b!)}))`;
+      case "bit.ushr":
+        return `jsUshr(jsI32(${e(a!)}), jsI32(${e(b!)}))`;
+      case "bit.not":
+        return `jsI32(${e(a!)}).inv()`;
       case "str.upper":
         return `${r()}.uppercase()`;
       case "str.lower":
@@ -388,6 +540,8 @@ class KotlinPrinter extends Printer {
         ];
       case "throw":
         return [`${ind}throw Exception(${this.expr(s.message, ind)})`];
+      case "unreachable":
+        return [`${ind}error("unreachable")`];
       case "fn":
         return this.fn(s.decl, ind);
       case "switch": {

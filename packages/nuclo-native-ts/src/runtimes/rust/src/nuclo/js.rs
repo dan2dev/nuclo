@@ -166,6 +166,87 @@ impl<T: Clone> Arr<T> {
     pub fn for_each(&self, f: impl Fn(T)) {
         self.iter().for_each(f)
     }
+    /// `[...a, ...b]` / `a.concat(b)`.
+    pub fn concat(parts: Vec<Arr<T>>) -> Arr<T> {
+        parts.iter().flat_map(|p| p.to_vec()).collect::<Vec<_>>().into()
+    }
+    /// JavaScript's `sort`: stable, and the same merge sort on every target, so even a comparator
+    /// that contradicts itself orders the same way everywhere. A positive result puts `b` first.
+    /// The comparator runs on a copy: it may read the array, as it may in JavaScript.
+    pub fn sort(&self, cmp: impl Fn(T, T) -> f64) -> Arr<T> {
+        let mut a = self.to_vec();
+        let mut b = a.clone();
+        let n = a.len();
+        let mut width = 1;
+        while width < n {
+            let mut start = 0;
+            while start < n {
+                let (mid, end) = ((start + width).min(n), (start + 2 * width).min(n));
+                let (mut l, mut r, mut k) = (start, mid, start);
+                while l < mid && r < end {
+                    if cmp(a[l].clone(), a[r].clone()) > 0.0 {
+                        b[k] = a[r].clone();
+                        r += 1;
+                    } else {
+                        b[k] = a[l].clone();
+                        l += 1;
+                    }
+                    k += 1;
+                }
+                while l < mid {
+                    b[k] = a[l].clone();
+                    l += 1;
+                    k += 1;
+                }
+                while r < end {
+                    b[k] = a[r].clone();
+                    r += 1;
+                    k += 1;
+                }
+                start += 2 * width;
+            }
+            std::mem::swap(&mut a, &mut b);
+            width *= 2;
+        }
+        *self.0.borrow_mut() = a;
+        self.clone()
+    }
+    pub fn reverse(&self) -> Arr<T> {
+        self.0.borrow_mut().reverse();
+        self.clone()
+    }
+    pub fn shift(&self) -> Option<T> {
+        let mut items = self.0.borrow_mut();
+        if items.is_empty() { None } else { Some(items.remove(0)) }
+    }
+    /// `xs.at(i)`: from the end when negative.
+    pub fn at_rel(&self, i: i64) -> Option<T> {
+        self.at(if i < 0 { self.len() + i } else { i })
+    }
+    pub fn reduce<A>(&self, init: A, f: impl Fn(A, T) -> A) -> A {
+        self.iter().fold(init, f)
+    }
+    pub fn map_i<U>(&self, f: impl Fn(T, i64) -> U) -> Arr<U> {
+        self.iter().enumerate().map(|(i, x)| f(x, i as i64)).collect::<Vec<_>>().into()
+    }
+    pub fn filter_i(&self, f: impl Fn(T, i64) -> bool) -> Arr<T> {
+        self.iter().enumerate().filter(|(i, x)| f(x.clone(), *i as i64)).map(|(_, x)| x).collect::<Vec<_>>().into()
+    }
+    pub fn for_each_i(&self, f: impl Fn(T, i64)) {
+        self.iter().enumerate().for_each(|(i, x)| f(x, i as i64))
+    }
+    pub fn some_i(&self, f: impl Fn(T, i64) -> bool) -> bool {
+        self.iter().enumerate().any(|(i, x)| f(x, i as i64))
+    }
+    pub fn every_i(&self, f: impl Fn(T, i64) -> bool) -> bool {
+        self.iter().enumerate().all(|(i, x)| f(x, i as i64))
+    }
+    pub fn find_i(&self, f: impl Fn(T, i64) -> bool) -> Option<T> {
+        self.iter().enumerate().find(|(i, x)| f(x.clone(), *i as i64)).map(|(_, x)| x)
+    }
+    pub fn find_index_i(&self, f: impl Fn(T, i64) -> bool) -> i64 {
+        self.iter().enumerate().find(|(i, x)| f(x.clone(), *i as i64)).map_or(-1, |(i, _)| i as i64)
+    }
 }
 
 impl<T: Clone + PartialEq> Arr<T> {
@@ -174,6 +255,9 @@ impl<T: Clone + PartialEq> Arr<T> {
     }
     pub fn includes(&self, value: &T) -> bool {
         self.0.borrow().contains(value)
+    }
+    pub fn last_index_of(&self, value: &T) -> i64 {
+        self.0.borrow().iter().rposition(|item| item == value).map_or(-1, |i| i as i64)
     }
 }
 
@@ -224,6 +308,15 @@ impl<T: Clone> Map<T> {
     }
     pub fn insert(&self, key: &str, value: T) {
         self.0.borrow_mut().insert(key.to_string(), value);
+    }
+    /// `delete map[key]`.
+    pub fn remove(&self, key: &str) {
+        let old = self.0.borrow_mut().remove(key);
+        drop(old);
+    }
+    /// `key in map`.
+    pub fn has(&self, key: &str) -> bool {
+        self.0.borrow().contains_key(key)
     }
     pub(crate) fn entries(&self) -> Vec<(String, T)> {
         self.0.borrow().iter().map(|(k, v)| (k.clone(), v.clone())).collect()
@@ -339,4 +432,144 @@ pub fn js_str_slice(s: &str, start: i64, end: Option<i64>) -> String {
     let from = clamp_index(start, units.len());
     let to = end.map_or(units.len(), |e| clamp_index(e, units.len()));
     if from < to { String::from_utf16_lossy(&units[from..to]) } else { String::new() }
+}
+
+/// ToInt32, which the bitwise operators apply to their operands.
+pub trait JsI32 {
+    fn js_i32(self) -> i32;
+}
+
+impl JsI32 for i64 {
+    fn js_i32(self) -> i32 {
+        self as i32
+    }
+}
+
+impl JsI32 for f64 {
+    fn js_i32(self) -> i32 {
+        if self.is_finite() { (self % 4294967296.0) as i64 as i32 } else { 0 }
+    }
+}
+
+pub fn js_sign(x: f64) -> i64 {
+    if x > 0.0 { 1 } else if x < 0.0 { -1 } else { 0 }
+}
+
+pub fn js_is_integer(x: f64) -> bool {
+    x.is_finite() && x.trunc() == x
+}
+
+/// JavaScript's white space and line terminators, which trim() removes.
+fn js_is_space(c: char) -> bool {
+    matches!(c, '\u{9}'..='\u{D}' | ' ' | '\u{A0}' | '\u{1680}' | '\u{2000}'..='\u{200A}' | '\u{2028}' | '\u{2029}' | '\u{202F}' | '\u{205F}' | '\u{3000}' | '\u{FEFF}')
+}
+
+pub fn js_trim(s: &str) -> String {
+    s.trim_matches(js_is_space).to_string()
+}
+
+pub fn js_trim_start(s: &str) -> String {
+    s.trim_start_matches(js_is_space).to_string()
+}
+
+pub fn js_trim_end(s: &str) -> String {
+    s.trim_end_matches(js_is_space).to_string()
+}
+
+fn units(s: &str) -> Vec<u16> {
+    s.encode_utf16().collect()
+}
+
+fn find_units(h: &[u16], n: &[u16], from: usize) -> Option<usize> {
+    (from..=h.len().saturating_sub(n.len())).find(|&i| i + n.len() <= h.len() && h[i..i + n.len()] == *n)
+}
+
+pub fn js_index_of(s: &str, sub: &str, from: i64) -> i64 {
+    let (h, n) = (units(s), units(sub));
+    find_units(&h, &n, (from.max(0) as usize).min(h.len())).map_or(-1, |i| i as i64)
+}
+
+pub fn js_last_index_of(s: &str, sub: &str) -> i64 {
+    let (h, n) = (units(s), units(sub));
+    if n.len() > h.len() {
+        return -1;
+    }
+    (0..=h.len() - n.len()).rev().find(|&i| h[i..i + n.len()] == *n).map_or(-1, |i| i as i64)
+}
+
+pub fn js_split(s: &str, sep: &str) -> Arr<String> {
+    let (h, n) = (units(s), units(sep));
+    if n.is_empty() {
+        return h.iter().map(|u| String::from_utf16_lossy(&[*u])).collect::<Vec<_>>().into();
+    }
+    let (mut parts, mut start) = (Vec::new(), 0);
+    while let Some(i) = find_units(&h, &n, start) {
+        parts.push(String::from_utf16_lossy(&h[start..i]));
+        start = i + n.len();
+    }
+    parts.push(String::from_utf16_lossy(&h[start..]));
+    parts.into()
+}
+
+/// `replace` / `replaceAll` with a string pattern, `$$ $& $` $'` in the replacement included.
+pub fn js_replace(s: &str, pattern: &str, replacement: &str, all: bool) -> String {
+    let (h, n, r) = (units(s), units(pattern), units(replacement));
+    let mut matches = Vec::new();
+    let mut i = 0;
+    while i + n.len() <= h.len() {
+        if h[i..i + n.len()] == *n {
+            matches.push(i);
+            if !all {
+                break;
+            }
+            i += n.len().max(1);
+        } else {
+            i += 1;
+        }
+    }
+    let (mut out, mut last) = (Vec::new(), 0);
+    for at in matches {
+        out.extend_from_slice(&h[last..at]);
+        let mut j = 0;
+        while j < r.len() {
+            let next = if r[j] == b'$' as u16 && j + 1 < r.len() { r[j + 1] } else { 0 };
+            match next {
+                36 => out.push(36),
+                38 => out.extend_from_slice(&n),
+                96 => out.extend_from_slice(&h[..at]),
+                39 => out.extend_from_slice(&h[at + n.len()..]),
+                _ => {
+                    out.push(r[j]);
+                    j += 1;
+                    continue;
+                }
+            }
+            j += 2;
+        }
+        last = at + n.len();
+    }
+    out.extend_from_slice(&h[last..]);
+    String::from_utf16_lossy(&out)
+}
+
+pub fn js_pad(s: &str, length: i64, fill: &str, at_start: bool) -> String {
+    let (h, f) = (units(s), units(fill));
+    if length <= h.len() as i64 || f.is_empty() {
+        return s.to_string();
+    }
+    let pad: Vec<u16> = (0..length as usize - h.len()).map(|i| f[i % f.len()]).collect();
+    String::from_utf16_lossy(&if at_start { [pad, h].concat() } else { [h, pad].concat() })
+}
+
+pub fn js_repeat(s: &str, n: i64) -> String {
+    s.repeat(n.max(0) as usize)
+}
+
+/// `a < b` on strings: UTF-16 units in order, as JavaScript compares (Rust's `<` orders code points).
+pub fn js_compare(a: &str, b: &str) -> i64 {
+    match a.encode_utf16().cmp(b.encode_utf16()) {
+        std::cmp::Ordering::Less => -1,
+        std::cmp::Ordering::Equal => 0,
+        std::cmp::Ordering::Greater => 1,
+    }
 }

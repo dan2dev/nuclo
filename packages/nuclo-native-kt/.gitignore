@@ -1,0 +1,8 @@
+build/
+.gradle/
+.kotlin/
+local.properties
+kotlin-js-store/
+/yarn.lock
+*.apk
+*.hprof

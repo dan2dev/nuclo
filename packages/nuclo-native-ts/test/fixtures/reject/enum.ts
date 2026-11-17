@@ -1,5 +1,5 @@
-// expect: Enums are not supported
+// expect: mixes strings and numbers
 export enum Mode {
-  A,
-  B,
+  A = 1,
+  B = "b",
 }

@@ -83,7 +83,7 @@ Each `<out>/<target>/` folder holds the complete sources of that platform's app,
 ```
 Bad.ts:3:11 - error: `any` cannot be compiled to a native type; give the value a real type.
 Bad.ts:5:1 - error: `eval` cannot be compiled ahead of time.
-Bad.ts:6:1 - error: Classes are not supported; use interfaces and functions.
+Bad.ts:6:3 - error: Setters are not supported natively; use a method.
 Bad.ts:7:7 - error: The type { a: number; } has no native equivalent; declare it as an interface.
 ```
 
@@ -134,7 +134,7 @@ The runtime is in two parts, so that another toolkit can show the same apps:
 - **`src/runtimes/rust/src/nuclo/`**, the core, knows no toolkit: the node tree and its bindings, `list` / `when` / `region` / `into` / `scope`, styles and variants, transitions (it paints the values in between, frame by frame), the `Flex` layout ported from `NucloRuntime.kt` statement by statement, the router's stacks, async functions on a small single-threaded executor, timers, `fetch` (ureq on a thread) and JSON decoding.
 - **`src/runtimes/rust/src/gtk_backend.rs`** implements the `Backend` trait of `nuclo/backend.rs` (its header comment is the contract): GTK widgets (label, button, entry, check button, text view, picture, scrolled window) placed at the frames the core computes and measured with Pango, libadwaita's navigation view, header bar, view switcher bar and dialog for the router, GTK gestures for the pointer.
 
-What the Rust printer (`emitRust.ts`) adds to the IR, because Rust infers and shares less than Swift and Kotlin: it types every expression to wrap optionals and pick `A::text` or `A::text_fn`; interfaces are `Rc` structs with `Var` fields and identity equality, arrays and maps are shared handles (a global array is read without copying it), globals are thread-local `Var`s initialized in order by `nuclo_main`, a local that a closure captures and something reassigns is an `Rc<Var>`, closures are `move` closures over clones, a local function takes the locals it reads as extra parameters, every `async fn` returns a `Result`, and `try` is a labelled block. The generated code has no `unsafe`.
+What the Rust printer (`emitRust.ts`) adds to the IR, because Rust infers and shares less than Swift and Kotlin: it types every expression to wrap optionals and pick `A::text` or `A::text_fn`; interfaces are `Rc` structs with `Var` fields and identity equality; classes are flattened (a struct holds its bases' fields too, methods and constructors are free functions of `this`), and a class with subclasses or an interface a class implements is a trait whose methods take `self: Rc<Self>`, its values `Rc<dyn Trait>`; arrays and maps are shared handles (a global array is read without copying it), globals are thread-local `Var`s initialized in order by `nuclo_main`, a local that a closure captures and something reassigns is an `Rc<Var>`, closures are `move` closures over clones, a local function takes the locals it reads as extra parameters, every `async fn` returns a `Result`, and `try` is a labelled block. The generated code has no `unsafe`.
 
 `NUCLO_SCREENSHOT=file.png` makes the app keep `file.png` a picture of its window (it is written again whenever it is deleted): a Wayland window can't be captured from outside.
 
@@ -189,6 +189,8 @@ Each folder in `examples/` is an app; all of them build for every target.
 - **`native-components`**: a platform slider and a platform-drawn gauge as typed components, and three native functions.
 - **`camera`**: the live camera as a typed component, `Camera({ facing })`, with nuclo's shutter, flip button, flash and gallery drawn over and under it. `requestCamera()` asks for access; `takePhoto()` returns a photo of what the shown camera sees as a URL `img()` shows (`file://` natively, a blob URL on the web and wasm; `""` on Linux when no camera is shown, since a Rust native function cannot throw). AVFoundation on iOS and macOS (a Mac's own camera faces you; another camera, an external one or an iPhone, stands in for the back one), Camera2 on a `TextureView` on Android (no library; the photo is turned upright in code), `getUserMedia` on the web and wasm. Where there is no camera to show — the iOS simulator, GTK (which needs GStreamer for one) and GPUI (which embeds nothing) — the view is a test card in the facing camera's colour with a ticking clock, and a photo is a picture of it (a PNG drawn with cairo on GTK; on GPUI a BMP of the colour with the time in seven segments). The Android runtime's `requestPermission(name)` asks for any runtime permission; the host's manifest declares `CAMERA` (not required to install), and `scripts/ios-run.sh` and `scripts/macos-run.sh` write `NSCameraUsageDescription`.
 - **`platform-views`**: `WebView({ url, onLoad })` (WKWebView on iOS and macOS, `android.webkit.WebView`, an iframe on the web and wasm; GTK and GPUI embed no browser, so there the page is fetched and its title and text are shown), `DatePicker({ value, onChange })` (a compact `UIDatePicker`, an `NSDatePicker` with its calendar, a field opening Android's `DatePickerDialog`, a `GtkCalendar` in a popover, `<input type="date">`; on GPUI a drawn ‹ day › stepper), `share(text)`, which shares the platform's way (its share sheet, or the clipboard on GTK, GPUI and a browser without `navigator.share`) and says what happened, and `daysUntil(date)` on the platform's calendar. GPUI's native code draws its text with `gpui_backend::paint_label` and reaches the clipboard with `copy_text`.
+- **`design-patterns`**: the 23 GoF patterns plus Module, Null Object, Dependency Injection, Publish / Subscribe and Specification, written without classes, `this` or generics: interfaces with function fields, private state in closures. Strategy, Observer, State, Visitor and Template Method again with classes (`implements`, `abstract`, `override`, `super`, getters, statics). Each card prints what its demo returned, and every target prints the same 89 lines as the TypeScript run under Bun.
+- **`language`**: one card per language feature the compiler translates (enums, destructuring, spread and rest, operators, optional calls, loops, `finally`, array, string, map and number methods, classes), each printing lines that every target must print exactly as TypeScript does.
 - **`bench`**: list operations timed as js-framework-benchmark does.
 - **`chirp`**: nuclo-native's social app, ported: a faked server with 100,000 people and a million posts loaded a page at a time (`onEndReached`), threads, replies, profiles, friends, search and three forms, styled with a `createCss` theme. A video shows its poster (no player natively) and every loaded row exists (no `windowed()`).
 - **`responsive`**: one shop screen restructured at 480 / 768 / 1024 / 1280 px: a breakpoint badge, inline nav or a menu button, sidebar + content + aside, a 1–6 column grid by percent widths, stacked or side-by-side media, form and pricing, a table that is cards on a phone, a wrapping footer.
@@ -253,7 +255,7 @@ App.ts ──ts.createProgram + TypeChecker──▶ transpile.ts ──typed IR
 ```
 
 - **`transpile.ts`** settles every TypeScript question, so the printers only choose syntax:
-  - Types: `string`, `boolean`, `T | null` → optional, `T[]` → `[T]` / `MutableList<T>`, `Record<string, T>` → a map, interfaces → classes.
+  - Types: `string`, `boolean`, `T | null` → optional, `T[]` → `[T]` / `MutableList<T>`, `Record<string, T>` → a map, interfaces → classes, classes → classes, an interface a class implements → a protocol / interface / trait.
   - Numbers: each variable, property, parameter and return value holding a `number` starts as `Int`. A fixpoint over every write turns it into `Double` once something non-whole can reach it (`/`, a decimal literal, a `Double` slot). `Int` / `Double` annotations from the API force the choice.
   - Narrowing: a nullable value that TypeScript has narrowed is force-unwrapped where it is read (`todo!.title` / `todo!!.title`).
   - Async: `async` functions become `async throws` / `suspend`. An un-awaited call is launched (`Task {}` / `launch {}`).
@@ -376,7 +378,7 @@ Building views remains the cost: about 40% of the main thread goes to constructi
 ## Differences from nuclo, on purpose
 
 - **Imports, not globals.** Apps import from `@nuclo/native-ts`. The lib is ES2022 only, with no DOM and no Node, so anything the compiler can't translate fails to type-check or is reported.
-- **Interfaces become `final class` (Swift) and `class` (Kotlin), not `struct` or `data class`.** JavaScript objects are references: `todo.done = …` in a list row has to change the todo the list holds. A Swift struct would copy it, and a data class's structural `equals` would break `list()`'s identity keys and `indexOf`.
+- **Interfaces become `final class` (Swift) and `class` (Kotlin), not `struct` or `data class`** (an interface a class implements becomes a protocol instead). JavaScript objects are references: `todo.done = …` in a list row has to change the todo the list holds. A Swift struct would copy it, and a data class's structural `equals` would break `list()`'s identity keys and `indexOf`.
 - **Arrays are Swift `[T]`, which is a value type.** Mutating an array through a second variable that aliases it won't reach the original as it does in JavaScript. Globals and properties, which is how nuclo state is written, behave the same.
 - **Styles** are CSS laid out as flexbox (column by default), in pt / dp: the `Style` interface in `src/index.ts`, which is nuclo-core's style object as far as the platforms can follow it (see above). There are no arbitrary selectors, and `@media` knows the window's width only.
 - **Swift dictionaries are unordered**, so on iOS `variants()` applies groups in name order (Kotlin keeps declaration order). It only matters when two groups set the same property.
@@ -401,16 +403,37 @@ If an app type-checks and compiles, it builds on both targets and behaves the sa
 
 | Rejected | Why |
 | --- | --- |
-| `any`, `eval`, classes, enums, namespaces, `this`, `delete`, generators, destructuring, rest parameters | No ahead-of-time equivalent |
-| Unions other than `T \| null` / `undefined` or string literals; tuples; generic functions and interfaces; overloads | A native value has one type |
+| `any`, `eval`, `namespace` blocks, `delete` of a property, generators | No ahead-of-time equivalent |
+| Class expressions and nested classes, generic classes, setters, `#private` names, decorators, async methods, a method read without a call, `instanceof`; an object literal of an interface a class implements | Not translated yet (a literal would need a class of its own conforming to the protocol) |
+| A class passed as an interface it doesn't declare (`implements`); an array of a class used as an array of its base or interface; `super(…)` anywhere but first in the constructor | Native classes conform nominally, and arrays are not covariant in Kotlin and Rust; Kotlin and Swift run the base's constructor first |
+| Unions other than `T \| null` / `undefined` or string literals; tuples mixing types; generic functions and interfaces; overloads | A native value has one type |
 | A value of one interface used as another, same-shaped one | TypeScript is structural; native classes are nominal |
-| Mutating an array parameter or a temporary, or sharing one array between two bindings when either is mutated | Swift arrays are values: the change would not reach the other side. Copy with `.slice()` |
+| Mutating an array parameter or a temporary, or sharing one array between two bindings (destructuring included) when either is mutated | Swift arrays are values: the change would not reach the other side. Copy with `.slice()` |
 | Names the generated code uses (`A`, `Style`, `jsNum`, the runtimes' types…) | They would shadow it. Math (`min`, `floor`…) is printed fully qualified, so those names stay free |
-| Text from `T \| undefined` without `??`; `?.()`; indexing or iterating strings | No `"undefined"` text, and characters differ between platforms |
-| `async` callbacks, `finally`, `++` inside expressions, callbacks with an index on `map` / `filter`… | Not translated yet |
+| Text from `T \| undefined` without `??`; indexing or iterating strings | No `"undefined"` text, and characters differ between platforms |
+| An enum mixing strings and numbers; a rest element in object destructuring; a destructuring default for a property that can be `null` | The rest has no class; JavaScript keeps the `null`, a native default would replace it |
+| A closure capturing the variable of a `for` loop that isn't a range (`i += 2`, a bound the body changes) | JavaScript gives each turn its own `let`; the `while` it becomes has one. Copy it to a `const` |
+| `finally` without `catch`, or with a `return` / `break` / `continue` out of the blocks, or a `throw` / `await` in the catch block | The finally block would be skipped natively |
+| `reduce` without an initial value, `localeCompare`, regular expressions, `?.()` / `++` on a computed target, spreading into a non-rest parameter | It would crash, differ per platform's locale data, or evaluate the target twice |
+| `async` callbacks, labelled `break` / `continue`, assignments inside expressions, `Object.keys` (Swift and Rust maps are unordered) | Not translated yet |
+
+Translated by lowering them to what the printers already handle, so every target runs the same code (`examples/language` prints one line per feature; every target prints exactly what TypeScript prints):
+- Enums (string or number): members are inlined as literals, the type is `string` / `number`.
+- `import * as ns`: `ns.name` is `name` (modules share one native namespace).
+- Destructuring in declarations, parameters and `for-of`, with defaults, nesting, holes and array rests (`const [a, , ...rest] = xs`).
+- `{ ...base, x: 1 }` into an interface (later members win), `[...a, x, ...b]`, `a.concat(b)`, rest parameters and spread arguments.
+- `f?.(x)` and `o?.f(x)`; `x++` / `--o.n` / `xs[i++]` as values; `??=`, `||=`, `&&=`; `**`, `**=`; the bitwise operators on ToInt32 (`>>>` is unsigned).
+- Every `for` form and `do … while` (a `while` whose `continue` runs the step first). A `for (let i = a; i < b; i++)` whose body can't change `i` or `b` stays a native range.
+- `finally` (see above), `key in map`, `delete map[key]`, `<` / `>` on strings (UTF-16 order).
+- Arrays: `sort` (stable, one merge sort on every target; without a comparator it compares text, as JavaScript does), `reverse`, `shift`, `at`, `lastIndexOf`, `reduce`, `concat`, `join` of numbers and booleans, and callbacks that take the index.
+- Strings, by UTF-16 units as in JavaScript: `length`, `split`, `replace` / `replaceAll` (with `$&` `$$` `` $` `` `$'`), `indexOf`, `lastIndexOf`, `padStart`, `padEnd`, `repeat`, `trimStart`, `trimEnd`; `toString()`.
+- Math: `sign`, `log`, `log2`, `log10`, `log1p`, `exp`, `expm1`, the trigonometric and hyperbolic functions, `atan2`, `hypot`, `cbrt`, the constants; `Number.isInteger` / `isNaN` / `isFinite`, `Infinity`, `NaN`, `Number.MAX_SAFE_INTEGER`…
+- Numbers print as JavaScript prints them on every target (`1e+21`, `1e-7`, `9007199254740992`). A whole literal beyond 32 bits is a Double (Kotlin's `Int` is 32 bits).
+- Classes: fields (with initializers, `readonly`, parameter properties), a constructor, methods, `this` (captured by arrow functions too), getters, `static` fields and methods (globals and functions named `Class__member`), `abstract`, `override`, `super(…)` and `super.m()`. An interface a class `implements` becomes a Swift protocol, a Kotlin interface and a Rust trait, and a class with subclasses a Swift / Kotlin open class and a Rust trait, so a value goes where its base or an interface it implements is expected and calls dispatch as in JavaScript. A field starts at a zero value and the constructor sets it in JavaScript's order (base constructor, field initializers, parameter properties, body). A method's optional and default parameters are applied by the method itself (callers pass nil), so an override or an implementation keeps its own defaults; they must be optional everywhere the method is declared. A member, what it overrides and what it implements share one number kind.
 
 Supported because they could otherwise break the build:
 - `interface B extends A`: inherited fields are part of the class.
+- A `switch` covering every member of a literal union, with no `default`.
 - Optional chains: `a?.b.c` becomes `a?.b?.c` in Kotlin.
 - Default and optional parameters.
 - Local functions: hoisted, and able to call themselves.

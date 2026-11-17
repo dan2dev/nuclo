@@ -9,7 +9,16 @@ SRC=build/ios/$EX
 APP=build/ios-app/$EX/NucloApp.app
 BID=dev.nuclo.nativets.ios
 
-[ -d "$SRC" ] || bun scripts/examples.ts ios
+OUT=build/check/$EX
+
+# A failed transpile or compile stops here and leaves the installed app running; unchanged Swift is not rebuilt.
+rm -rf "$OUT"
+bun src/compiler/cli.ts build "examples/$EX/App.ts" --out "$OUT" --target ios
+if [ -x "$APP/NucloApp" ] && diff -rq "$OUT/ios" "$SRC" >/dev/null 2>&1; then
+  echo "$EX: generated Swift unchanged"
+  exit 0
+fi
+rm -rf "$SRC" && mkdir -p build/ios && cp -R "$OUT/ios" "$SRC"
 rm -rf "$APP" && mkdir -p "$APP"
 SDK=$(xcrun --sdk iphonesimulator --show-sdk-path)
 xcrun swiftc -O -sdk "$SDK" -target arm64-apple-ios15.0-simulator -swift-version 5 \
@@ -33,7 +42,7 @@ cat > "$APP/Info.plist" <<EOF
 </dict></plist>
 EOF
 xcrun simctl boot "$SIM" 2>/dev/null || true
-open -a Simulator 2>/dev/null || true
+pgrep -xq Simulator || open -a Simulator 2>/dev/null || true
 xcrun simctl bootstatus "$SIM" >/dev/null
 xcrun simctl install "$SIM" "$APP"
-xcrun simctl launch "$SIM" "$BID"
+xcrun simctl launch --terminate-running-process "$SIM" "$BID"

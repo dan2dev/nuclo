@@ -3312,10 +3312,34 @@ public enum NJSON {
 
 // MARK: - JavaScript semantics
 
-/// Numbers the way JavaScript prints them: 3, not 3.0.
+/// Numbers the way JavaScript prints them: 3, not 3.0; 1e+21 and 1e-7, never 1.0E21 or 9007199254740992.0.
 public func jsNum(_ d: Double) -> String {
-    if d.isFinite && d == d.rounded() && abs(d) < 1e15 { return String(Int(d)) }
-    return d.isNaN ? "NaN" : d.isInfinite ? (d > 0 ? "Infinity" : "-Infinity") : String(d)
+    if d.isNaN { return "NaN" }
+    if d.isInfinite { return d > 0 ? "Infinity" : "-Infinity" }
+    if d == 0 { return "0" }
+    if d == d.rounded() && abs(d) < 1e15 { return String(Int(d)) }
+    // Swift's description has the shortest digits that read back as `d`: lay them out as JavaScript does.
+    var text = "\(abs(d))"
+    var exponent = 0
+    if let e = text.firstIndex(where: { $0 == "e" || $0 == "E" }) {
+        exponent = Int(text[text.index(after: e)...]) ?? 0
+        text = String(text[..<e])
+    }
+    let parts = text.split(separator: ".", omittingEmptySubsequences: false)
+    return (d < 0 ? "-" : "") + jsLayout(String(parts[0]) + (parts.count > 1 ? String(parts[1]) : ""), parts[0].count + exponent)
+}
+
+/// Number::toString's layout of the digits `digits` with the decimal point after `point` of them.
+func jsLayout(_ digits: String, _ point: Int) -> String {
+    var digits = digits, n = point
+    while digits.count > 1 && digits.hasPrefix("0") { digits.removeFirst(); n -= 1 }
+    while digits.count > 1 && digits.hasSuffix("0") { digits.removeLast() }
+    let k = digits.count
+    if k <= n && n <= 21 { return digits + String(repeating: "0", count: n - k) }
+    if 0 < n && n <= 21 { return String(digits.prefix(n)) + "." + String(digits.dropFirst(n)) }
+    if -6 < n && n <= 0 { return "0." + String(repeating: "0", count: -n) + digits }
+    let e = n - 1
+    return String(digits.prefix(1)) + (k > 1 ? "." + String(digits.dropFirst()) : "") + "e" + (e >= 0 ? "+" : "-") + String(abs(e))
 }
 
 public func jsFixed(_ d: Double, _ digits: Int) -> String { String(format: "%.\(digits)f", d) }
@@ -3362,13 +3386,191 @@ public extension Array where Element: Equatable {
     func jsIncludes(_ item: Element) -> Bool { contains(item) }
 }
 
-public extension String {
-    func jsTrim() -> String { trimmingCharacters(in: .whitespacesAndNewlines) }
-
-    func jsSlice(_ start: Int, _ end: Int?) -> String {
-        let chars = Array(self)
-        return String(chars.jsSlice(start, end))
+public extension Array {
+    /// JavaScript's `sort`: stable, and the same merge sort on every target, so even a comparator
+    /// that contradicts itself orders the same way everywhere. A positive result puts `b` first.
+    @discardableResult mutating func jsSort(_ cmp: (Element, Element) throws -> Double) rethrows -> [Element] {
+        self = try jsSorted(cmp)
+        return self
     }
+
+    func jsSorted(_ cmp: (Element, Element) throws -> Double) rethrows -> [Element] {
+        var a = self
+        var b = self
+        var width = 1
+        while width < count {
+            var start = 0
+            while start < count {
+                let mid = Swift.min(start + width, count), end = Swift.min(start + 2 * width, count)
+                var l = start, r = mid, k = start
+                while l < mid && r < end {
+                    if try cmp(a[l], a[r]) > 0 { b[k] = a[r]; r += 1 } else { b[k] = a[l]; l += 1 }
+                    k += 1
+                }
+                while l < mid { b[k] = a[l]; l += 1; k += 1 }
+                while r < end { b[k] = a[r]; r += 1; k += 1 }
+                start += 2 * width
+            }
+            swap(&a, &b)
+            width *= 2
+        }
+        return a
+    }
+
+    @discardableResult mutating func jsReverse() -> [Element] {
+        reverse()
+        return self
+    }
+
+    @discardableResult mutating func jsShift() -> Element? { isEmpty ? nil : removeFirst() }
+
+    /// `xs.at(i)`: from the end when negative.
+    func jsAtRel(_ i: Int) -> Element? { jsAt(i < 0 ? count + i : i) }
+
+    func jsMapI<U>(_ f: (Element, Int) throws -> U) rethrows -> [U] { try enumerated().map { try f($0.element, $0.offset) } }
+    func jsFilterI(_ f: (Element, Int) throws -> Bool) rethrows -> [Element] { try enumerated().filter { try f($0.element, $0.offset) }.map { $0.element } }
+    func jsForEachI(_ f: (Element, Int) throws -> Void) rethrows { for (i, x) in enumerated() { try f(x, i) } }
+    func jsSomeI(_ f: (Element, Int) throws -> Bool) rethrows -> Bool { try enumerated().contains { try f($0.element, $0.offset) } }
+    func jsEveryI(_ f: (Element, Int) throws -> Bool) rethrows -> Bool { try enumerated().allSatisfy { try f($0.element, $0.offset) } }
+    func jsFindI(_ f: (Element, Int) throws -> Bool) rethrows -> Element? { try enumerated().first { try f($0.element, $0.offset) }?.element }
+    func jsFindIndexI(_ f: (Element, Int) throws -> Bool) rethrows -> Int { try enumerated().first { try f($0.element, $0.offset) }?.offset ?? -1 }
+}
+
+public extension Array where Element: AnyObject {
+    func jsLastIndexOf(_ item: Element) -> Int { lastIndex { $0 === item } ?? -1 }
+}
+
+public extension Array where Element: Equatable {
+    func jsLastIndexOf(_ item: Element) -> Int { lastIndex(of: item) ?? -1 }
+}
+
+/// `++x` / `x++` inside an expression.
+public func jsPreIncr(_ x: inout Int, _ d: Int) -> Int { x += d; return x }
+public func jsPreIncr(_ x: inout Double, _ d: Double) -> Double { x += d; return x }
+public func jsPostIncr(_ x: inout Int, _ d: Int) -> Int { let v = x; x += d; return v }
+public func jsPostIncr(_ x: inout Double, _ d: Double) -> Double { let v = x; x += d; return v }
+
+/// ToInt32, which the bitwise operators apply to their operands.
+public func jsI32(_ x: Int) -> Int32 { Int32(truncatingIfNeeded: x) }
+public func jsI32(_ x: Double) -> Int32 {
+    guard x.isFinite else { return 0 }
+    return Int32(truncatingIfNeeded: Int64(x.truncatingRemainder(dividingBy: 4294967296)))
+}
+
+public func jsSign(_ x: Double) -> Int { x > 0 ? 1 : x < 0 ? -1 : 0 }
+public func jsIsInteger(_ x: Double) -> Bool { x.isFinite && x.rounded(.towardZero) == x }
+
+/// JavaScript's white space and line terminators, which trim() removes.
+private func jsIsSpace(_ u: UInt16) -> Bool {
+    switch u {
+    case 0x09...0x0D, 0x20, 0xA0, 0x1680, 0x2000...0x200A, 0x2028, 0x2029, 0x202F, 0x205F, 0x3000, 0xFEFF: return true
+    default: return false
+    }
+}
+
+/// Strings as JavaScript sees them: sequences of UTF-16 units (lengths, indices, order).
+public extension String {
+    var jsLength: Int { utf16.count }
+
+    private static func jsFrom(_ units: ArraySlice<UInt16>) -> String { String(decoding: units, as: UTF16.self) }
+
+    func jsTrim() -> String { jsTrimEnd().jsTrimStart() }
+    func jsTrimStart() -> String { String.jsFrom(Array(utf16).drop { jsIsSpace($0) }) }
+    func jsTrimEnd() -> String {
+        let units = Array(utf16)
+        var end = units.count
+        while end > 0 && jsIsSpace(units[end - 1]) { end -= 1 }
+        return String.jsFrom(units[0..<end])
+    }
+
+    func jsSlice(_ start: Int, _ end: Int?) -> String { String.jsFrom(ArraySlice(Array(utf16).jsSlice(start, end))) }
+
+    func jsIndexOf(_ s: String, _ from: Int = 0) -> Int {
+        let h = Array(utf16), n = Array(s.utf16)
+        var i = Swift.max(0, Swift.min(from, h.count))
+        while i + n.count <= h.count {
+            if h[i..<(i + n.count)].elementsEqual(n) { return i }
+            i += 1
+        }
+        return -1
+    }
+
+    func jsLastIndexOf(_ s: String) -> Int {
+        let h = Array(utf16), n = Array(s.utf16)
+        var i = h.count - n.count
+        while i >= 0 {
+            if h[i..<(i + n.count)].elementsEqual(n) { return i }
+            i -= 1
+        }
+        return -1
+    }
+
+    func jsSplit(_ sep: String) -> [String] {
+        let h = Array(utf16), n = Array(sep.utf16)
+        if n.isEmpty { return h.map { String.jsFrom([$0]) } }
+        var parts: [String] = [], start = 0, i = 0
+        while i + n.count <= h.count {
+            if h[i..<(i + n.count)].elementsEqual(n) {
+                parts.append(String.jsFrom(h[start..<i]))
+                i += n.count
+                start = i
+            } else { i += 1 }
+        }
+        parts.append(String.jsFrom(h[start..<h.count]))
+        return parts
+    }
+
+    /// `replace` / `replaceAll` with a string pattern, `$$ $& $` $'` in the replacement included.
+    func jsReplace(_ pattern: String, _ replacement: String, all: Bool) -> String {
+        let h = Array(utf16), n = Array(pattern.utf16), r = Array(replacement.utf16)
+        // Where the pattern matches: left to right, not overlapping (an empty one between every unit).
+        var matches: [Int] = []
+        var i = 0
+        while i + n.count <= h.count {
+            if h[i..<(i + n.count)].elementsEqual(n) {
+                matches.append(i)
+                if !all { break }
+                i += Swift.max(n.count, 1)
+            } else { i += 1 }
+        }
+        var out: [UInt16] = [], last = 0
+        for at in matches {
+            out += h[last..<at]
+            var j = 0
+            while j < r.count {
+                if r[j] == 36, j + 1 < r.count, [36, 38, 96, 39].contains(r[j + 1]) {
+                    switch r[j + 1] {
+                    case 36: out.append(36)
+                    case 38: out += n
+                    case 96: out += h[0..<at]
+                    default: out += h[(at + n.count)...]
+                    }
+                    j += 2
+                } else {
+                    out.append(r[j])
+                    j += 1
+                }
+            }
+            last = at + n.count
+        }
+        out += h[last...]
+        return String(decoding: out, as: UTF16.self)
+    }
+
+    func jsPad(_ length: Int, _ fill: String, atStart: Bool) -> String {
+        let units = Array(utf16), f = Array(fill.utf16)
+        if length <= units.count || f.isEmpty { return self }
+        var pad: [UInt16] = []
+        while pad.count < length - units.count { pad.append(f[pad.count % f.count]) }
+        return String(decoding: atStart ? pad + units : units + pad, as: UTF16.self)
+    }
+
+    func jsRepeat(_ n: Int) -> String { String(repeating: self, count: Swift.max(0, n)) }
+}
+
+/// `a < b` on strings: UTF-16 units in order, as JavaScript compares (not Swift's Unicode order).
+public func jsCompare(_ a: String, _ b: String) -> Int {
+    a.utf16.elementsEqual(b.utf16) ? 0 : a.utf16.lexicographicallyPrecedes(b.utf16) ? -1 : 1
 }
 
 // MARK: - App delegate

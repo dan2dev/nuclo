@@ -1,5 +1,5 @@
 /** IR → Swift 5.9+ for UIKit, against src/runtimes/ios/NucloRuntime.swift. */
-import type { ClassDecl, Expr, FnDecl, Op, Program, Stmt, Ty } from "./ir.ts";
+import type { ClassDecl, Expr, FnDecl, MethodDecl, ObjectClassDecl, Op, Program, ProtocolDecl, Stmt, Ty } from "./ir.ts";
 import { INDENT, Printer } from "./printer.ts";
 
 const KEYWORDS = new Set([
@@ -36,6 +36,8 @@ class SwiftPrinter extends Printer {
   print(program: Program): string {
     const out = [this.header(program, "//"), "#if canImport(UIKit)", "import UIKit", "#else", "import AppKit", "#endif", ""];
     for (const cls of program.classes) out.push(...this.classDecl(cls), "");
+    for (const p of program.protocols ?? []) out.push(...this.protocolDecl(p), "");
+    for (const cls of program.objectClasses ?? []) out.push(...this.objectClassDecl(cls, program.objectClasses!), "");
     for (const g of program.globals) out.push(...this.stmt(g, "").map((l) => `@MainActor ${l}`));
     if (program.globals.length) out.push("");
     for (const fn of program.functions) out.push(...this.fn(fn), "");
@@ -62,6 +64,80 @@ class SwiftPrinter extends Printer {
     }
     lines.push("}");
     return lines;
+  }
+
+  private protocolDecl(p: ProtocolDecl): string[] {
+    const lines = [`@MainActor protocol ${p.name}: ${p.bases.length ? p.bases.join(", ") : "AnyObject"} {`];
+    for (const f of p.fields) lines.push(`${INDENT}var ${this.name(f.name)}: ${this.ty(f.ty)} { get${f.readonly ? "" : " set"} }`);
+    for (const m of p.methods) lines.push(`${INDENT}${this.signature(m.name, m.params, m.ret)}`);
+    lines.push("}");
+    return lines;
+  }
+
+  private signature(name: string, params: FnDecl["params"], ret: Ty, ind = ""): string {
+    const ps = params.map((p) => `_ ${this.name(p.name)}: ${p.ty.k === "fn" ? "@escaping " : ""}${this.ty(p.ty)}${p.default ? ` = ${this.expr(p.default, ind)}` : ""}`).join(", ");
+    return `func ${this.name(name)}(${ps})${ret.k === "void" ? "" : ` -> ${this.ty(ret)}`}`;
+  }
+
+  /**
+   * A class. Fields start at a zero value (or `T!` when their type has none) and the initializer
+   * sets them in JavaScript's order: Swift's rule that every field is set before `super.init` and
+   * before `self` is used would otherwise reorder the constructor.
+   */
+  private objectClassDecl(cls: ObjectClassDecl, all: ObjectClassDecl[]): string[] {
+    const i1 = INDENT;
+    const i2 = INDENT + INDENT;
+    const supers = [...(cls.base ? [cls.base] : []), ...cls.protocols];
+    const lines = [`@MainActor ${cls.open ? "" : "final "}class ${cls.name}${supers.length ? `: ${supers.join(", ")}` : ""} {`];
+    for (const f of cls.fields) {
+      const zero = f.init ? this.expr(f.init, i1) : this.zero(f.ty);
+      const [name, ty] = [this.name(f.name), this.ty(f.ty)];
+      if (zero !== undefined) lines.push(`${i1}var ${name}: ${ty} = ${zero}`);
+      // No zero value: unset storage behind a property of the field's own type (what a protocol requires, and what `let x = o.f` infers).
+      else lines.push(`${i1}private var ${f.name}__: (${ty})!`, `${i1}var ${name}: ${ty} { get { ${f.name}__ } set { ${f.name}__ = newValue } }`);
+    }
+    if (cls.fields.length) lines.push("");
+    // `override init` when the base has an initializer with the same parameter types.
+    const base = all.find((b) => b.name === cls.base);
+    const same = !!base && base.ctor.params.length === cls.ctor.params.length && base.ctor.params.every((p, i) => this.ty(p.ty) === this.ty(cls.ctor.params[i]!.ty));
+    const params = cls.ctor.params.map((p) => `_ ${this.name(p.name)}: ${p.ty.k === "fn" ? "@escaping " : ""}${this.ty(p.ty)}${p.default ? ` = ${this.expr(p.default, i1)}` : ""}`).join(", ");
+    lines.push(`${i1}${same ? "override " : ""}init(${params}) {`);
+    if (cls.ctor.superArgs) lines.push(`${i2}${this.call("super.init", cls.ctor.superArgs, [], i2, (l) => `${l}: `)}`);
+    lines.push(...this.block(cls.ctor.body, i2), `${i1}}`);
+    for (const m of cls.methods) lines.push("", ...this.method(m));
+    lines.push("}");
+    return lines;
+  }
+
+  private method(m: MethodDecl): string[] {
+    const i1 = INDENT;
+    const body = m.abstract ? [`${i1}${i1}fatalError("${m.name}() is abstract")`] : this.block(m.body, i1 + i1);
+    const override = m.overrides ? "override " : "";
+    if (m.getter) return [`${i1}${override}var ${this.name(m.name)}: ${this.ty(m.ret)} {`, ...body, `${i1}}`];
+    const attrs = m.ret.k === "void" ? "" : "@discardableResult ";
+    return [`${i1}${attrs}${override}${this.signature(m.name, m.params, m.ret, i1)} {`, ...body, `${i1}}`];
+  }
+
+  /** The value a field holds until the constructor sets it; undefined when its type has none. */
+  private zero(t: Ty): string | undefined {
+    switch (t.k) {
+      case "int":
+        return "0";
+      case "double":
+        return "0.0";
+      case "string":
+        return '""';
+      case "bool":
+        return "false";
+      case "optional":
+        return "nil";
+      case "array":
+        return "[]";
+      case "map":
+        return "[:]";
+      default:
+        return undefined;
+    }
   }
 
   /** An expression decoding `value` (an `Any?` from JSONSerialization) into `ty`. */
@@ -120,7 +196,8 @@ class SwiftPrinter extends Printer {
       case "class":
         return t.name;
       case "fn":
-        return `(${t.params.map((p) => this.ty(p)).join(", ")}) -> ${this.ty(t.ret)}`;
+        // A function passed to a function may be stored (a listener), so it escapes.
+        return `(${t.params.map((p) => (p.k === "fn" ? "@escaping " : "") + this.ty(p)).join(", ")}) -> ${this.ty(t.ret)}`;
       case "rt":
         return RUNTIME_TYPES[t.name] ?? t.name;
     }
@@ -146,7 +223,11 @@ class SwiftPrinter extends Printer {
         // A single-line string literal: an interpolated expression the printer wrapped is put back on one line.
         return `"${x.parts.map((p) => (typeof p === "string" ? this.escape(p) : `\\(${this.interpolated(p, ind).replace(/,\n\s*/g, ", ").replace(/\n\s*/g, "")})`)).join("")}"`;
       case "id":
-        return this.name(x.name);
+        return x.name === "this" ? "self" : this.name(x.name);
+      case "construct":
+        return this.call(x.cls, x.args, [], ind, (l) => `${l}: `);
+      case "invoke":
+        return this.call(`${x.sup ? "super" : this.postfixOperand(x.obj, ind)}.${this.name(x.name)}`, x.args, [], ind, (l) => `${l}: `);
       case "call":
         return this.awaited(this.call(this.postfixOperand(x.callee, ind), x.args, [], ind, (l) => `${l}: `), !!x.await);
       case "rt":
@@ -157,6 +238,8 @@ class SwiftPrinter extends Printer {
         return `${this.expr(x.c, ind)} ? ${this.expr(x.a, ind)} : ${this.expr(x.b, ind)}`;
       case "unwrap":
         return `${this.postfixOperand(x.x, ind)}!`;
+      case "incr":
+        return `${x.prefix ? "jsPreIncr" : "jsPostIncr"}(&${this.expr(x.target, ind)}, ${x.op === "+=" ? "" : "-"}${this.expr(x.one, ind)})`;
       case "coalesce":
         return `${this.expr(x.l, ind)} ?? ${this.expr(x.r, ind)}`;
       case "toDouble":
@@ -226,8 +309,10 @@ class SwiftPrinter extends Printer {
     let s: string;
     switch (op) {
       case "arr.length":
-      case "str.length":
         s = `${r()}.count`;
+        break;
+      case "str.length":
+        s = `${r()}.jsLength`;
         break;
       case "arr.at":
         s = `${r()}.jsAt(${e(b!)})`;
@@ -356,8 +441,116 @@ class SwiftPrinter extends Printer {
       case "error.message":
         s = `jsErrorMessage(${e(a!)})`;
         break;
+      case "arr.concat":
+        s = `(${args.map(e).join(" + ")})`;
+        break;
+      // Sorting and reversing a variable change it; a temporary (`xs.slice().sort()`) is a sorted copy.
+      case "arr.sort":
+        s = this.isPlace(a!) ? `${r()}.jsSort(${e(b!)})` : `${r()}.jsSorted(${e(b!)})`;
+        break;
+      case "arr.reverse":
+        s = this.isPlace(a!) ? `${r()}.jsReverse()` : `Array(${r()}.reversed())`;
+        break;
+      case "arr.shift":
+        s = `${r()}.jsShift()`;
+        break;
+      case "arr.lastIndexOf":
+        s = `${r()}.jsLastIndexOf(${e(b!)})`;
+        break;
+      case "arr.atRel":
+        s = `${r()}.jsAtRel(${e(b!)})`;
+        break;
+      case "arr.reduce":
+        s = `${r()}.reduce(${e(c!)}, ${e(b!)})`;
+        break;
+      case "arr.mapI":
+      case "arr.filterI":
+      case "arr.forEachI":
+      case "arr.someI":
+      case "arr.everyI":
+      case "arr.findI":
+      case "arr.findIndexI":
+        s = `${r()}.js${op[4]!.toUpperCase()}${op.slice(5)}(${e(b!)})`;
+        break;
+      case "map.delete":
+        s = `${r()}.removeValue(forKey: ${e(b!)})`;
+        break;
+      case "map.has":
+        s = `(${r()}[${e(b!)}] != nil)`;
+        break;
+      case "str.split":
+        s = `${r()}.jsSplit(${e(b!)})`;
+        break;
+      case "str.replace":
+      case "str.replaceAll":
+        s = `${r()}.jsReplace(${e(b!)}, ${e(c!)}, all: ${op === "str.replaceAll"})`;
+        break;
+      case "str.indexOf":
+        s = `${r()}.jsIndexOf(${e(b!)}, ${e(c!)})`;
+        break;
+      case "str.lastIndexOf":
+        s = `${r()}.jsLastIndexOf(${e(b!)})`;
+        break;
+      case "str.padStart":
+      case "str.padEnd":
+        s = `${r()}.jsPad(${e(b!)}, ${e(c!)}, atStart: ${op === "str.padStart"})`;
+        break;
+      case "str.repeat":
+        s = `${r()}.jsRepeat(${e(b!)})`;
+        break;
+      case "str.trimStart":
+        s = `${r()}.jsTrimStart()`;
+        break;
+      case "str.trimEnd":
+        s = `${r()}.jsTrimEnd()`;
+        break;
+      case "str.compare":
+        s = `jsCompare(${e(a!)}, ${e(b!)})`;
+        break;
+      case "math.fn":
+        s = this.mathFn((a as Extract<Expr, { e: "str" }>).v, args.slice(1).map(e));
+        break;
+      case "bit.and":
+      case "bit.or":
+      case "bit.xor":
+      case "bit.shl":
+      case "bit.shr": {
+        const sym = { "bit.and": "&", "bit.or": "|", "bit.xor": "^", "bit.shl": "&<<", "bit.shr": "&>>" }[op];
+        s = `Int(jsI32(${e(a!)}) ${sym} jsI32(${e(b!)}))`;
+        break;
+      }
+      case "bit.ushr":
+        s = `Double(UInt32(bitPattern: jsI32(${e(a!)})) &>> UInt32(bitPattern: jsI32(${e(b!)})))`;
+        break;
+      case "bit.not":
+        s = `Int(~jsI32(${e(a!)}))`;
+        break;
     }
     return this.awaited(s, awaited);
+  }
+
+  /** A variable, property or element: what a mutating method can change in place. */
+  private isPlace(x: Expr): boolean {
+    return x.e === "id" || x.e === "prop" || x.e === "index";
+  }
+
+  private mathFn(name: string, args: string[]): string {
+    switch (name) {
+      case "sign":
+        return `jsSign(${args[0]})`;
+      case "isInteger":
+        return `jsIsInteger(${args[0]})`;
+      case "isNaN":
+        return `(${args[0]}).isNaN`;
+      case "isFinite":
+        return `(${args[0]}).isFinite`;
+      case "Infinity":
+        return "Double.infinity";
+      case "NaN":
+        return "Double.nan";
+      default:
+        return `Foundation.${name}(${args.join(", ")})`;
+    }
   }
 
   /** A trailing closure can't appear bare in a statement condition. */
@@ -377,7 +570,7 @@ class SwiftPrinter extends Printer {
       case "assign":
         return [`${ind}${this.expr(s.target, ind)} ${s.op} ${this.expr(s.value, ind)}`];
       case "expr":
-        return [`${ind}${this.expr(s.x, ind)}`];
+        return [`${ind}${s.discard ? "_ = " : ""}${this.expr(s.x, ind)}`];
       case "if": {
         const lines = [`${ind}if ${this.condition(s.c, ind)} {`, ...this.block(s.then, i2)];
         let rest = s.else;
@@ -417,6 +610,8 @@ class SwiftPrinter extends Printer {
         ];
       case "throw":
         return [`${ind}throw NError(${this.expr(s.message, ind)})`];
+      case "unreachable":
+        return [`${ind}fatalError("unreachable")`];
       case "fn":
         return this.fn(s.decl, ind, true);
       case "switch": {

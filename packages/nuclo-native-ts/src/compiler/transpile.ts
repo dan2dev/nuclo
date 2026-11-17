@@ -3,7 +3,8 @@
  *
  * It answers every TypeScript question so the printers don't have to:
  *  - types: `number` slots are inferred Int or Double (a fixpoint over every write), interfaces
- *    become classes, `T | null` an optional, `T[]` an array, `Record<string, T>` a map;
+ *    become classes (protocols when a class implements them), `T | null` an optional, `T[]` an
+ *    array, `Record<string, T>` a map;
  *  - narrowing: a nullable value TypeScript has narrowed is force-unwrapped where it is read;
  *  - async: `async` functions become `async throws` / `suspend`, an un-awaited call is launched;
  *  - nuclo: builder calls, attribute objects, when/list/region/into/scope, styles, variants and
@@ -16,7 +17,10 @@ import {
 } from "../styleAliases.ts";
 import * as path from "node:path";
 import ts from "typescript";
-import { type BinOp, type ClassDecl, type Expr, type FnDecl, type Op, type Param, type Program, type RuntimeType, type Stmt, T, type Ty } from "./ir.ts";
+import {
+  type BinOp, type ClassDecl, type Expr, type FnDecl, type MethodDecl, type ObjectClassDecl, type ObjectField, type Op, type Param, type Program,
+  type ProtocolDecl, type RuntimeType, type Stmt, T, type Ty,
+} from "./ir.ts";
 
 export interface Diagnostic {
   file: string;
@@ -193,6 +197,60 @@ const IMPLICIT_NAMES = new Set([
 type NumKind = "int" | "double";
 type Slot = ts.Symbol | ts.Node;
 
+/**
+ * The kind of each numeric slot. A property read through some types (`obj.count` of a class) is a
+ * transient copy of the declared symbol: it is looked up as the symbol it stands for.
+ */
+class SlotKinds extends Map<Slot, NumKind> {
+  private readonly checker: ts.TypeChecker;
+  constructor(checker: ts.TypeChecker) {
+    super();
+    this.checker = checker;
+  }
+  private root(slot: Slot): Slot {
+    return "flags" in slot && "escapedName" in slot && slot.flags & ts.SymbolFlags.Transient ? (this.checker.getRootSymbols(slot)[0] ?? slot) : slot;
+  }
+  override get(slot: Slot) {
+    return super.get(this.root(slot));
+  }
+  override set(slot: Slot, kind: NumKind) {
+    return super.set(this.root(slot), kind);
+  }
+  override has(slot: Slot) {
+    return super.has(this.root(slot));
+  }
+}
+
+const BIT_OPS: Partial<Record<ts.SyntaxKind, Op>> = {
+  [ts.SyntaxKind.AmpersandToken]: "bit.and",
+  [ts.SyntaxKind.BarToken]: "bit.or",
+  [ts.SyntaxKind.CaretToken]: "bit.xor",
+  [ts.SyntaxKind.LessThanLessThanToken]: "bit.shl",
+  [ts.SyntaxKind.GreaterThanGreaterThanToken]: "bit.shr",
+  [ts.SyntaxKind.GreaterThanGreaterThanGreaterThanToken]: "bit.ushr",
+};
+
+/** `a op= b` for the operators that have no native compound form: `a = a op b`. */
+const COMPOUND: Partial<Record<ts.SyntaxKind, ts.BinaryOperator>> = {
+  [ts.SyntaxKind.AmpersandEqualsToken]: ts.SyntaxKind.AmpersandToken,
+  [ts.SyntaxKind.BarEqualsToken]: ts.SyntaxKind.BarToken,
+  [ts.SyntaxKind.CaretEqualsToken]: ts.SyntaxKind.CaretToken,
+  [ts.SyntaxKind.LessThanLessThanEqualsToken]: ts.SyntaxKind.LessThanLessThanToken,
+  [ts.SyntaxKind.GreaterThanGreaterThanEqualsToken]: ts.SyntaxKind.GreaterThanGreaterThanToken,
+  [ts.SyntaxKind.GreaterThanGreaterThanGreaterThanEqualsToken]: ts.SyntaxKind.GreaterThanGreaterThanGreaterThanToken,
+  [ts.SyntaxKind.AsteriskAsteriskEqualsToken]: ts.SyntaxKind.AsteriskAsteriskToken,
+};
+
+/** Math functions with the same meaning everywhere (`Math.fn(x)` → math.fn). */
+const MATH_FNS = new Set(["sign", "log", "log2", "log10", "log1p", "exp", "expm1", "sin", "cos", "tan", "asin", "acos", "atan", "atan2", "sinh", "cosh", "tanh", "hypot", "cbrt"]);
+
+/** Constants, as literals JavaScript prints the same way. */
+const MATH_CONSTANTS: Record<string, number> = {
+  "Math.E": Math.E, "Math.LN2": Math.LN2, "Math.LN10": Math.LN10, "Math.LOG2E": Math.LOG2E, "Math.LOG10E": Math.LOG10E, "Math.SQRT2": Math.SQRT2, "Math.SQRT1_2": Math.SQRT1_2,
+  "Number.EPSILON": Number.EPSILON, "Number.MAX_SAFE_INTEGER": Number.MAX_SAFE_INTEGER, "Number.MIN_SAFE_INTEGER": Number.MIN_SAFE_INTEGER,
+  "Number.MAX_VALUE": Number.MAX_VALUE, "Number.MIN_VALUE": Number.MIN_VALUE,
+};
+
 interface Ctx {
   async: boolean;
   /** The enclosing function's return type. */
@@ -200,6 +258,8 @@ interface Ctx {
   /** `void | (() => void)`: a bare `return` and the end of the body return nil. */
   voidUnion: boolean;
   inTry: boolean;
+  /** Inside a `for` loop lowered to `while`: what a `continue` runs first (the loop's increment). */
+  continueWith?: Stmt[];
 }
 
 const camel = (s: string) => s.replace(/-([a-z])/g, (_, c: string) => c.toUpperCase());
@@ -230,15 +290,22 @@ export function transpile(entry: string): Program {
 class Frontend {
   private readonly checker: ts.TypeChecker;
   private readonly diagnostics: Diagnostic[] = [];
-  private readonly kinds = new Map<Slot, NumKind>();
-  private readonly writes: { slot: Slot; from?: ts.Expression; fromSlot?: ts.Symbol; forceDouble?: boolean }[] = [];
+  private readonly kinds: SlotKinds;
+  private readonly writes: { slot: Slot; from?: ts.Expression; fromSlot?: Slot; forceDouble?: boolean }[] = [];
   /** Top-level and local functions: a reference to one as a value is a function reference. */
   private readonly functionSymbols = new Set<ts.Symbol>();
   private readonly classes = new Map<ts.Symbol, ClassDecl>();
+  /** The app's classes, and the interfaces some class implements (protocols), by symbol. */
+  private readonly objectClasses = new Map<ts.Symbol, ts.ClassDeclaration>();
+  private readonly protocols = new Map<ts.Symbol, ts.InterfaceDeclaration>();
   private readonly asyncFunctions = new Set<ts.Node>();
   /** Arrays are values in Swift: what mutates an array, and what makes two bindings share one (see checkArrays). */
   private readonly mutations: ts.Expression[] = [];
   private readonly aliases: { target: ts.Node; source: ts.Expression }[] = [];
+  /** Arrays bound by destructuring: the local and the property it was read from. */
+  private readonly destructuredArrays: { target: ts.Identifier; source?: ts.Symbol }[] = [];
+  /** Names of the temporaries the lowering introduces (`ds__1`, `it__2`…). */
+  private temps = 0;
   /** `const MapView = native<MapProps>("MapView")`: the platform type's name and the props type. */
   private readonly nativeComponents = new Map<ts.Symbol, { name: string; props: ts.Type }>();
   /** The ones used, with the name of their props class. */
@@ -260,12 +327,15 @@ class Frontend {
     this.program = program;
     this.files = files;
     this.checker = program.getTypeChecker();
+    this.kinds = new SlotKinds(this.checker);
   }
 
   run(source: string): Program {
     for (const sf of this.files) this.collectStyling(sf);
+    this.collectClasses();
     for (const sf of this.files) this.collect(sf);
     for (const sf of this.files) this.collectFunctionReferences(sf);
+    this.linkMembers();
     this.inferNumbers();
     this.checkArrays();
 
@@ -274,6 +344,27 @@ class Frontend {
       for (const statement of sf.statements) this.topLevel(statement, out);
     }
     out.classes = [...this.classes.values()];
+    if (this.protocols.size) out.protocols = [...this.protocols.values()].map((node) => this.protocolDecl(node));
+    if (out.objectClasses) {
+      // Bases first: a printer that flattens a class (Rust) finds its base already declared.
+      const order: ObjectClassDecl[] = [];
+      const visit = (c: ObjectClassDecl) => {
+        if (order.includes(c)) return;
+        const base = out.objectClasses!.find((b) => b.name === c.base);
+        if (base) visit(base);
+        order.push(c);
+      };
+      out.objectClasses.forEach(visit);
+      out.objectClasses = order;
+      for (const c of order) c.open = order.some((sub) => sub.base === c.name);
+    }
+    // An interface holding one that can't be decoded (it has a function field) can't be decoded either.
+    for (let changed = true; changed; ) {
+      changed = false;
+      for (const cls of out.classes) {
+        if (cls.decodable && !cls.fields.every((f) => this.decodable(f.ty))) (cls.decodable = false), (changed = true);
+      }
+    }
     if (this.usedComponents.size) out.components = [...this.usedComponents].map(([name, props]) => ({ name, props }));
     if (this.diagnostics.length) {
       throw new CompileError(this.diagnostics.sort((a, b) => a.file.localeCompare(b.file) || a.line - b.line || a.column - b.column));
@@ -304,7 +395,13 @@ class Frontend {
     const visit = (node: ts.Node): void => {
       this.reject(node);
 
-      if (ts.isInterfaceDeclaration(node) || (ts.isTypeAliasDeclaration(node) && ts.isTypeLiteralNode(node.type))) {
+      if (ts.isInterfaceDeclaration(node) && this.protocols.has(this.checker.getSymbolAtLocation(node.name)!)) {
+        if (node.typeParameters?.length) this.error(node.name, "Generic interfaces are not supported natively; declare a concrete interface per type.");
+        for (const member of node.members) {
+          if (ts.isPropertySignature(member)) this.declareSlot(member.name, member.type);
+          else if (!ts.isMethodSignature(member)) this.error(member, "Only properties and methods are supported in an interface a class implements.");
+        }
+      } else if (ts.isInterfaceDeclaration(node) || (ts.isTypeAliasDeclaration(node) && ts.isTypeLiteralNode(node.type))) {
         const symbol = this.checker.getSymbolAtLocation(node.name);
         if (symbol) this.classes.set(symbol, { name: node.name.text, fields: [], decodable: true });
         if (RESERVED_TYPES.has(node.name.text) || IMPLICIT_NAMES.has(node.name.text)) this.error(node.name, `"${node.name.text}" is reserved by the native runtimes; rename the type.`);
@@ -344,7 +441,7 @@ class Frontend {
       if (ts.isPropertyAssignment(node) && ts.isObjectLiteralExpression(node.parent)) this.aliases.push({ target: node.name, source: node.initializer });
       if (ts.isShorthandPropertyAssignment(node)) this.aliases.push({ target: node.name, source: node.name });
       if (ts.isCallExpression(node) && ts.isPropertyAccessExpression(node.expression) && ["push", "pop", "shift", "unshift", "splice"].includes(node.expression.name.text)) {
-        if (this.checker.isArrayType(this.checker.getNonNullableType(this.typeOf(node.expression.expression)))) this.mutations.push(node.expression.expression);
+        if (this.isArray(this.checker.getNonNullableType(this.typeOf(node.expression.expression)))) this.mutations.push(node.expression.expression);
       }
       if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name) && this.nativeComponent(node)) {
         // Not a variable natively: each use builds the platform's component.
@@ -360,19 +457,44 @@ class Frontend {
           if (symbol && ts.isForOfStatement(node.parent.parent)) this.writes.push({ slot: symbol, forceDouble: true });
         }
       }
+      if (ts.isBindingElement(node) && ts.isIdentifier(node.name) && !this.isCreateCss(node.parent.parent)) {
+        this.declareSlot(node.name, undefined);
+        const symbol = this.checker.getSymbolAtLocation(node.name);
+        const source = ts.isObjectBindingPattern(node.parent) ? this.checker.getNonNullableType(this.typeOf(node.parent)).getProperty((node.propertyName ?? node.name).getText().replace(/^["']|["']$/g, "")) : undefined;
+        if (symbol) this.writes.push(source ? { slot: symbol, fromSlot: source } : { slot: symbol, forceDouble: true });
+        if (node.initializer) this.write(node.name, node.initializer);
+        if (this.isArray(this.checker.getNonNullableType(this.typeOf(node.name)))) this.destructuredArrays.push({ target: node.name, source });
+      }
       if (ts.isParameter(node) && ts.isIdentifier(node.name)) {
         this.declareSlot(node.name, node.type);
         if (node.initializer) this.write(node.name, node.initializer);
         // An untyped callback parameter takes the kind of the parameter it is passed for.
         const fn = node.parent;
-        if (ts.isArrowFunction(fn) || ts.isFunctionExpression(fn)) {
-          const ctx = this.checker.getContextualType(fn as ts.Expression)?.getCallSignatures()[0];
+        const call = fn.parent;
+        const isIndex = (ts.isArrowFunction(fn) || ts.isFunctionExpression(fn)) && fn.parameters.indexOf(node) === 1 && ts.isCallExpression(call) && call.arguments[0] === fn &&
+          ts.isPropertyAccessExpression(call.expression) && ["map", "filter", "forEach", "some", "every", "find", "findIndex"].includes(call.expression.name.text) &&
+          this.isArray(this.checker.getNonNullableType(this.typeOf(call.expression.expression)));
+        // An array callback's index is whole: it keeps the Int declareSlot gave it.
+        if (!isIndex && (ts.isArrowFunction(fn) || ts.isFunctionExpression(fn))) {
+          const contextual = this.checker.getContextualType(fn as ts.Expression);
+          const ctx = contextual && this.checker.getNonNullableType(contextual).getCallSignatures()[0];
           const source = ctx?.getParameters()[fn.parameters.indexOf(node)];
           const symbol = this.checker.getSymbolAtLocation(node.name);
           if (source && symbol) this.writes.push({ slot: symbol, fromSlot: source });
         }
       }
-      if (this.isFunctionNode(node) || ts.isFunctionDeclaration(node)) {
+      if (ts.isGetAccessor(node)) this.declareSlot(node.name, node.type);
+      if (ts.isPropertyDeclaration(node) && ts.isClassDeclaration(node.parent)) {
+        this.declareSlot(node.name, node.type);
+        if (node.initializer) this.write(node.name, node.initializer);
+      }
+      // A parameter property is a parameter and a field: two symbols, one kind.
+      if (ts.isParameter(node) && ts.isIdentifier(node.name) && ts.isConstructorDeclaration(node.parent) && ts.isParameterPropertyDeclaration(node, node.parent)) {
+        const [param, field] = this.checker.getSymbolsOfParameterPropertyDeclaration(node, node.name.text);
+        if (field && this.isNumber(this.checker.getTypeOfSymbol(field))) this.kinds.set(field, this.forcedKind(node.type) ?? "int");
+        if (param && field) this.link(param, field);
+      }
+      if (this.isFunctionNode(node) || ts.isFunctionDeclaration(node) || ts.isMethodSignature(node) || ts.isGetAccessor(node)) {
         const fn = node as ts.SignatureDeclaration;
         if (ts.getCombinedModifierFlags(fn as ts.Declaration) & ts.ModifierFlags.Async) this.asyncFunctions.add(fn);
         const signature = this.checker.getSignatureFromDeclaration(fn);
@@ -384,18 +506,18 @@ class Frontend {
         if (ts.isArrowFunction(node) && !ts.isBlock(node.body)) this.writes.push({ slot: node, from: node.body });
       }
       if (ts.isReturnStatement(node) && node.expression) {
-        const fn = ts.findAncestor(node.parent, (n) => this.isFunctionNode(n) || ts.isFunctionDeclaration(n));
+        const fn = ts.findAncestor(node.parent, (n) => this.isFunctionNode(n) || ts.isFunctionDeclaration(n) || ts.isGetAccessor(n));
         if (fn) this.writes.push({ slot: fn, from: node.expression });
       }
       if (ts.isBinaryExpression(node) && this.isAssignment(node.operatorToken.kind)) {
         const target = ts.isPropertyAccessExpression(node.left) ? node.left.name : node.left;
         const symbol = this.checker.getSymbolAtLocation(target);
-        if (symbol) this.writes.push({ slot: symbol, from: node.right, forceDouble: node.operatorToken.kind === ts.SyntaxKind.SlashEqualsToken });
+        if (symbol) this.writes.push({ slot: symbol, from: node.right, forceDouble: [ts.SyntaxKind.SlashEqualsToken, ts.SyntaxKind.AsteriskAsteriskEqualsToken, ts.SyntaxKind.GreaterThanGreaterThanGreaterThanEqualsToken].includes(node.operatorToken.kind) });
       }
-      if (ts.isCallExpression(node)) {
+      if (ts.isCallExpression(node) || ts.isNewExpression(node)) {
         const declaration = this.checker.getResolvedSignature(node)?.getDeclaration();
         if (declaration && !this.isApi(declaration) && !declaration.getSourceFile().isDeclarationFile) {
-          node.arguments.forEach((arg, i) => {
+          node.arguments?.forEach((arg, i) => {
             const param = declaration.parameters[i];
             const symbol = param && ts.isIdentifier(param.name) ? this.checker.getSymbolAtLocation(param.name) : undefined;
             if (symbol) this.writes.push({ slot: symbol, from: arg });
@@ -410,6 +532,13 @@ class Frontend {
             const target = ctx.getProperty(prop.name.text);
             if (target && this.kinds.has(target)) {
               this.writes.push({ slot: target, from: ts.isPropertyAssignment(prop) ? prop.initializer : prop.name });
+            }
+          }
+          for (const prop of node.properties) {
+            if (!ts.isSpreadAssignment(prop)) continue;
+            for (const source of this.checker.getNonNullableType(this.typeOf(prop.expression)).getProperties()) {
+              const target = ctx.getProperty(source.name);
+              if (target && this.kinds.has(target)) this.writes.push({ slot: target, fromSlot: source });
             }
           }
         }
@@ -480,7 +609,7 @@ class Frontend {
   }
 
   private isDeclarationName(node: ts.Identifier): boolean {
-    return "name" in node.parent && (node.parent as ts.NamedDeclaration).name === node;
+    return "name" in node.parent && (node.parent as ts.NamedDeclaration).name === node && !(ts.isPropertyAccessExpression(node.parent) && this.unNamespace(node.parent) === node);
   }
 
   /** The function a function symbol names: `function f() {}` or `const f = () => …`. */
@@ -512,8 +641,14 @@ class Frontend {
       }
       mutated.add(symbol);
     }
+    for (const { target, source } of this.destructuredArrays) {
+      const symbol = this.checker.getSymbolAtLocation(target);
+      if ((symbol && mutated.has(symbol)) || (source && mutated.has(source))) {
+        this.error(target, "This array would be shared in JavaScript but copied natively (Swift arrays are values), and one side is mutated. Read it with .slice(), or keep one variable.");
+      }
+    }
     for (const { target, source } of this.aliases) {
-      if (!this.checker.isArrayType(this.checker.getNonNullableType(this.typeOf(source))) || this.isFresh(source, false)) continue;
+      if (!this.isArray(this.checker.getNonNullableType(this.typeOf(source))) || this.isFresh(source, false)) continue;
       const to = this.storageSymbol(target);
       const from = this.storageSymbol(source);
       if ((to && mutated.has(to)) || (from && mutated.has(from)) || (!from && to && mutated.has(to))) {
@@ -578,16 +713,380 @@ class Frontend {
   /** Constructs with no native equivalent. */
   private reject(node: ts.Node) {
     if (node.kind === ts.SyntaxKind.AnyKeyword) this.error(node, "`any` cannot be compiled to a native type; give the value a real type.");
-    else if (ts.isClassDeclaration(node) || ts.isClassExpression(node)) this.error(node, "Classes are not supported; use interfaces and functions.");
-    else if (ts.isEnumDeclaration(node)) this.error(node, "Enums are not supported; use a union of string literals.");
+    else if (ts.isClassExpression(node)) this.error(node, "Class expressions are not supported; declare the class at the top level.");
+    else if (ts.isClassDeclaration(node)) this.checkClass(node);
+    else if (ts.isEnumDeclaration(node)) this.checkEnum(node);
     else if (ts.isModuleDeclaration(node)) this.error(node, "Namespaces are not supported.");
-    else if (node.kind === ts.SyntaxKind.ThisKeyword) this.error(node, "`this` is not supported.");
-    else if (ts.isDeleteExpression(node)) this.error(node, "`delete` is not supported; use a nullable property.");
+    else if (node.kind === ts.SyntaxKind.ThisKeyword && this.isStaticContext(node)) this.error(node, "`this` in a static member is not supported; name the class.");
+    else if (ts.isDeleteExpression(node) && !this.isMapEntry(node.expression)) this.error(node, "`delete` is supported on Record<string, T> entries; use a nullable property.");
     else if (ts.isIdentifier(node) && node.text === "eval") this.error(node, "`eval` cannot be compiled ahead of time.");
     else if (ts.isPropertyAccessExpression(node) && (node.name.text === "prototype" || node.name.text === "__proto__")) {
       this.error(node, "Prototype access is not supported.");
     } else if ((ts.isFunctionDeclaration(node) || ts.isFunctionExpression(node)) && node.asteriskToken) this.error(node, "Generators are not supported.");
-    else if ((ts.isObjectBindingPattern(node) || ts.isArrayBindingPattern(node)) && !this.isCreateCss(node.parent)) this.error(node, "Destructuring is not supported; read the properties.");
+    else if (ts.isBindingElement(node) && ts.isObjectBindingPattern(node.parent) && !this.isCreateCss(node.parent.parent)) {
+      if (node.dotDotDotToken) this.error(node, "Unsupported: a rest element in object destructuring (the rest has no native class); read the properties.");
+      else if (node.propertyName && !ts.isIdentifier(node.propertyName) && !ts.isStringLiteral(node.propertyName)) this.error(node, "Unsupported: a computed key in destructuring.");
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // Classes
+  // -------------------------------------------------------------------------
+
+  /** The app's classes, and the interfaces they implement (with the interfaces those extend): protocols. */
+  private collectClasses() {
+    const pending: ts.InterfaceDeclaration[] = [];
+    const addProtocol = (expr: ts.Expression) => {
+      const symbol = this.resolveAlias(this.checker.getSymbolAtLocation(expr));
+      const decl = symbol?.declarations?.find(ts.isInterfaceDeclaration);
+      if (!symbol || !decl || decl.getSourceFile().isDeclarationFile || this.protocols.has(symbol)) return;
+      this.protocols.set(symbol, decl);
+      pending.push(decl);
+    };
+    for (const sf of this.files) {
+      for (const statement of sf.statements) {
+        if (!ts.isClassDeclaration(statement) || !statement.name) continue;
+        this.objectClasses.set(this.checker.getSymbolAtLocation(statement.name)!, statement);
+        for (const clause of statement.heritageClauses ?? []) {
+          if (clause.token === ts.SyntaxKind.ImplementsKeyword) clause.types.forEach((t) => addProtocol(t.expression));
+        }
+      }
+    }
+    for (let decl = pending.pop(); decl; decl = pending.pop()) {
+      for (const clause of decl.heritageClauses ?? []) clause.types.forEach((t) => addProtocol(t.expression));
+    }
+  }
+
+  /** What a class may contain natively. */
+  private checkClass(node: ts.ClassDeclaration) {
+    if (!node.name || !ts.isSourceFile(node.parent)) return void this.error(node, "Declare classes at the top level of a module.");
+    if (RESERVED_TYPES.has(node.name.text) || IMPLICIT_NAMES.has(node.name.text)) this.error(node.name, `"${node.name.text}" is reserved by the native runtimes; rename the class.`);
+    if (node.typeParameters?.length) this.error(node.name, "Generic classes are not supported natively; declare a concrete class per type.");
+    if (ts.getDecorators(node)?.length) this.error(node, "Decorators are not supported.");
+    const base = this.heritage(node, ts.SyntaxKind.ExtendsKeyword)[0];
+    if (base) {
+      const symbol = this.resolveAlias(this.checker.getSymbolAtLocation(base.expression));
+      if (!symbol || !this.objectClasses.has(symbol)) this.error(base, "A class can extend only another class of the app.");
+    }
+    for (const member of node.members) {
+      const isStatic = !!(ts.getCombinedModifierFlags(member) & ts.ModifierFlags.Static);
+      if (member.name && ts.isPrivateIdentifier(member.name)) this.error(member.name, "#private members are not supported; use the `private` modifier.");
+      else if (member.name && !ts.isIdentifier(member.name)) this.error(member.name, "Class members need plain names natively.");
+      else if (ts.isSetAccessor(member)) this.error(member, "Setters are not supported natively; use a method.");
+      else if (ts.isGetAccessor(member) && isStatic) this.error(member, "Static getters are not supported natively; use a static method.");
+      else if (ts.isMethodDeclaration(member) && ts.getCombinedModifierFlags(member) & ts.ModifierFlags.Async) this.error(member, "Async methods are not supported natively; call an async function from the method.");
+      else if (ts.isMethodDeclaration(member) && member.asteriskToken) this.error(member, "Generators are not supported.");
+      else if (ts.isPropertyDeclaration(member) && isStatic && !member.initializer) this.error(member, "A static field needs an initial value natively.");
+      else if (ts.isPropertyDeclaration(member) && member.exclamationToken) this.error(member, "Definite-assignment fields (`x!: T`) are not supported natively; give the field a value or set it in the constructor.");
+      else if (ts.isConstructorDeclaration(member) && base) {
+        // The base's constructor runs first: Kotlin and Swift call it before anything else.
+        const first = member.body?.statements[0];
+        const isSuper = first && ts.isExpressionStatement(first) && ts.isCallExpression(first.expression) && first.expression.expression.kind === ts.SyntaxKind.SuperKeyword;
+        if (!isSuper) this.error(member, "Call super(…) as the constructor's first statement.");
+      } else if (!(ts.isPropertyDeclaration(member) || ts.isMethodDeclaration(member) || ts.isGetAccessor(member) || ts.isConstructorDeclaration(member) || ts.isSemicolonClassElement(member))) {
+        this.error(member, "Unsupported class member: use fields, a constructor, methods, getters and static members.");
+      }
+    }
+  }
+
+  private heritage(node: ts.ClassDeclaration, token: ts.SyntaxKind.ExtendsKeyword | ts.SyntaxKind.ImplementsKeyword): readonly ts.ExpressionWithTypeArguments[] {
+    return node.heritageClauses?.find((c) => c.token === token)?.types ?? [];
+  }
+
+  /** Whether `this` here is the class (a static member) rather than an instance. Arrow functions see their parent's. */
+  private isStaticContext(node: ts.Node): boolean {
+    const container = ts.findAncestor(node.parent, (n) => ts.isFunctionLike(n) && !ts.isArrowFunction(n) || ts.isPropertyDeclaration(n) || ts.isClassStaticBlockDeclaration(n));
+    return !!container && (ts.isClassStaticBlockDeclaration(container) || !!(ts.getCombinedModifierFlags(container as ts.Declaration) & ts.ModifierFlags.Static));
+  }
+
+  /** Two numeric slots that must have one kind (Int or Double): each is written from the other. */
+  private link(a: Slot, b: Slot) {
+    this.writes.push({ slot: a, fromSlot: b }, { slot: b, fromSlot: a });
+  }
+
+  /**
+   * A member and what it overrides or implements are one native member, so their numbers have one
+   * kind: fields with fields, a getter with the property, a method's parameters and result with the other's.
+   */
+  private linkMembers() {
+    const parts = (decl: ts.Declaration | undefined): { ret?: Slot; params: Slot[] } => {
+      if (!decl) return { params: [] };
+      if (ts.isMethodDeclaration(decl) || ts.isMethodSignature(decl)) {
+        return { ret: decl, params: decl.parameters.map((p) => this.checker.getSymbolAtLocation(p.name)!).filter(Boolean) };
+      }
+      return { params: [] };
+    };
+    for (const node of this.objectClasses.values()) {
+      for (const member of node.members) {
+        if (!member.name || !ts.isIdentifier(member.name)) continue;
+        const symbol = this.checker.getSymbolAtLocation(member.name);
+        if (ts.isGetAccessor(member) && symbol) this.link(member, symbol);
+        if (ts.getCombinedModifierFlags(member) & ts.ModifierFlags.Static) continue;
+        for (const other of this.counterparts(node, member.name.text)) {
+          const decl = other.valueDeclaration ?? other.declarations?.[0];
+          if (symbol && !ts.isMethodDeclaration(member)) this.link(symbol, other);
+          if (decl && ts.isGetAccessor(decl)) this.link(other, decl);
+          const [mine, theirs] = [parts(member), parts(decl)];
+          if (mine.ret && theirs.ret) this.link(mine.ret, theirs.ret);
+          mine.params.forEach((p, i) => theirs.params[i] && this.link(p, theirs.params[i]!));
+        }
+      }
+      // Parameter properties.
+      const ctor = node.members.find(ts.isConstructorDeclaration);
+      for (const param of ctor?.parameters ?? []) {
+        if (!ts.isParameterPropertyDeclaration(param, ctor!) || !ts.isIdentifier(param.name)) continue;
+        const [, field] = this.checker.getSymbolsOfParameterPropertyDeclaration(param, param.name.text);
+        if (field) for (const other of this.counterparts(node, param.name.text)) this.link(field, other);
+      }
+    }
+    // A protocol's members with those of the protocols it extends.
+    for (const node of this.protocols.values()) {
+      for (const member of node.members) {
+        if (!member.name || !ts.isIdentifier(member.name)) continue;
+        for (const clause of node.heritageClauses ?? []) {
+          for (const t of clause.types) {
+            const other = this.checker.getTypeAtLocation(t).getProperty(member.name.text);
+            const decl = other?.valueDeclaration;
+            const symbol = this.checker.getSymbolAtLocation(member.name);
+            if (other && symbol && ts.isPropertySignature(member)) this.link(symbol, other);
+            const [mine, theirs] = [parts(member), parts(decl)];
+            if (mine.ret && theirs.ret) this.link(mine.ret, theirs.ret);
+            mine.params.forEach((p, i) => theirs.params[i] && this.link(p, theirs.params[i]!));
+          }
+        }
+      }
+    }
+  }
+
+  /** The members named `name` of a class's base and of the interfaces it implements. */
+  private counterparts(node: ts.ClassDeclaration, name: string): ts.Symbol[] {
+    const out: ts.Symbol[] = [];
+    for (const clause of node.heritageClauses ?? []) {
+      for (const t of clause.types) {
+        const prop = this.checker.getTypeAtLocation(t).getProperty(name);
+        if (prop) out.push(prop);
+      }
+    }
+    return out;
+  }
+
+  /** The class or protocol a declaration belongs to, by name. */
+  private ownerOf(decl: ts.Node): string | undefined {
+    const parent = decl.parent;
+    if ((ts.isClassDeclaration(parent) || ts.isInterfaceDeclaration(parent)) && parent.name) {
+      const symbol = this.checker.getSymbolAtLocation(parent.name);
+      if (symbol && (this.objectClasses.has(symbol) || this.protocols.has(symbol))) return parent.name.text;
+    }
+    return undefined;
+  }
+
+  /** The base class and the protocols a class or protocol name conforms to, transitively. */
+  private supertypes(name: string, out = new Set<string>()): Set<string> {
+    const find = <T extends ts.ClassDeclaration | ts.InterfaceDeclaration>(map: Map<ts.Symbol, T>) => [...map].find(([s]) => s.name === name)?.[1];
+    const decl = find(this.objectClasses) ?? find(this.protocols);
+    for (const clause of decl?.heritageClauses ?? []) {
+      for (const t of clause.types) {
+        const symbol = this.resolveAlias(this.checker.getSymbolAtLocation(t.expression));
+        if (!symbol || out.has(symbol.name)) continue;
+        out.add(symbol.name);
+        this.supertypes(symbol.name, out);
+      }
+    }
+    return out;
+  }
+
+  private protocolDecl(node: ts.InterfaceDeclaration): ProtocolDecl {
+    const decl: ProtocolDecl = { name: node.name.text, bases: [], fields: [], methods: [] };
+    for (const clause of node.heritageClauses ?? []) {
+      for (const t of clause.types) {
+        const symbol = this.resolveAlias(this.checker.getSymbolAtLocation(t.expression));
+        if (symbol) decl.bases.push(symbol.name);
+      }
+    }
+    for (const member of node.members) {
+      if (!member.name || !ts.isIdentifier(member.name)) continue;
+      const symbol = this.checker.getSymbolAtLocation(member.name)!;
+      if (ts.isPropertySignature(member)) {
+        const readonly = !!member.modifiers?.some((m) => m.kind === ts.SyntaxKind.ReadonlyKeyword);
+        decl.fields.push({ name: member.name.text, ty: this.tyOfSymbol(symbol, member), readonly, optional: !!member.questionToken });
+      } else if (ts.isMethodSignature(member)) {
+        const signature = this.checker.getSignatureFromDeclaration(member)!;
+        const params = this.params(member, { async: false, ret: T.void, voidUnion: false, inTry: false }).map((p) => ({ name: p.name, ty: p.ty }));
+        decl.methods.push({ name: member.name.text, params, ret: this.ty(signature.getReturnType(), member, this.slotKind(member)) });
+      }
+    }
+    return decl;
+  }
+
+  /**
+   * A method's optional and default parameters, applied by the method itself as JavaScript does (a
+   * Swift protocol can't declare defaults, and an override or an implementation may have its own):
+   * the parameter is optional natively, callers pass nil for it, and the body starts with
+   * `p = p ?? default`. A method and what it overrides or implements must agree on which are optional.
+   */
+  private calleeDefaults(method: MethodDecl, node: ts.MethodDeclaration | ts.GetAccessorDeclaration, cls: ts.ClassDeclaration) {
+    const optional = (p: ts.ParameterDeclaration | undefined) => !!p && (!!p.questionToken || !!p.initializer || !!p.dotDotDotToken);
+    for (const other of this.counterparts(cls, method.name)) {
+      const decl = other.valueDeclaration;
+      if (!decl || !(ts.isMethodDeclaration(decl) || ts.isMethodSignature(decl))) continue;
+      node.parameters.forEach((p, i) => {
+        if (optional(p) !== optional(decl.parameters[i])) this.error(p, "Make this parameter optional (or defaulted) in every class and interface that declares the method, or in none: natively they are one method.");
+      });
+    }
+    method.params.forEach((p, i) => {
+      const param = node.parameters[i]!;
+      if (!p.default || param.dotDotDotToken) return;
+      const value = p.default;
+      delete p.default;
+      if (!param.initializer) return;
+      const ty = p.ty;
+      p.ty = T.optional(ty);
+      const fill: Expr = { e: "coalesce", l: { e: "id", name: p.name }, r: value };
+      // The body may already shadow the parameter (it is reassigned): that variable starts with the default.
+      const shadow = method.body.find((st): st is Extract<Stmt, { s: "let" }> => st.s === "let" && st.name === p.name && st.init?.e === "id" && st.init.name === p.name);
+      if (shadow) shadow.init = fill;
+      else method.body.unshift({ s: "let", name: p.name, ty, init: fill, mutable: false });
+    });
+  }
+
+  /** A class: its fields, constructor and methods; its static members become globals and functions. */
+  private classDef(node: ts.ClassDeclaration, out: Program) {
+    const name = node.name!.text;
+    const symbol = this.checker.getSymbolAtLocation(node.name!)!;
+    const top: Ctx = { async: false, ret: T.void, voidUnion: false, inTry: false };
+    const self: Expr = { e: "id", name: "this" };
+    const baseNode = this.heritage(node, ts.SyntaxKind.ExtendsKeyword)[0];
+    const base = baseNode && this.resolveAlias(this.checker.getSymbolAtLocation(baseNode.expression))?.name;
+    const protocols = this.heritage(node, ts.SyntaxKind.ImplementsKeyword).map((t) => this.resolveAlias(this.checker.getSymbolAtLocation(t.expression))!.name);
+    const inBase = (member: string) => !!baseNode && !!this.checker.getTypeAtLocation(baseNode).getProperty(member);
+    const inProtocol = (member: string) => [...this.supertypes(name)].some((p) => [...this.protocols].some(([s, d]) => s.name === p && !!this.checker.getDeclaredTypeOfSymbol(s).getProperty(member) && !!d));
+    const cls: ObjectClassDecl = {
+      name,
+      base,
+      protocols,
+      abstract: !!(ts.getCombinedModifierFlags(node) & ts.ModifierFlags.Abstract),
+      open: false,
+      fields: [],
+      ctor: { params: [], body: [] },
+      methods: [],
+    };
+    const inits: Stmt[] = [];
+    const field = (fieldName: string, fieldSymbol: ts.Symbol, at: ts.Node, readonly: boolean, optional: boolean): ObjectField => {
+      const f: ObjectField = { name: fieldName, ty: this.tyOfSymbol(fieldSymbol, at), readonly, optional };
+      if (inBase(fieldName)) f.overrides = true;
+      if (inProtocol(fieldName)) f.implements = true;
+      cls.fields.push(f);
+      return f;
+    };
+    let ctorNode: ts.ConstructorDeclaration | undefined;
+    for (const member of node.members) {
+      if (!member.name || !ts.isIdentifier(member.name)) {
+        if (ts.isConstructorDeclaration(member) && member.body) ctorNode = member;
+        continue;
+      }
+      const memberName = member.name.text;
+      const isStatic = !!(ts.getCombinedModifierFlags(member) & ts.ModifierFlags.Static);
+      if (ts.isPropertyDeclaration(member)) {
+        const memberSymbol = this.checker.getSymbolAtLocation(member.name)!;
+        const readonly = !!(ts.getCombinedModifierFlags(member) & ts.ModifierFlags.Readonly);
+        if (isStatic) {
+          const ty = this.tyOfSymbol(memberSymbol, member);
+          out.globals.push({ s: "let", name: `${name}__${memberName}`, ty, init: this.expr(member.initializer!, top, ty), mutable: !readonly });
+          continue;
+        }
+        const f = field(memberName, memberSymbol, member, readonly, !!member.questionToken);
+        const init = member.initializer;
+        if (!init) continue;
+        const literal = ts.isNumericLiteral(init) || ts.isStringLiteral(init) || ts.isNoSubstitutionTemplateLiteral(init) || init.kind === ts.SyntaxKind.TrueKeyword ||
+          init.kind === ts.SyntaxKind.FalseKeyword || init.kind === ts.SyntaxKind.NullKeyword || (ts.isArrayLiteralExpression(init) && !init.elements.length);
+        if (literal) f.init = this.expr(init, top, f.ty);
+        else inits.push({ s: "assign", target: { e: "prop", obj: self, name: memberName }, op: "=", value: this.expr(init, top, f.ty) });
+      } else if (ts.isMethodDeclaration(member) || ts.isGetAccessor(member)) {
+        if (isStatic) {
+          out.functions.push(this.fnDecl(`${name}__${memberName}`, member));
+          continue;
+        }
+        const method: MethodDecl = this.fnDecl(memberName, member);
+        this.calleeDefaults(method, member, node);
+        if (ts.isGetAccessor(member)) method.getter = true;
+        if (!member.body) method.abstract = true;
+        if (inBase(memberName)) method.overrides = true;
+        if (inProtocol(memberName)) method.implements = true;
+        cls.methods.push(method);
+      }
+    }
+    // The constructor: its own, or the base's parameters passed on.
+    const assigns: Stmt[] = [];
+    let rest: Stmt[] = [];
+    if (ctorNode) {
+      cls.ctor.params = this.params(ctorNode, top);
+      for (const param of ctorNode.parameters) {
+        if (!ts.isParameterPropertyDeclaration(param, ctorNode) || !ts.isIdentifier(param.name)) continue;
+        const [, fieldSymbol] = this.checker.getSymbolsOfParameterPropertyDeclaration(param, param.name.text);
+        field(param.name.text, fieldSymbol!, param, !!(ts.getCombinedModifierFlags(param) & ts.ModifierFlags.Readonly), false);
+        assigns.push({ s: "assign", target: { e: "prop", obj: self, name: param.name.text }, op: "=", value: { e: "id", name: param.name.text } });
+      }
+      const statements = ctorNode.body!.statements;
+      const first = statements[0];
+      const superCall = base && first && ts.isExpressionStatement(first) && ts.isCallExpression(first.expression) ? first.expression : undefined;
+      if (superCall) {
+        const signature = this.checker.getResolvedSignature(superCall);
+        cls.ctor.superArgs = signature ? this.callArgs(superCall, signature, top) : [];
+      }
+      // The super(…) statement itself lowers to nothing (stmt): the class declares the call.
+      rest = this.body(ctorNode, top);
+    } else if (base) {
+      // The base's parameters, defaults included (the base is declared first).
+      const baseDecl = out.objectClasses?.find((c) => c.name === base);
+      const [signature] = this.checker.getSignaturesOfType(this.checker.getTypeOfSymbol(symbol), ts.SignatureKind.Construct);
+      cls.ctor.params = baseDecl ? baseDecl.ctor.params.map((p) => ({ ...p })) : (signature?.getParameters() ?? []).map((p) => ({ name: p.name, ty: this.tyOfSymbol(p, node) }));
+      cls.ctor.superArgs = cls.ctor.params.map((p): Expr => ({ e: "id", name: p.name }));
+    }
+    cls.ctor.body = [...inits, ...assigns, ...rest];
+    (out.objectClasses ??= []).push(cls);
+  }
+
+  /** An enum is a set of string or number constants: its members are inlined, its type is string or number. */
+  private checkEnum(node: ts.EnumDeclaration) {
+    let kind: string | undefined;
+    for (const member of node.members) {
+      const value = this.checker.getConstantValue(member);
+      if (value === undefined) {
+        this.error(member, "Enum members need constant values natively (literals, or numbers counted up).");
+        continue;
+      }
+      if (kind && kind !== typeof value) this.error(member, "This enum mixes strings and numbers; natively it is one or the other.");
+      kind = typeof value;
+    }
+  }
+
+  /** `E.Member` of an enum: its constant value. */
+  private enumValue(node: ts.Node): string | number | undefined {
+    const symbol = ts.isPropertyAccessExpression(node) ? this.checker.getSymbolAtLocation(node.name) : undefined;
+    const decl = symbol && symbol.flags & ts.SymbolFlags.EnumMember ? symbol.valueDeclaration : undefined;
+    return decl && ts.isEnumMember(decl) ? this.checker.getConstantValue(decl) : undefined;
+  }
+
+  /** `map[key]` of a Record<string, T>. */
+  private isMapEntry(node: ts.Expression): node is ts.ElementAccessExpression {
+    if (!ts.isElementAccessExpression(node)) return false;
+    const type = this.checker.getNonNullableType(this.typeOf(node.expression));
+    return !!type.getStringIndexType() && type.getProperties().length === 0;
+  }
+
+  /** `ns.name` where `ns` is `import * as ns`: the name itself (modules share one native namespace). */
+  private unNamespace<T extends ts.Expression>(node: T): T | ts.Identifier {
+    if (!ts.isPropertyAccessExpression(node) || !ts.isIdentifier(node.expression)) return node;
+    const symbol = this.checker.getSymbolAtLocation(node.expression);
+    const target = this.resolveAlias(symbol);
+    return symbol && symbol.flags & ts.SymbolFlags.Alias && target && target.flags & ts.SymbolFlags.ValueModule ? (node.name as ts.Identifier) : node;
+  }
+
+  /** An expression with no effects, which may be read more than once: `a`, `a.b.c`, `a!`. */
+  private isPure(node: ts.Expression): boolean {
+    if (ts.isIdentifier(node)) return true;
+    if (ts.isParenthesizedExpression(node) || ts.isNonNullExpression(node)) return this.isPure(node.expression);
+    return ts.isPropertyAccessExpression(node) && !node.questionDotToken && this.isPure(node.expression);
   }
 
   private declareSlot(name: ts.Node, typeNode: ts.TypeNode | undefined) {
@@ -647,11 +1146,13 @@ class Frontend {
 
   /** Whether a numeric expression is always whole, given the slots' current kinds. */
   private numKind(node: ts.Expression): NumKind {
-    if (ts.isNumericLiteral(node)) return /^(0x[0-9a-f]+|\d+)$/i.test(node.text) ? "int" : "double";
+    // A whole literal beyond 32 bits is a Double: exact to 2^53 as in JavaScript, where Kotlin's Int would overflow.
+    if (ts.isNumericLiteral(node)) return /^(0x[0-9a-f]+|\d+)$/i.test(node.text) && Number(node.text) <= 2147483647 ? "int" : "double";
     if (ts.isParenthesizedExpression(node) || ts.isAsExpression(node) || ts.isNonNullExpression(node) || ts.isSatisfiesExpression(node)) {
       return this.numKind(node.expression);
     }
     if (ts.isAwaitExpression(node)) return this.numKind(node.expression);
+    if (ts.isPrefixUnaryExpression(node) && node.operator === ts.SyntaxKind.TildeToken) return "int";
     if (ts.isPrefixUnaryExpression(node) || ts.isPostfixUnaryExpression(node)) return this.numKind(node.operand);
     if (ts.isConditionalExpression(node)) return this.numKind(node.whenTrue) === "int" && this.numKind(node.whenFalse) === "int" ? "int" : "double";
     if (ts.isBinaryExpression(node)) {
@@ -664,6 +1165,8 @@ class Frontend {
         case ts.SyntaxKind.AmpersandToken:
         case ts.SyntaxKind.BarToken:
         case ts.SyntaxKind.CaretToken:
+        case ts.SyntaxKind.LessThanLessThanToken:
+        case ts.SyntaxKind.GreaterThanGreaterThanToken:
           return "int";
         case ts.SyntaxKind.CommaToken:
           return this.numKind(node.right);
@@ -678,6 +1181,8 @@ class Frontend {
       return symbol ? this.slotKind(symbol) : "double";
     }
     if (ts.isPropertyAccessExpression(node)) {
+      const member = this.enumValue(node);
+      if (member !== undefined) return typeof member === "number" && Number.isInteger(member) ? "int" : "double";
       if (node.name.text === "length" && this.isSequence(this.checker.getNonNullableType(this.typeOf(node.expression)))) return "int";
       const symbol = this.checker.getSymbolAtLocation(node.name);
       return symbol ? this.slotKind(symbol) : "double";
@@ -859,13 +1364,18 @@ class Frontend {
     return type.isUnion() && type.types.some((u) => !!(u.flags & (ts.TypeFlags.Null | ts.TypeFlags.Undefined | ts.TypeFlags.Void)));
   }
 
+  /** An array, or a tuple (TypeScript's type for `[1, 2]` in destructuring), which is one natively. */
+  private isArray(type: ts.Type): boolean {
+    return this.checker.isArrayType(type) || this.checker.isTupleType(type);
+  }
+
   private isSequence(type: ts.Type): boolean {
-    return this.isString(type) || this.checker.isArrayType(type);
+    return this.isString(type) || this.isArray(type);
   }
 
   private isClassType(type: ts.Type): boolean {
     const symbol = type.aliasSymbol ?? type.getSymbol();
-    return !!symbol && [...this.classes.keys()].some((s) => s === symbol || s.name === symbol.name);
+    return !!symbol && [...this.classes.keys(), ...this.objectClasses.keys(), ...this.protocols.keys()].some((s) => s === symbol || s.name === symbol.name);
   }
 
   /** The IR type of a TypeScript type; `num` is the kind a number takes here. */
@@ -888,6 +1398,18 @@ class Frontend {
     if (this.checker.isArrayType(type)) {
       const [elem] = this.checker.getTypeArguments(type as ts.TypeReference);
       return T.array(this.ty(elem!, node));
+    }
+    // `[1, 2]` where TypeScript infers a tuple (destructuring): an array when every element has one type.
+    if (this.checker.isTupleType(type)) {
+      const elems = this.checker.getTypeArguments(type as ts.TypeReference).map((t) => this.ty(t, node));
+      const first = elems[0];
+      if (first && elems.every((t) => JSON.stringify(t) === JSON.stringify(first))) return T.array(first);
+      // `[]`: the rest of a destructured tuple, typed by the array it came from.
+      const decl = ts.isIdentifier(node) ? this.checker.getSymbolAtLocation(node)?.valueDeclaration : ts.isBindingElement(node) ? node : undefined;
+      if (!first && decl && ts.isBindingElement(decl) && decl.dotDotDotToken) {
+        const elem = this.checker.getIndexTypeOfType(this.checker.getNonNullableType(this.typeOf(decl.parent)), ts.IndexKind.Number);
+        if (elem) return T.array(this.ty(elem, node));
+      }
     }
     const symbol = type.aliasSymbol ?? type.getSymbol();
     const decl = symbol?.declarations?.[0];
@@ -933,6 +1455,8 @@ class Frontend {
       return;
     }
     if (ts.isInterfaceDeclaration(node)) return this.classDecl(node);
+    if (ts.isClassDeclaration(node)) return node.name ? this.classDef(node, out) : undefined;
+    if (ts.isEnumDeclaration(node)) return;
     if (ts.isFunctionDeclaration(node) && node.name && node.body) {
       out.functions.push(this.fnDecl(node.name.text, node));
       return;
@@ -943,13 +1467,19 @@ class Frontend {
     }
     if (ts.isVariableStatement(node)) {
       for (const decl of node.declarationList.declarations) {
-        if (!ts.isIdentifier(decl.name)) continue;
+        if (!ts.isIdentifier(decl.name)) {
+          if (this.isCreateCss(decl)) continue;
+          for (const stmt of this.varDecl(decl, node.declarationList, { async: false, ret: T.void, voidUnion: false, inTry: false })) {
+            if (stmt.s === "let") out.globals.push(stmt);
+          }
+          continue;
+        }
         if (this.nativeComponents.has(this.checker.getSymbolAtLocation(decl.name)!)) continue;
         if (decl.initializer && this.isFunctionNode(decl.initializer) && node.declarationList.flags & ts.NodeFlags.Const) {
           out.functions.push(this.fnDecl(decl.name.text, decl.initializer as ts.ArrowFunction));
         } else {
-          const stmt = this.varDecl(decl, node.declarationList, { async: false, ret: T.void, voidUnion: false, inTry: false });
-          if (stmt.s === "let") {
+          const [stmt] = this.varDecl(decl, node.declarationList, { async: false, ret: T.void, voidUnion: false, inTry: false });
+          if (stmt?.s === "let") {
             if (!stmt.init && stmt.ty.k !== "optional") this.error(decl, "A top-level variable needs an initial value.");
             out.globals.push(stmt);
           }
@@ -984,8 +1514,9 @@ class Frontend {
       case "double":
       case "string":
       case "bool":
-      case "class":
         return true;
+      case "class":
+        return [...this.classes.values()].find((c) => c.name === ty.name)?.decodable ?? true;
       case "array":
       case "optional":
       case "map":
@@ -999,7 +1530,7 @@ class Frontend {
     return ts.isArrowFunction(node) || ts.isFunctionExpression(node) || ts.isMethodDeclaration(node);
   }
 
-  private fnDecl(name: string, node: ts.FunctionDeclaration | ts.ArrowFunction | ts.FunctionExpression): FnDecl {
+  private fnDecl(name: string, node: ts.FunctionDeclaration | ts.ArrowFunction | ts.FunctionExpression | ts.MethodDeclaration | ts.GetAccessorDeclaration): FnDecl {
     const isAsync = this.asyncFunctions.has(node);
     const signature = this.checker.getSignatureFromDeclaration(node)!;
     let retType = signature.getReturnType();
@@ -1011,21 +1542,28 @@ class Frontend {
 
   private params(node: ts.SignatureDeclaration, ctx?: Ctx): Param[] {
     return node.parameters.map((param) => {
-      if (!ts.isIdentifier(param.name)) return this.error(param, "Destructured parameters are not supported."), { name: "_", ty: T.void };
-      if (param.dotDotDotToken) return this.error(param, "Rest parameters are not supported natively; take an array."), { name: "_", ty: T.void };
-      const symbol = this.checker.getSymbolAtLocation(param.name)!;
-      const ty = this.tyOfSymbol(symbol, param);
-      if (!param.initializer && !param.questionToken) return { name: param.name.text, ty };
-      if (!ctx) return this.error(param, "Callbacks can't have default or optional parameters natively."), { name: param.name.text, ty };
+      const name = this.paramName(param);
+      const ty = ts.isIdentifier(param.name) ? this.tyOfSymbol(this.checker.getSymbolAtLocation(param.name)!, param) : this.ty(this.typeOf(param), param);
+      if (!param.initializer && !param.questionToken) return { name, ty };
+      if (param.dotDotDotToken) return { name, ty, default: { e: "arr", of: (ty as Extract<Ty, { k: "array" }>).of, items: [] } };
+      if (!ctx) return this.error(param, "Callbacks can't have default or optional parameters natively."), { name, ty };
       const value: Expr = param.initializer ? this.expr(param.initializer, ctx, ty) : { e: "nil" };
-      return { name: param.name.text, ty, default: value };
+      return { name, ty, default: value };
     });
+  }
+
+  /** A parameter's native name: its own, or `arg__<i>` for a destructured one. */
+  private paramName(param: ts.ParameterDeclaration): string {
+    return ts.isIdentifier(param.name) ? param.name.text : `arg__${param.parent.parameters.indexOf(param)}`;
   }
 
   private body(node: ts.SignatureDeclaration & { body?: ts.ConciseBody }, ctx: Ctx): Stmt[] {
     const body = node.body;
     if (!body) return [];
     const stmts: Stmt[] = [];
+    for (const param of node.parameters) {
+      if (!ts.isIdentifier(param.name)) stmts.push(...this.bindPattern(param.name, { e: "id", name: this.paramName(param) }, ctx, false));
+    }
     // Swift parameters are constants: a reassigned one is shadowed by a variable.
     for (const param of node.parameters) {
       if (ts.isIdentifier(param.name) && this.isReassigned(param.name, body)) {
@@ -1064,6 +1602,10 @@ class Frontend {
     return kind >= ts.SyntaxKind.FirstAssignment && kind <= ts.SyntaxKind.LastAssignment;
   }
 
+  private isLogicalAssignment(kind: ts.SyntaxKind) {
+    return kind === ts.SyntaxKind.QuestionQuestionEqualsToken || kind === ts.SyntaxKind.BarBarEqualsToken || kind === ts.SyntaxKind.AmpersandAmpersandEqualsToken;
+  }
+
   private isIncrement(node: ts.PrefixUnaryExpression | ts.PostfixUnaryExpression) {
     return node.operator === ts.SyntaxKind.PlusPlusToken || node.operator === ts.SyntaxKind.MinusMinusToken;
   }
@@ -1081,7 +1623,8 @@ class Frontend {
   }
 
   private stmt(node: ts.Statement, ctx: Ctx): Stmt[] {
-    if (ts.isVariableStatement(node)) return node.declarationList.declarations.map((d) => this.varDecl(d, node.declarationList, ctx));
+    if (ts.isExpressionStatement(node) && ts.isCallExpression(node.expression) && node.expression.expression.kind === ts.SyntaxKind.SuperKeyword) return [];
+    if (ts.isVariableStatement(node)) return node.declarationList.declarations.flatMap((d) => this.varDecl(d, node.declarationList, ctx));
     if (ts.isExpressionStatement(node)) return this.exprStmt(node.expression, ctx);
     if (ts.isBlock(node)) return this.block(node, ctx);
     if (ts.isIfStatement(node)) {
@@ -1094,16 +1637,33 @@ class Frontend {
     }
     if (ts.isForOfStatement(node)) {
       const decl = node.initializer;
-      if (!ts.isVariableDeclarationList(decl) || !ts.isIdentifier(decl.declarations[0]!.name)) return [this.unsupported(node, "this for-of form")];
-      if (!this.checker.isArrayType(this.typeOf(node.expression))) return [this.unsupported(node.expression, "for-of over anything but an array (strings iterate characters natively)")];
-      return [{ s: "forOf", name: decl.declarations[0]!.name.text, of: this.expr(node.expression, ctx), body: this.block(node.statement, ctx) }];
+      if (!ts.isVariableDeclarationList(decl)) return [this.unsupported(node, "for-of over an existing variable; declare it in the loop")];
+      if (!this.isArray(this.typeOf(node.expression))) return [this.unsupported(node.expression, "for-of over anything but an array (strings iterate characters natively)")];
+      const binding = decl.declarations[0]!.name;
+      const inner = { ...ctx, continueWith: undefined };
+      if (ts.isIdentifier(binding)) return [{ s: "forOf", name: binding.text, of: this.expr(node.expression, ctx), body: this.block(node.statement, inner) }];
+      const item = `it__${++this.temps}`;
+      const binds = this.bindPattern(binding, { e: "id", name: item }, ctx, !(decl.flags & ts.NodeFlags.Const));
+      return [{ s: "forOf", name: item, of: this.expr(node.expression, ctx), body: [...binds, ...this.block(node.statement, inner)] }];
     }
-    if (ts.isForStatement(node)) return this.forRange(node, ctx);
-    if (ts.isWhileStatement(node)) return [{ s: "while", c: this.cond(node.expression, ctx), body: this.block(node.statement, ctx) }];
-    if (ts.isBreakStatement(node)) return [{ s: "break" }];
-    if (ts.isContinueStatement(node)) return [{ s: "continue" }];
+    if (ts.isForStatement(node)) return this.forLoop(node, ctx);
+    if (ts.isWhileStatement(node)) return [{ s: "while", c: this.cond(node.expression, ctx), body: this.block(node.statement, { ...ctx, continueWith: undefined }) }];
+    if (ts.isDoStatement(node)) {
+      // `do B while (C)` → `first = true; while (first || C) { first = false; B }`: `continue` still tests C.
+      const first = `first__${++this.temps}`;
+      const body = this.block(node.statement, { ...ctx, continueWith: undefined });
+      const test: Expr = { e: "bin", op: "||", l: { e: "id", name: first }, r: this.cond(node.expression, ctx) };
+      return [
+        { s: "let", name: first, ty: T.bool, init: { e: "bool", v: true }, mutable: true },
+        { s: "while", c: test, body: [{ s: "assign", target: { e: "id", name: first }, op: "=", value: { e: "bool", v: false } }, ...body] },
+      ];
+    }
+    if (ts.isBreakStatement(node) || ts.isContinueStatement(node)) {
+      if (node.label) return [this.unsupported(node, "labelled break and continue")];
+      return ts.isBreakStatement(node) ? [{ s: "break" }] : [...(ctx.continueWith ?? []), { s: "continue" }];
+    }
     if (ts.isTryStatement(node)) {
-      if (node.finallyBlock) return [this.unsupported(node.finallyBlock, "`finally`")];
+      if (node.finallyBlock) return this.tryFinally(node, ctx);
       const inner = { ...ctx, inTry: true };
       const catchName = node.catchClause?.variableDeclaration && ts.isIdentifier(node.catchClause.variableDeclaration.name) ? node.catchClause.variableDeclaration.name.text : undefined;
       return [{ s: "try", body: this.block(node.tryBlock, inner), catchName, catchBody: node.catchClause ? this.block(node.catchClause.block, ctx) : [] }];
@@ -1127,20 +1687,197 @@ class Frontend {
     return { s: "expr", x: { e: "nil" } };
   }
 
-  private varDecl(decl: ts.VariableDeclaration, list: ts.VariableDeclarationList, ctx: Ctx): Stmt {
-    if (!ts.isIdentifier(decl.name)) return this.unsupported(decl, "destructuring");
+  private varDecl(decl: ts.VariableDeclaration, list: ts.VariableDeclarationList, ctx: Ctx): Stmt[] {
+    const mutable = !(list.flags & ts.NodeFlags.Const);
+    if (!ts.isIdentifier(decl.name)) {
+      if (!decl.initializer) return [this.unsupported(decl, "destructuring without a value")];
+      // The value is read once: a temporary unless it is a variable already.
+      const init = decl.initializer;
+      if (ts.isIdentifier(init)) return this.bindPattern(decl.name, this.expr(init, ctx), ctx, mutable);
+      const temp = `ds__${++this.temps}`;
+      const ty = this.tyOfExpr(init);
+      return [{ s: "let", name: temp, ty, init: this.expr(init, ctx, ty), mutable: false }, ...this.bindPattern(decl.name, { e: "id", name: temp }, ctx, mutable)];
+    }
     // `const f = () => …` is a local function: it can call itself, and its numbers keep their kinds.
     if (decl.initializer && list.flags & ts.NodeFlags.Const && (ts.isArrowFunction(decl.initializer) || ts.isFunctionExpression(decl.initializer))) {
-      return { s: "fn", decl: this.fnDecl(decl.name.text, decl.initializer) };
+      return [{ s: "fn", decl: this.fnDecl(decl.name.text, decl.initializer) }];
     }
     const symbol = this.checker.getSymbolAtLocation(decl.name)!;
     const ty = this.tyOfSymbol(symbol, decl);
-    const mutable = !(list.flags & ts.NodeFlags.Const);
-    return { s: "let", name: decl.name.text, ty, init: decl.initializer && this.expr(decl.initializer, ctx, ty), mutable };
+    return [{ s: "let", name: decl.name.text, ty, init: decl.initializer && this.expr(decl.initializer, ctx, ty), mutable }];
   }
 
-  /** `for (let i = a; i < b; i++)` → a range loop; other `for` forms are rejected. */
-  private forRange(node: ts.ForStatement, ctx: Ctx): Stmt[] {
+  /**
+   * Destructuring, as the reads it stands for: `const { a, b: c = 1 } = o` is `a = o.a`, `c = o.b ?? 1`;
+   * `const [x, , ...rest] = xs` is `x = xs[0]`, `rest = xs.slice(2)`. `source` is read once per name.
+   */
+  private bindPattern(pattern: ts.BindingPattern, source: Expr, ctx: Ctx, mutable: boolean): Stmt[] {
+    const out: Stmt[] = [];
+    const sourceType = this.checker.getNonNullableType(this.typeOf(pattern));
+    const isMap = !!sourceType.getStringIndexType() && sourceType.getProperties().length === 0;
+    pattern.elements.forEach((el, i) => {
+      if (ts.isOmittedExpression(el)) return;
+      let value: Expr;
+      let nullable: boolean;
+      if (ts.isObjectBindingPattern(pattern)) {
+        const key = (el.propertyName ?? el.name) as ts.Identifier | ts.StringLiteral;
+        if (isMap) {
+          value = { e: "op", op: "map.get", args: [source, { e: "str", v: key.text }] };
+          nullable = true;
+        } else {
+          const prop = sourceType.getProperty(key.text);
+          const propType = prop ? this.checker.getTypeOfSymbolAtLocation(prop, el) : undefined;
+          value = { e: "prop", obj: source, name: key.text };
+          nullable = !!propType && this.isNullable(propType);
+          if (el.initializer && propType && this.isNullable(propType) && (propType as ts.UnionType).types.some((t) => t.flags & ts.TypeFlags.Null)) {
+            this.error(el, "A default for a property that can be null: JavaScript keeps the null, natively the default would replace it. Use ?? instead.");
+          }
+          if (prop && el.initializer && this.isNumber(propType!) && this.slotKind(prop) === "int" && this.numKind(el.initializer) === "double") {
+            this.error(el.initializer, "This default is not a whole number but the property is: give the property a Double type, or the default a whole value.");
+          }
+        }
+      } else if (el.dotDotDotToken) {
+        value = { e: "op", op: "arr.slice", args: [source, { e: "int", v: String(i) }, { e: "nil" }] };
+        nullable = false;
+      } else {
+        // A tuple's element is there (a plain read); an array's may not be (`T | undefined`).
+        nullable = this.isNullable(this.typeOf(el.name)) || !!el.initializer;
+        const index: Expr = { e: "int", v: String(i) };
+        value = nullable ? { e: "op", op: "arr.at", args: [source, index] } : { e: "index", obj: source, index };
+      }
+      if (ts.isIdentifier(el.name)) {
+        const symbol = this.checker.getSymbolAtLocation(el.name)!;
+        // A rest of a tuple is a tuple TypeScript may type as `[]`: its type is the source's element type.
+        const elemType = el.dotDotDotToken ? this.checker.getIndexTypeOfType(sourceType, ts.IndexKind.Number) : undefined;
+        const ty = elemType ? T.array(this.ty(elemType, el)) : this.tyOfSymbol(symbol, el);
+        if (el.initializer && nullable) value = { e: "coalesce", l: value, r: this.expr(el.initializer, ctx, ty) };
+        out.push({ s: "let", name: el.name.text, ty, init: value, mutable });
+        return;
+      }
+      const temp = `ds__${++this.temps}`;
+      const ty = this.ty(this.typeOf(el.name), el);
+      if (el.initializer && nullable) value = { e: "coalesce", l: value, r: this.expr(el.initializer, ctx, ty) };
+      out.push({ s: "let", name: temp, ty, init: value, mutable: false }, ...this.bindPattern(el.name, { e: "id", name: temp }, ctx, mutable));
+    });
+    return out;
+  }
+
+  /**
+   * `try {} catch {} finally {}` where nothing leaves the blocks early: the finally block runs after
+   * the try statement, as it does in JavaScript. A `return`, `break`, `continue` or `throw` out of
+   * them (or an `await` in the catch block, which can fail) would skip it natively.
+   */
+  private tryFinally(node: ts.TryStatement, ctx: Ctx): Stmt[] {
+    if (!node.catchClause) return [this.unsupported(node, "`finally` without `catch` (the error would skip it natively); add a catch block")];
+    const leaves = (block: ts.Node, inCatch: boolean): ts.Node | undefined => {
+      let found: ts.Node | undefined;
+      const visit = (n: ts.Node, inLoop: boolean, inSwitch: boolean): void => {
+        if (found || this.isFunctionNode(n) || ts.isFunctionDeclaration(n)) return;
+        if (ts.isReturnStatement(n)) found = n;
+        else if (ts.isBreakStatement(n) && !inLoop && !inSwitch) found = n;
+        else if (ts.isContinueStatement(n) && !inLoop) found = n;
+        else if (inCatch && (ts.isThrowStatement(n) || ts.isAwaitExpression(n))) found = n;
+        const loop = inLoop || ts.isIterationStatement(n, false);
+        ts.forEachChild(n, (c) => visit(c, loop, inSwitch || ts.isSwitchStatement(n)));
+      };
+      visit(block, false, false);
+      return found;
+    };
+    const early = leaves(node.tryBlock, false) ?? leaves(node.catchClause.block, true);
+    if (early) return [this.unsupported(early, "leaving a try or catch block that has `finally` early (the finally block would be skipped natively)")];
+    const inner = { ...ctx, inTry: true };
+    const catchName = node.catchClause.variableDeclaration && ts.isIdentifier(node.catchClause.variableDeclaration.name) ? node.catchClause.variableDeclaration.name.text : undefined;
+    return [
+      { s: "try", body: this.block(node.tryBlock, inner), catchName, catchBody: this.block(node.catchClause.block, ctx) },
+      ...this.block(node.finallyBlock!, ctx),
+    ];
+  }
+
+  /**
+   * `for (let i = a; i < b; i++)` with a bound the body can't change → a range loop. Any other
+   * `for` → `init; while (cond) { body; step }`, where a `continue` runs the step first.
+   */
+  private forLoop(node: ts.ForStatement, ctx: Ctx): Stmt[] {
+    const range = this.forRange(node, ctx);
+    if (range) return range;
+    const init = node.initializer;
+    // JavaScript gives each iteration its own `let i`; a `while` has one. A closure would tell them apart.
+    if (init && ts.isVariableDeclarationList(init)) {
+      const symbols = new Set(init.declarations.flatMap((d) => (ts.isIdentifier(d.name) ? [this.checker.getSymbolAtLocation(d.name)] : [])));
+      let captured: ts.Node | undefined;
+      const visit = (n: ts.Node, inClosure: boolean): void => {
+        if (captured) return;
+        if (inClosure && ts.isIdentifier(n) && symbols.has(this.checker.getSymbolAtLocation(n))) captured = n;
+        ts.forEachChild(n, (c) => visit(c, inClosure || this.isFunctionNode(n) || ts.isFunctionDeclaration(n)));
+      };
+      visit(node.statement, false);
+      if (captured) return [this.unsupported(captured, "a closure capturing the variable of this `for` loop (each iteration has its own in JavaScript); copy it to a const in the body")];
+    }
+    const first: Stmt[] = !init ? [] : ts.isVariableDeclarationList(init) ? init.declarations.flatMap((d) => this.varDecl(d, init, ctx)) : this.exprStmt(init, ctx);
+    const step = node.incrementor ? this.exprStmt(node.incrementor, ctx) : [];
+    const body = this.block(node.statement, { ...ctx, continueWith: step });
+    const loop: Stmt = { s: "while", c: node.condition ? this.cond(node.condition, ctx) : { e: "bool", v: true }, body: [...body, ...step] };
+    // The loop's variables are its own: `if (true) { … }` scopes them (two loops may both declare `i`).
+    return [{ s: "if", c: { e: "bool", v: true }, then: [...first, loop] }];
+  }
+
+  /**
+   * Whether the body of a loop leaves `bound` as it is: literals, variables the body doesn't assign
+   * (nor, for globals, a function it calls), the length of an array it doesn't change, and
+   * arithmetic and Math calls of those. JavaScript reads the bound on every turn; a range reads it once.
+   */
+  private stableBound(bound: ts.Expression, body: ts.Statement): boolean {
+    let callsApp = false;
+    const findCalls = (n: ts.Node): void => {
+      if (callsApp) return;
+      if (ts.isCallExpression(n)) {
+        const callee = this.checker.getResolvedSignature(n)?.getDeclaration();
+        callsApp = !!callee && !this.isApi(callee) && !callee.getSourceFile().isDeclarationFile;
+      }
+      ts.forEachChild(n, findCalls);
+    };
+    findCalls(body);
+    const isLocal = (symbol: ts.Symbol | undefined) => {
+      const decl = symbol?.valueDeclaration;
+      return !!decl && (ts.isParameter(decl) || (ts.isVariableDeclaration(decl) && !ts.isSourceFile(this.topLevelOf(decl))));
+    };
+    const stable = (x: ts.Expression): boolean => {
+      if (ts.isNumericLiteral(x)) return true;
+      if (ts.isParenthesizedExpression(x)) return stable(x.expression);
+      if (ts.isIdentifier(x)) {
+        const symbol = this.checker.getSymbolAtLocation(x);
+        const decl = symbol?.valueDeclaration;
+        if (decl && ts.isVariableDeclaration(decl) && ts.getCombinedNodeFlags(decl) & ts.NodeFlags.Const) return true;
+        return !this.isReassigned(x, body) && (isLocal(symbol) || !callsApp);
+      }
+      if (ts.isBinaryExpression(x) && [ts.SyntaxKind.PlusToken, ts.SyntaxKind.MinusToken, ts.SyntaxKind.AsteriskToken, ts.SyntaxKind.SlashToken, ts.SyntaxKind.PercentToken].includes(x.operatorToken.kind)) {
+        return stable(x.left) && stable(x.right);
+      }
+      if (ts.isCallExpression(x) && ts.isPropertyAccessExpression(x.expression) && ts.isIdentifier(x.expression.expression) && x.expression.expression.text === "Math") {
+        return x.expression.name.text !== "random" && x.arguments.every(stable);
+      }
+      if (ts.isPropertyAccessExpression(x) && x.name.text === "length" && this.isPure(x.expression)) {
+        // The array changes if the body mutates or reassigns it, or calls a function that could reach it (a global or a property).
+        const array = this.storageSymbol(x.expression);
+        if (!array || (!isLocal(array) && callsApp)) return false;
+        let changes = false;
+        const visit = (n: ts.Node): void => {
+          if (changes) return;
+          if (ts.isCallExpression(n) && ts.isPropertyAccessExpression(n.expression) && ["push", "pop", "shift", "unshift", "splice", "sort", "reverse"].includes(n.expression.name.text)) {
+            changes = this.storageSymbol(n.expression.expression) === array;
+          } else if (ts.isBinaryExpression(n) && this.isAssignment(n.operatorToken.kind)) changes = this.storageSymbol(n.left) === array;
+          ts.forEachChild(n, visit);
+        };
+        visit(body);
+        return !changes;
+      }
+      return false;
+    };
+    return stable(bound);
+  }
+
+  /** `for (let i = a; i < b; i++)` → a range loop, when nothing in the body changes `i` or `b`. */
+  private forRange(node: ts.ForStatement, ctx: Ctx): Stmt[] | undefined {
     const init = node.initializer;
     const decl = init && ts.isVariableDeclarationList(init) ? init.declarations[0] : undefined;
     const cond = node.condition;
@@ -1150,7 +1887,8 @@ class Frontend {
       ts.isIdentifier(cond.left) && cond.left.text === decl.name.text &&
       (cond.operatorToken.kind === ts.SyntaxKind.LessThanToken || cond.operatorToken.kind === ts.SyntaxKind.LessThanEqualsToken) &&
       inc && (ts.isPostfixUnaryExpression(inc) || ts.isPrefixUnaryExpression(inc)) && inc.operator === ts.SyntaxKind.PlusPlusToken &&
-      ts.isIdentifier(inc.operand) && inc.operand.text === decl.name.text && !this.isReassigned(decl.name, node.statement)
+      ts.isIdentifier(inc.operand) && inc.operand.text === decl.name.text && !this.isReassigned(decl.name, node.statement) &&
+      this.stableBound(cond.right, node.statement)
     ) {
       return [{
         s: "forRange",
@@ -1158,11 +1896,12 @@ class Frontend {
         from: this.expr(decl.initializer, ctx, T.int),
         to: this.expr(cond.right, ctx, T.int),
         inclusive: cond.operatorToken.kind === ts.SyntaxKind.LessThanEqualsToken,
-        body: this.block(node.statement, ctx),
+        body: this.block(node.statement, { ...ctx, continueWith: undefined }),
       }];
     }
-    return [this.unsupported(node, "this `for` form (use `for (let i = a; i < b; i++)` or for-of)")];
+    return undefined;
   }
+
 
   private switchStmt(node: ts.SwitchStatement, ctx: Ctx): Stmt {
     const subject = this.tyOfExpr(node.expression);
@@ -1184,12 +1923,56 @@ class Frontend {
         pending = [];
       }
     }
+    // An exhaustive switch needs no default in TypeScript, but Swift, Kotlin and Rust need its end to be unreachable.
+    if (!defaultBody && this.coversEveryLiteral(node)) defaultBody = [{ s: "unreachable" }];
     return { s: "switch", x: this.expr(node.expression, ctx), cases, default: defaultBody };
+  }
+
+  private coversEveryLiteral(node: ts.SwitchStatement): boolean {
+    const subject = this.checker.getTypeAtLocation(node.expression);
+    const members = subject.isUnion() ? subject.types : [subject];
+    const covered = new Set<unknown>();
+    for (const clause of node.caseBlock.clauses) {
+      const type = ts.isCaseClause(clause) ? this.checker.getTypeAtLocation(clause.expression) : undefined;
+      if (type?.isLiteral()) covered.add(type.value);
+    }
+    return members.every((t) => t.isLiteral() && covered.has(t.value));
   }
 
   /** An expression in statement position: assignments, increments, calls, launches. */
   private exprStmt(node: ts.Expression, ctx: Ctx): Stmt[] {
     if (ts.isParenthesizedExpression(node)) return this.exprStmt(node.expression, ctx);
+    if (ts.isBinaryExpression(node) && node.operatorToken.kind === ts.SyntaxKind.CommaToken) return [...this.exprStmt(node.left, ctx), ...this.exprStmt(node.right, ctx)];
+    if (ts.isCallExpression(node)) {
+      const optional = this.optionalCall(node, ctx);
+      if (optional) return [{ s: "if", c: optional.cond, then: [{ s: "expr", x: optional.call }] }];
+    }
+    if (ts.isBinaryExpression(node) && this.isLogicalAssignment(node.operatorToken.kind)) {
+      // `a ??= b`, `a ||= b`, `a &&= b`: an assignment under a test of `a`.
+      if (!this.isPure(node.left)) return [this.unsupported(node, "a logical assignment to a computed target")];
+      const kind = node.operatorToken.kind;
+      const target = this.lvalue(node.left, ctx);
+      const current = this.expr(node.left, ctx);
+      const test: Expr = kind === ts.SyntaxKind.QuestionQuestionEqualsToken
+        ? { e: "bin", op: "==", l: current, r: { e: "nil" } }
+        : kind === ts.SyntaxKind.BarBarEqualsToken ? { e: "not", x: this.cond(node.left, ctx) } : this.cond(node.left, ctx);
+      return [{ s: "if", c: test, then: [{ s: "assign", target, op: "=", value: this.expr(node.right, ctx, this.lvalueTy(node.left)) }] }];
+    }
+    const compound = ts.isBinaryExpression(node) ? COMPOUND[node.operatorToken.kind] : undefined;
+    if (compound && ts.isBinaryExpression(node)) {
+      if (!this.isPure(node.left)) return [this.unsupported(node, "this compound assignment to a computed target")];
+      // `a |= b` is `a = a | b`, converted to the kind of `a`.
+      const op = compound === ts.SyntaxKind.AsteriskAsteriskToken ? "math.pow" : BIT_OPS[compound]!;
+      const args = op === "math.pow" ? [this.expr(node.left, ctx, T.double), this.expr(node.right, ctx, T.double)] : [this.expr(node.left, ctx), this.expr(node.right, ctx)];
+      let x: Expr = { e: "op", op, args };
+      const target = this.lvalueTy(node.left);
+      if (target.k === "int" && (op === "math.pow" || op === "bit.ushr")) x = { e: "toInt", x };
+      if (target.k === "double" && op !== "math.pow" && op !== "bit.ushr") x = { e: "toDouble", x };
+      return [{ s: "assign", target: this.lvalue(node.left, ctx), op: "=", value: x }];
+    }
+    if (ts.isDeleteExpression(node) && this.isMapEntry(node.expression)) {
+      return [{ s: "expr", x: { e: "op", op: "map.delete", args: [this.expr(node.expression.expression, ctx), this.expr(node.expression.argumentExpression, ctx, T.string)] } }];
+    }
     if (ts.isBinaryExpression(node) && this.isAssignment(node.operatorToken.kind)) {
       const ops: Record<number, "=" | "+=" | "-=" | "*=" | "/=" | "%="> = {
         [ts.SyntaxKind.EqualsToken]: "=",
@@ -1220,6 +2003,8 @@ class Frontend {
     if (ts.isBinaryExpression(node) && node.operatorToken.kind === ts.SyntaxKind.AmpersandAmpersandToken) {
       return [{ s: "if", c: this.cond(node.left, ctx), then: this.exprStmt(node.right, ctx) }];
     }
+    // `subscribe(fn)` that returns an unsubscribe function nobody keeps.
+    if (ts.isCallExpression(node) && this.typeOf(node).getCallSignatures().length) return [{ s: "expr", x: this.expr(node, ctx), discard: true }];
     return [{ s: "expr", x: this.expr(node, ctx) }];
   }
 
@@ -1230,6 +2015,8 @@ class Frontend {
 
   private lvalue(node: ts.Expression, ctx: Ctx): Expr {
     if (ts.isIdentifier(node)) return { e: "id", name: node.text };
+    const staticField = this.staticField(node);
+    if (staticField) return staticField;
     if (ts.isPropertyAccessExpression(node)) return { e: "prop", obj: this.expr(node.expression, ctx), name: node.name.text };
     if (ts.isElementAccessExpression(node)) return { e: "index", obj: this.expr(node.expression, ctx), index: this.expr(node.argumentExpression, ctx, this.indexTy(node)) };
     return this.error(node, "Unsupported assignment target.");
@@ -1242,7 +2029,7 @@ class Frontend {
   }
 
   private indexTy(node: ts.ElementAccessExpression): Ty {
-    return this.checker.isArrayType(this.typeOf(node.expression)) ? T.int : T.string;
+    return this.isArray(this.typeOf(node.expression)) ? T.int : T.string;
   }
 
   // -------------------------------------------------------------------------
@@ -1282,7 +2069,7 @@ class Frontend {
   private checkNominal(node: ts.Expression, want: Ty) {
     let n = node;
     while (ts.isParenthesizedExpression(n)) n = n.expression;
-    if (!(ts.isIdentifier(n) || ts.isPropertyAccessExpression(n) || ts.isElementAccessExpression(n) || ts.isCallExpression(n) || ts.isAwaitExpression(n))) return;
+    if (!(ts.isIdentifier(n) || ts.isPropertyAccessExpression(n) || ts.isElementAccessExpression(n) || ts.isCallExpression(n) || ts.isAwaitExpression(n) || ts.isNewExpression(n) || n.kind === ts.SyntaxKind.ThisKeyword)) return;
     const type = this.typeOf(n);
     if (type.flags & (ts.TypeFlags.Any | ts.TypeFlags.Unknown) || type.getCallSignatures().length) return;
     const classOf = (t: Ty): string | undefined =>
@@ -1290,6 +2077,12 @@ class Frontend {
     const expected = classOf(want);
     if (!expected) return;
     const actual = this.classNameOf(this.checker.getNonNullableType(type));
+    // A class goes where its base or a protocol it implements is expected, but an array of it is another native type.
+    const direct = want.k === "class" || (want.k === "optional" && want.of.k === "class");
+    if (actual && direct && this.supertypes(actual).has(expected)) return;
+    if (actual && !direct && actual !== expected && this.supertypes(actual).has(expected)) {
+      return void this.error(node, `An array or map of ${actual} is used where one of ${expected} is expected: natively they are different types. Declare it as ${expected}[] where it is built.`);
+    }
     if (actual && actual !== expected) {
       this.error(node, `${actual} is used where ${expected} is expected: same shape in TypeScript, but different native classes. Build the ${expected} explicitly.`);
     }
@@ -1297,7 +2090,7 @@ class Frontend {
 
   /** The interface a type is, looking through arrays and maps. */
   private classNameOf(type: ts.Type): string | undefined {
-    if (this.checker.isArrayType(type)) return this.classNameOf(this.checker.getNonNullableType(this.checker.getTypeArguments(type as ts.TypeReference)[0]!));
+    if (this.isArray(type)) return this.classNameOf(this.checker.getNonNullableType(this.checker.getTypeArguments(type as ts.TypeReference)[0]!));
     const index = type.getStringIndexType();
     if (index && type.getProperties().length === 0) return this.classNameOf(this.checker.getNonNullableType(index));
     const symbol = type.aliasSymbol ?? type.getSymbol();
@@ -1380,8 +2173,10 @@ class Frontend {
     switch (node.kind) {
       case ts.SyntaxKind.NumericLiteral: {
         const text = (node as ts.NumericLiteral).text;
-        if (want?.k === "double" || (want?.k === "optional" && want.of.k === "double")) return { e: "double", v: text.includes(".") ? text : `${text}.0` };
-        return this.numKind(node) === "int" ? { e: "int", v: text } : { e: "double", v: text };
+        const value = Number(text);
+        const double: Expr = { e: "double", v: Number.isInteger(value) && !/e/i.test(String(value)) ? `${value}.0` : String(value) };
+        if (want?.k === "double" || (want?.k === "optional" && want.of.k === "double")) return double;
+        return this.numKind(node) === "int" ? { e: "int", v: /^0x/i.test(text) ? String(value) : text } : double;
       }
       case ts.SyntaxKind.StringLiteral:
       case ts.SyntaxKind.NoSubstitutionTemplateLiteral:
@@ -1426,19 +2221,41 @@ class Frontend {
       if (node.operator === ts.SyntaxKind.ExclamationToken) return { e: "not", x: this.cond(node.operand, ctx) };
       if (node.operator === ts.SyntaxKind.MinusToken) return { e: "neg", x: this.expr(node.operand, ctx, want) };
       if (node.operator === ts.SyntaxKind.PlusToken) return this.expr(node.operand, ctx, want);
-      return this.error(node, "Unsupported: ++/-- inside an expression; use it as a statement.");
+      if (node.operator === ts.SyntaxKind.TildeToken) return { e: "op", op: "bit.not", args: [this.expr(node.operand, ctx)] };
+      return this.increment(node, ctx);
     }
-    if (ts.isPostfixUnaryExpression(node)) return this.error(node, "Unsupported: ++/-- inside an expression; use it as a statement.");
+    if (ts.isPostfixUnaryExpression(node)) return this.increment(node, ctx);
     if (ts.isBinaryExpression(node)) return this.binary(node, ctx);
     if (ts.isArrayLiteralExpression(node)) {
       const ty = want?.k === "array" ? want : this.tyOfExpr(node);
       if (ty.k !== "array") return this.error(node, "Unsupported array literal.");
-      return { e: "arr", of: ty.of, items: node.elements.map((el) => (ts.isSpreadElement(el) ? this.error(el, "Unsupported: spread in arrays.") : this.expr(el, ctx, ty.of))) };
+      return this.arrayOf(node.elements, ty.of, ctx);
     }
     if (ts.isObjectLiteralExpression(node)) return this.object(node, ctx, want);
-    if (ts.isNewExpression(node)) return this.error(node, "Unsupported: `new` (only `throw new Error(...)`).");
+    if (node.kind === ts.SyntaxKind.ThisKeyword) return { e: "id", name: "this" };
+    if (ts.isNewExpression(node)) {
+      const symbol = ts.isIdentifier(node.expression) ? this.resolveAlias(this.checker.getSymbolAtLocation(node.expression)) : undefined;
+      const signature = this.checker.getResolvedSignature(node);
+      if (symbol && this.objectClasses.has(symbol) && signature) return { e: "construct", cls: symbol.name, args: this.callArgs(node, signature, ctx) };
+      return this.error(node, "Unsupported: `new` of anything but the app's classes (and `throw new Error(...)`).");
+    }
     if (ts.isTypeOfExpression(node)) return this.error(node, "Unsupported: `typeof` at run time.");
     return this.error(node, `Unsupported expression ${ts.SyntaxKind[node.kind]}.`);
+  }
+
+  /** `x++`, `--obj.count`, `xs[i]++` as a value. The target is read and written, so it must have no effects. */
+  private increment(node: ts.PrefixUnaryExpression | ts.PostfixUnaryExpression, ctx: Ctx): Expr {
+    const target = node.operand;
+    const pure = this.isPure(target) || (ts.isElementAccessExpression(target) && this.isPure(target.expression) && this.isPure(target.argumentExpression));
+    if (!pure) return this.error(node, "Unsupported: ++/-- on a computed target inside an expression; read it into a variable first.");
+    const ty = this.lvalueTy(target);
+    return {
+      e: "incr",
+      target: this.lvalue(target, ctx),
+      op: node.operator === ts.SyntaxKind.PlusPlusToken ? "+=" : "-=",
+      one: ty.k === "int" ? { e: "int", v: "1" } : { e: "double", v: "1.0" },
+      prefix: ts.isPrefixUnaryExpression(node),
+    };
   }
 
   /**
@@ -1451,7 +2268,7 @@ class Frontend {
     const obj = this.expr(node.expression, ctx);
     const present = asserted || !this.isNullable(this.typeOf(node));
     if (this.isString(objType)) return this.error(node, "Indexing a string is not supported natively (characters differ); use slice().");
-    if (this.checker.isArrayType(objType)) {
+    if (this.isArray(objType)) {
       const index = this.expr(node.argumentExpression, ctx, T.int);
       if (node.questionDotToken) return this.error(node, "Unsupported: ?.[] on an optional array; read it into a variable and narrow it first.");
       return present ? { e: "index", obj, index } : { e: "op", op: "arr.at", args: [obj, index] };
@@ -1465,9 +2282,15 @@ class Frontend {
 
   private identifier(node: ts.Identifier): Expr {
     if (node.text === "undefined") return { e: "nil" };
+    if ((node.text === "Infinity" || node.text === "NaN") && this.checker.getSymbolAtLocation(node)?.declarations?.[0]?.getSourceFile().isDeclarationFile) {
+      return { e: "op", op: "math.fn", args: [{ e: "str", v: node.text }] };
+    }
     const symbol = this.checker.getSymbolAtLocation(node);
     if (!symbol) return this.error(node, `Unknown identifier ${node.text}.`);
     const resolved = this.resolveAlias(symbol)!;
+    if (resolved.flags & ts.SymbolFlags.Enum) return this.error(node, `The enum ${node.text} exists natively only through its members (${node.text}.Member).`);
+    if (resolved.flags & ts.SymbolFlags.ValueModule) return this.error(node, `The module ${node.text} exists natively only through its members (${node.text}.name).`);
+    if (resolved.flags & ts.SymbolFlags.Class) return this.error(node, `The class ${node.text} exists natively only through \`new\` and its static members.`);
     const decl = resolved.valueDeclaration ?? resolved.declarations?.[0];
     if (decl && this.isApi(decl)) return this.error(node, `${node.text} must be called, not used as a value.`);
     if (decl?.getSourceFile().isDeclarationFile) return this.error(node, `${node.text} is not available natively.`);
@@ -1491,12 +2314,29 @@ class Frontend {
   }
 
   private property(node: ts.PropertyAccessExpression, ctx: Ctx): Expr {
+    const member = this.enumValue(node);
+    if (member !== undefined) {
+      if (typeof member === "string") return { e: "str", v: member };
+      return Number.isInteger(member) ? { e: "int", v: String(member) } : { e: "double", v: String(member) };
+    }
+    const unqualified = this.unNamespace(node);
+    if (unqualified !== node) return this.identifier(unqualified as ts.Identifier);
+    const staticField = this.staticField(node);
+    if (staticField) return staticField;
+    const memberDecl = this.checker.getSymbolAtLocation(node.name)?.valueDeclaration;
+    if (memberDecl && (ts.isMethodDeclaration(memberDecl) || ts.isMethodSignature(memberDecl)) && this.ownerOf(memberDecl)) {
+      return this.error(node, "A method can only be called natively (JavaScript would lose its `this`); wrap it in an arrow function.");
+    }
     const name = node.name.text;
     const objType = this.typeOf(node.expression);
     if (ts.isIdentifier(node.expression) && node.expression.text === "Math" && name === "PI") return { e: "op", op: "math.pi", args: [] };
+    const constant = ts.isIdentifier(node.expression) ? MATH_CONSTANTS[`${node.expression.text}.${name}`] : undefined;
+    if (constant !== undefined) return { e: "double", v: Number.isInteger(constant) ? `${constant}.0` : String(constant) };
+    if (ts.isIdentifier(node.expression) && node.expression.text === "Number" && (name === "POSITIVE_INFINITY" || name === "NaN")) return { e: "op", op: "math.fn", args: [{ e: "str", v: name === "NaN" ? "NaN" : "Infinity" }] };
+    if (ts.isIdentifier(node.expression) && node.expression.text === "Number" && name === "NEGATIVE_INFINITY") return { e: "neg", x: { e: "op", op: "math.fn", args: [{ e: "str", v: "Infinity" }] } };
     const chain = (ts.isOptionalChain(node) && !node.questionDotToken) || undefined;
     if (node.questionDotToken && name === "length") return this.error(node, "Unsupported: ?.length; narrow the value first.");
-    if (name === "length" && this.checker.isArrayType(this.checker.getNonNullableType(objType))) return { e: "op", op: "arr.length", args: [this.expr(node.expression, ctx)], chain };
+    if (name === "length" && this.isArray(this.checker.getNonNullableType(objType))) return { e: "op", op: "arr.length", args: [this.expr(node.expression, ctx)], chain };
     if (name === "length" && this.isString(this.checker.getNonNullableType(objType))) return { e: "op", op: "str.length", args: [this.expr(node.expression, ctx)], chain };
     if (name === "message" && this.ty(objType, node).k === "rt") return { e: "op", op: "error.message", args: [this.expr(node.expression, ctx)] };
     const obj = this.expr(node.expression, ctx);
@@ -1556,6 +2396,14 @@ class Frontend {
       [ts.SyntaxKind.EqualsEqualsToken]: "==",
       [ts.SyntaxKind.ExclamationEqualsToken]: "!=",
     };
+    if (kind === ts.SyntaxKind.AsteriskAsteriskToken) return { e: "op", op: "math.pow", args: [this.expr(node.left, ctx, T.double), this.expr(node.right, ctx, T.double)] };
+    if (kind === ts.SyntaxKind.InKeyword) {
+      const map = this.checker.getNonNullableType(rt);
+      if (!map.getStringIndexType() || map.getProperties().length) return this.error(node, "`in` is supported on Record<string, T> maps natively.");
+      return { e: "op", op: "map.has", args: [this.expr(node.right, ctx), this.expr(node.left, ctx, T.string)] };
+    }
+    const bit = BIT_OPS[kind];
+    if (bit) return { e: "op", op: bit, args: [this.expr(node.left, ctx), this.expr(node.right, ctx)] };
     let op = ops[kind];
     if (!op) return this.error(node, `Unsupported operator ${node.operatorToken.getText()}.`);
     if (op === "==" || op === "!=") {
@@ -1565,6 +2413,10 @@ class Frontend {
         return { e: "bin", op, l: this.expr(other, ctx), r: { e: "nil" } };
       }
       if (this.isClassType(this.checker.getNonNullableType(lt))) op = op === "==" ? "===" : "!==";
+    }
+    // JavaScript orders strings by UTF-16 units; Swift and Rust by other rules.
+    if (["<", "<=", ">", ">="].includes(op) && this.isString(lt) && this.isString(rt)) {
+      return { e: "bin", op, l: { e: "op", op: "str.compare", args: [this.expr(node.left, ctx), this.expr(node.right, ctx)] }, r: { e: "int", v: "0" } };
     }
     if (this.isNumber(lt) && this.isNumber(rt)) {
       const num = op === "/" || this.numKind(node.left) === "double" || this.numKind(node.right) === "double" ? T.double : T.int;
@@ -1579,18 +2431,33 @@ class Frontend {
     const ctxType = this.checker.getContextualType(node) ?? this.typeOf(node);
     const ty = target && target.k !== "fn" ? target : this.ty(this.checker.getNonNullableType(ctxType), node);
     if (ty.k === "rt" && ty.name === "Style") return this.style(node, ctx);
-    if (ty.k === "class") {
+    if (ty.k === "class" && [...this.classes.values()].some((c) => c.name === ty.name)) {
       const cls = [...this.classes.values()].find((c) => c.name === ty.name)!;
-      const given = new Map<string, ts.Expression>();
+      // Later members win, as in JavaScript: `{ ...base, x: 1 }` and `{ x: 1, ...base }` differ.
+      const given = new Map<string, ts.Expression | Expr>();
       for (const prop of node.properties) {
         if (ts.isPropertyAssignment(prop) && ts.isIdentifier(prop.name)) given.set(prop.name.text, prop.initializer);
         else if (ts.isShorthandPropertyAssignment(prop)) given.set(prop.name.text, prop.name);
-        else this.error(prop, "Unsupported object literal member (spreads and methods can't build a native class).");
+        else if (ts.isSpreadAssignment(prop)) {
+          if (!this.isPure(prop.expression)) this.error(prop, "Spread a variable or a property (natively it is read once per field).");
+          else if (this.isNullable(this.typeOf(prop.expression))) this.error(prop, "Spreading a value that may be null: narrow it first.");
+          else {
+            const sourceType = this.typeOf(prop.expression);
+            const source = this.expr(prop.expression, ctx);
+            for (const field of cls.fields) {
+              const from = sourceType.getProperty(field.name);
+              if (!from) continue;
+              const read: Expr = { e: "prop", obj: source, name: field.name };
+              const target = field.ty.k === "optional" ? field.ty.of : field.ty;
+              given.set(field.name, target.k === "double" && this.isNumber(this.checker.getTypeOfSymbol(from)) && this.slotKind(from) === "int" ? { e: "toDouble", x: read } : read);
+            }
+          }
+        } else this.error(prop, "Unsupported object literal member (methods and computed keys can't build a native class).");
       }
       const args: [string, Expr][] = [];
       for (const field of cls.fields) {
         const value = given.get(field.name);
-        if (value) args.push([field.name, this.expr(value, ctx, field.ty)]);
+        if (value) args.push([field.name, "kind" in value ? this.expr(value as ts.Expression, ctx, field.ty) : (value as Expr)]);
       }
       return { e: "new", cls: cls.name, args };
     }
@@ -1605,6 +2472,7 @@ class Frontend {
         }),
       };
     }
+    if (ty.k === "class") return this.error(node, `${ty.name} is a class or an interface a class implements: create it with \`new\`, not an object literal.`);
     return this.error(node, "An object literal needs an interface type to become a native class.");
   }
 
@@ -1875,14 +2743,17 @@ class Frontend {
     if (want && declaredRet && ret.k !== "void" && !voidUnion && declaredRet.flags & ts.TypeFlags.Void) ret = T.void;
     const inner: Ctx = { async: false, ret, voidUnion, inTry: false };
     const params = this.params(node);
-    const body = node.body && !ts.isBlock(node.body) && ret.k !== "void" && !voidUnion ? this.expr(node.body, inner, ret) : this.body(node, inner);
+    const destructures = node.parameters.some((p) => !ts.isIdentifier(p.name));
+    const body = node.body && !ts.isBlock(node.body) && ret.k !== "void" && !voidUnion && !destructures ? this.expr(node.body, inner, ret) : this.body(node, inner);
     return { e: "lambda", params, ret, body };
   }
 
   private call(node: ts.CallExpression, ctx: Ctx): Expr {
-    const callee = node.expression;
+    const optional = this.optionalCall(node, ctx);
+    if (optional) return { e: "cond", c: optional.cond, a: optional.call, b: { e: "nil" } };
+    const callee = this.unNamespace(node.expression);
     if (node.questionDotToken || (ts.isPropertyAccessExpression(callee) && callee.questionDotToken)) {
-      return this.error(node, "Unsupported: optional calls (?.()); narrow the value first (if (f) f()).");
+      return this.error(node, "Unsupported: this optional call (?.()); narrow the value first (if (f) f()).");
     }
     const api = ts.isIdentifier(callee) ? this.apiName(callee) : undefined;
     if (api) return this.nuclo(api, node, ctx);
@@ -1893,8 +2764,13 @@ class Frontend {
       if (callee.text === "String" && node.arguments.length === 1) return this.str(node.arguments[0]!, ctx);
       if (callee.text === "Number") return { e: "op", op: "num.parse", args: [this.expr(node.arguments[0]!, ctx, T.string)] };
       if (callee.text === "parseInt") return { e: "op", op: "int.parse", args: [this.expr(node.arguments[0]!, ctx, T.string)] };
+      if ((callee.text === "isNaN" || callee.text === "isFinite") && node.arguments.length === 1) {
+        return { e: "op", op: "math.fn", args: [{ e: "str", v: callee.text }, this.expr(node.arguments[0]!, ctx, T.double)] };
+      }
     }
     if (ts.isPropertyAccessExpression(callee)) {
+      const member = this.memberCall(callee, node, ctx);
+      if (member) return member;
       const method = this.method(callee, node, ctx);
       if (method?.e === "op" && ts.isOptionalChain(node)) method.chain = true;
       if (method) return method;
@@ -1909,15 +2785,97 @@ class Frontend {
       return { e: "call", callee: this.expr(callee, ctx), args: arg ? [this.selection(arg, ctx)] : [] };
     }
     if (decl.getSourceFile().isDeclarationFile) return this.error(node, `${callee.getText()}() is not available natively.`);
-    const params = signature.getParameters();
-    const args = node.arguments.map((arg, i) => {
-      const param = params[i];
-      return this.expr(arg, ctx, param ? this.tyOfSymbol(param, arg) : undefined);
-    });
+    const args = this.callArgs(node, signature, ctx);
     // A declared function is called by name; a function value (maybe narrowed from null) is read as one.
     const symbol = ts.isIdentifier(callee) ? this.resolveAlias(this.checker.getSymbolAtLocation(callee)) : undefined;
-    const fn = symbol && this.functionSymbols.has(symbol) ? ({ e: "id", name: callee.getText() } as Expr) : this.expr(callee, ctx);
+    const fn = symbol && this.functionSymbols.has(symbol) ? ({ e: "id", name: (callee as ts.Identifier).text } as Expr) : this.expr(callee, ctx);
     return { e: "call", callee: fn, args };
+  }
+
+  /** `obj.m(…)` / `super.m(…)` on a class or protocol value, and `C.m(…)`, a static method. */
+  private memberCall(callee: ts.PropertyAccessExpression, node: ts.CallExpression, ctx: Ctx): Expr | undefined {
+    const decl = this.checker.getSymbolAtLocation(callee.name)?.valueDeclaration;
+    const owner = decl && this.ownerOf(decl);
+    if (!decl || !owner || !(ts.isMethodDeclaration(decl) || ts.isMethodSignature(decl))) return undefined;
+    const signature = this.checker.getResolvedSignature(node);
+    if (!signature) return this.error(node, "Cannot resolve this call.");
+    const args = this.callArgs(node, signature, ctx);
+    if (ts.getCombinedModifierFlags(decl) & ts.ModifierFlags.Static) return { e: "call", callee: { e: "id", name: `${owner}__${callee.name.text}` }, args };
+    // Left-out optional arguments are nil: the method applies its own defaults.
+    const declared = decl.parameters.filter((p) => !p.dotDotDotToken).length;
+    while (args.length < declared) args.push({ e: "nil" });
+    if (callee.expression.kind === ts.SyntaxKind.SuperKeyword) return { e: "invoke", obj: { e: "id", name: "this" }, name: callee.name.text, args, sup: owner };
+    return { e: "invoke", obj: this.expr(callee.expression, ctx), name: callee.name.text, args };
+  }
+
+  /** A static field of one of the app's classes (`C.count`): the global `C__count`. */
+  private staticField(node: ts.Expression): Expr | undefined {
+    if (!ts.isPropertyAccessExpression(node)) return undefined;
+    const decl = this.checker.getSymbolAtLocation(node.name)?.valueDeclaration;
+    const owner = decl && ts.isPropertyDeclaration(decl) && ts.getCombinedModifierFlags(decl) & ts.ModifierFlags.Static ? this.ownerOf(decl) : undefined;
+    return owner ? { e: "id", name: `${owner}__${node.name.text}` } : undefined;
+  }
+
+  /** The arguments of a call to the app's own function: a rest parameter receives the trailing ones as an array. */
+  private callArgs(node: ts.CallExpression | ts.NewExpression, signature: ts.Signature, ctx: Ctx): Expr[] {
+    const params = signature.getParameters();
+    const decl = signature.getDeclaration();
+    const rest = decl?.parameters.findIndex((p) => p.dotDotDotToken) ?? -1;
+    const arg = (a: ts.Expression, i: number) => {
+      const param = params[i];
+      if (ts.isSpreadElement(a)) return this.error(a, "Spread arguments are supported for a rest parameter only.");
+      return this.expr(a, ctx, param ? this.tyOfSymbol(param, a) : undefined);
+    };
+    const given = node.arguments ?? ts.factory.createNodeArray<ts.Expression>();
+    if (rest < 0) return given.map(arg);
+    const restTy = this.tyOfSymbol(params[rest]!, node) as Extract<Ty, { k: "array" }>;
+    const trailing = given.slice(rest);
+    const only = trailing.length === 1 ? trailing[0]! : undefined;
+    const packed = only && ts.isSpreadElement(only) ? this.expr(only.expression, ctx, restTy) : this.arrayOf(trailing, restTy.of, ctx);
+    return [...given.slice(0, rest).map(arg), packed];
+  }
+
+  /** `[a, ...xs, b]`: one array literal, or the concatenation of literals and spread arrays. */
+  private arrayOf(elements: readonly ts.Expression[], of: Ty, ctx: Ctx): Expr {
+    const parts: Expr[] = [];
+    let run: Expr[] = [];
+    for (const el of elements) {
+      if (!ts.isSpreadElement(el)) {
+        run.push(this.expr(el, ctx, of));
+        continue;
+      }
+      if (run.length) parts.push({ e: "arr", of, items: run });
+      run = [];
+      if (!this.isArray(this.checker.getNonNullableType(this.typeOf(el.expression)))) return this.error(el, "Only arrays can be spread natively.");
+      parts.push(this.expr(el.expression, ctx, { k: "array", of }));
+    }
+    if (run.length || !parts.length) parts.push({ e: "arr", of, items: run });
+    return parts.length === 1 && parts[0]!.e === "arr" ? parts[0]! : { e: "op", op: "arr.concat", args: parts };
+  }
+
+  /**
+   * `f?.(…)` and `o?.f(…)` (a function field of an optional object): the call when the value is
+   * there, `undefined` otherwise. The value is read twice, so it must be a variable or a property.
+   */
+  private optionalCall(node: ts.CallExpression, ctx: Ctx): { cond: Expr; call: Expr } | undefined {
+    const callee = node.expression;
+    const signature = this.checker.getResolvedSignature(node);
+    const nonNil = (x: Expr): Expr => ({ e: "bin", op: "!=", l: x, r: { e: "nil" } });
+    // What TypeScript narrowed is still tested: the optional itself.
+    const optional = (x: Expr): Expr => (x.e === "unwrap" ? x.x : x);
+    if (node.questionDotToken) {
+      if (!this.isPure(callee) || !signature) return void this.error(node, "Unsupported: ?.() on a computed function; read it into a variable first.");
+      const f = optional(this.expr(callee, ctx));
+      return { cond: nonNil(f), call: { e: "call", callee: { e: "unwrap", x: f }, args: this.callArgs(node, signature, ctx) } };
+    }
+    if (ts.isPropertyAccessExpression(callee) && callee.questionDotToken) {
+      const field = this.checker.getSymbolAtLocation(callee.name)?.valueDeclaration;
+      if (!field || !ts.isPropertySignature(field) || !signature) return undefined;
+      if (!this.isPure(callee.expression)) return void this.error(node, "Unsupported: ?. on a computed value before a call; read it into a variable first.");
+      const obj = optional(this.expr(callee.expression, ctx));
+      return { cond: nonNil(obj), call: { e: "call", callee: { e: "prop", obj: { e: "unwrap", x: obj }, name: callee.name.text }, args: this.callArgs(node, signature, ctx) } };
+    }
+    return undefined;
   }
 
   /** Methods of built-in values: arrays, strings, numbers, Math, Date, console, router, response, when(). */
@@ -1928,11 +2886,15 @@ class Frontend {
     if (ts.isIdentifier(recv) && recv.text === "Math") {
       const ops: Record<string, Op> = { floor: "math.floor", ceil: "math.ceil", round: "math.round", trunc: "math.trunc", abs: "math.abs", min: "math.min", max: "math.max", sqrt: "math.sqrt", pow: "math.pow", random: "math.random" };
       const op = ops[name];
+      if (!op && MATH_FNS.has(name)) return { e: "op", op: "math.fn", args: [{ e: "str", v: name }, ...args.map((a) => this.expr(a, ctx, T.double))] };
       if (!op) return this.error(node, `Math.${name} is not available natively.`);
       const num = this.numKind(node) === "int" && (op === "math.abs" || op === "math.min" || op === "math.max") ? T.int : T.double;
       // Math.floor(n) of a whole number is the number itself.
       if (["math.floor", "math.ceil", "math.round", "math.trunc"].includes(op) && this.numKind(args[0]!) === "int") return this.expr(args[0]!, ctx, T.int);
       return { e: "op", op, args: args.map((a) => this.expr(a, ctx, num)) };
+    }
+    if (ts.isIdentifier(recv) && recv.text === "Number" && ["isInteger", "isNaN", "isFinite"].includes(name) && args.length === 1) {
+      return { e: "op", op: "math.fn", args: [{ e: "str", v: name }, this.expr(args[0]!, ctx, T.double)] };
     }
     if (ts.isIdentifier(recv) && recv.text === "Date" && name === "now") return { e: "op", op: "date.now", args: [] };
     if (ts.isIdentifier(recv) && this.apiName(recv) === "console" && name === "log") return { e: "rt", name: "log", args: args.map((a) => this.str(a, ctx)) };
@@ -1941,13 +2903,17 @@ class Frontend {
     const recvTy = this.ty(recvType, recv);
     const obj = this.expr(recv, ctx);
 
-    if (this.checker.isArrayType(recvType)) {
+    if (this.isArray(recvType)) {
       const elem = (recvTy as Extract<Ty, { k: "array" }>).of;
-      const cb = (i: number, ret: Ty) => this.expr(args[i]!, ctx, { k: "fn", params: [elem], ret });
+      // A callback may take the index as well: `(x, i) => …` is the op's indexed form.
+      const arity = (fn: ts.Expression | undefined) =>
+        !fn ? 0 : ts.isArrowFunction(fn) || ts.isFunctionExpression(fn) ? fn.parameters.length : (this.typeOf(fn).getCallSignatures()[0]?.parameters.length ?? 1);
+      const indexed = arity(args[0]) === 2;
+      const cb = (i: number, ret: Ty) => this.expr(args[i]!, ctx, { k: "fn", params: indexed ? [elem, T.int] : [elem], ret });
       const checkCallback = () => {
-        const fn = args[0];
-        if (fn && (ts.isArrowFunction(fn) || ts.isFunctionExpression(fn)) && fn.parameters.length > 1) this.error(fn, `${name}() callbacks take one parameter natively (no index).`);
+        if (arity(args[0]) > 2) this.error(args[0]!, `${name}() callbacks take the item and its index natively (not the array).`);
       };
+      const each = (op: string): Op => `arr.${op}${indexed ? "I" : ""}` as Op;
       switch (name) {
         case "push":
           return args.length === 1 ? { e: "op", op: "arr.push", args: [obj, this.expr(args[0]!, ctx, elem)] } : { e: "op", op: "arr.pushAll", args: [obj, { e: "arr", of: elem, items: args.map((a) => this.expr(a, ctx, elem)) }] };
@@ -1962,9 +2928,33 @@ class Frontend {
           return { e: "op", op: "arr.indexOf", args: [obj, this.expr(args[0]!, ctx, elem)] };
         case "includes":
           return { e: "op", op: "arr.includes", args: [obj, this.expr(args[0]!, ctx, elem)] };
-        case "join":
-          if (elem.k !== "string") return this.error(node, "join() is supported on string arrays.");
-          return { e: "op", op: "arr.join", args: [obj, args[0] ? this.expr(args[0], ctx, T.string) : { e: "str", v: "," }] };
+        case "join": {
+          const sep: Expr = args[0] ? this.expr(args[0], ctx, T.string) : { e: "str", v: "," };
+          if (elem.k === "string") return { e: "op", op: "arr.join", args: [obj, sep] };
+          // Numbers and booleans are joined as JavaScript prints them.
+          if (!["int", "double", "bool"].includes(elem.k)) return this.error(node, "join() is supported on arrays of strings, numbers and booleans.");
+          const text: Expr = { e: "lambda", params: [{ name: "j__", ty: elem }], ret: T.string, body: { e: "toStr", x: { e: "id", name: "j__" }, from: elem } };
+          return { e: "op", op: "arr.join", args: [{ e: "op", op: "arr.map", args: [obj, text] }, sep] };
+        }
+        case "concat":
+          return { e: "op", op: "arr.concat", args: [obj, ...args.map((a): Expr => (this.isArray(this.typeOf(a)) ? this.expr(a, ctx, recvTy) : { e: "arr", of: elem, items: [this.expr(a, ctx, elem)] }))] };
+        case "sort":
+          return { e: "op", op: "arr.sort", args: [obj, args[0] ? this.expr(args[0], ctx, { k: "fn", params: [elem, elem], ret: T.double }) : this.defaultComparator(elem, node)] };
+        case "reverse":
+          return { e: "op", op: "arr.reverse", args: [obj] };
+        case "shift":
+          return { e: "op", op: "arr.shift", args: [obj] };
+        case "lastIndexOf":
+          if (args.length > 1) return this.error(node, "lastIndexOf() with a start index is not supported natively.");
+          return { e: "op", op: "arr.lastIndexOf", args: [obj, this.expr(args[0]!, ctx, elem)] };
+        case "at":
+          return { e: "op", op: "arr.atRel", args: [obj, this.expr(args[0]!, ctx, T.int)] };
+        case "reduce": {
+          if (args.length < 2) return this.error(node, "Give reduce() an initial value: without one it throws on an empty array, which natively would crash.");
+          if (arity(args[0]) > 2) return this.error(args[0]!, "reduce() callbacks take the total and the item natively (not the index).");
+          const acc = this.tyOfExpr(node);
+          return { e: "op", op: "arr.reduce", args: [obj, this.expr(args[0]!, ctx, { k: "fn", params: [acc, elem], ret: acc }), this.expr(args[1]!, ctx, acc)] };
+        }
         case "slice":
           return { e: "op", op: "arr.slice", args: [obj, args[0] ? this.expr(args[0], ctx, T.int) : { e: "int", v: "0" }, args[1] ? this.expr(args[1], ctx, T.int) : { e: "nil" }] };
         case "find":
@@ -1973,25 +2963,55 @@ class Frontend {
         case "some":
         case "every":
           checkCallback();
-          return { e: "op", op: `arr.${name}` as Op, args: [obj, cb(0, T.bool)] };
+          return { e: "op", op: each(name), args: [obj, cb(0, T.bool)] };
         case "forEach":
           checkCallback();
-          return { e: "op", op: "arr.forEach", args: [obj, cb(0, T.void)] };
+          return { e: "op", op: each("forEach"), args: [obj, cb(0, T.void)] };
         case "map": {
           checkCallback();
           const out = this.tyOfExpr(node);
-          return { e: "op", op: "arr.map", args: [obj, cb(0, out.k === "array" ? out.of : T.void)] };
+          return { e: "op", op: each("map"), args: [obj, cb(0, out.k === "array" ? out.of : T.void)] };
         }
       }
       return this.error(node, `Array.${name}() is not available natively.`);
     }
     if (this.isString(recvType)) {
-      const strOps: Record<string, Op> = { trim: "str.trim", toUpperCase: "str.upper", toLowerCase: "str.lower", includes: "str.includes", startsWith: "str.startsWith", endsWith: "str.endsWith", slice: "str.slice" };
+      const strOps: Record<string, Op> = {
+        trim: "str.trim", trimStart: "str.trimStart", trimEnd: "str.trimEnd", toUpperCase: "str.upper", toLowerCase: "str.lower",
+        includes: "str.includes", startsWith: "str.startsWith", endsWith: "str.endsWith", slice: "str.slice",
+      };
+      const text = (i: number, fallback?: string): Expr => (args[i] ? this.expr(args[i]!, ctx, T.string) : { e: "str", v: fallback ?? "" });
+      const int = (i: number, fallback: string): Expr => (args[i] ? this.expr(args[i]!, ctx, T.int) : { e: "int", v: fallback });
+      const strings = args.every((a) => this.isString(this.typeOf(a)) || this.isNumber(this.typeOf(a)));
+      if (!strings) return this.error(node, `${name}() takes strings and numbers natively (no regular expressions or callbacks).`);
+      switch (name) {
+        case "toString":
+          return obj;
+        case "split":
+          if (args.length !== 1) return this.error(node, "split() takes one separator natively.");
+          return { e: "op", op: "str.split", args: [obj, text(0)] };
+        case "replace":
+        case "replaceAll":
+          return { e: "op", op: `str.${name}`, args: [obj, text(0), text(1)] };
+        case "indexOf":
+          return { e: "op", op: "str.indexOf", args: [obj, text(0), int(1, "0")] };
+        case "lastIndexOf":
+          if (args.length > 1) return this.error(node, "lastIndexOf() with a start index is not supported natively.");
+          return { e: "op", op: "str.lastIndexOf", args: [obj, text(0)] };
+        case "padStart":
+        case "padEnd":
+          return { e: "op", op: `str.${name}`, args: [obj, int(0, "0"), text(1, " ")] };
+        case "repeat":
+          return { e: "op", op: "str.repeat", args: [obj, int(0, "0")] };
+        case "localeCompare":
+          return this.error(node, "localeCompare() depends on the platform's locale data; compare with < and > (UTF-16 order, the same everywhere).");
+      }
       const op = strOps[name];
       if (!op) return this.error(node, `String.${name}() is not available natively.`);
       if (op === "str.slice") return { e: "op", op, args: [obj, this.expr(args[0]!, ctx, T.int), args[1] ? this.expr(args[1], ctx, T.int) : { e: "nil" }] };
       return { e: "op", op, args: [obj, ...args.map((a) => this.expr(a, ctx, T.string))] };
     }
+    if ((this.isNumber(recvType) || this.isBoolean(recvType)) && name === "toString" && !args.length) return this.str(recv, ctx);
     if (this.isNumber(recvType) && name === "toFixed") {
       return { e: "op", op: "num.toFixed", args: [this.expr(recv, ctx, T.double), args[0] ? this.expr(args[0], ctx, T.int) : { e: "int", v: "0" }] };
     }
@@ -2015,6 +3035,18 @@ class Frontend {
       }
     }
     return undefined;
+  }
+
+  /** `sort()` without a comparator compares the items as text, as JavaScript does: `[10, 9].sort()` is `[10, 9]`. */
+  private defaultComparator(elem: Ty, node: ts.Node): Expr {
+    if (!["string", "int", "double", "bool"].includes(elem.k)) return this.error(node, "sort() of objects needs a comparator (JavaScript would compare \"[object Object]\").");
+    const text = (name: string): Expr => (elem.k === "string" ? { e: "id", name } : { e: "toStr", x: { e: "id", name }, from: elem });
+    return {
+      e: "lambda",
+      params: [{ name: "a__", ty: elem }, { name: "b__", ty: elem }],
+      ret: T.double,
+      body: { e: "toDouble", x: { e: "op", op: "str.compare", args: [text("a__"), text("b__")] } },
+    };
   }
 
   /** `{ intent: "danger", block: true }` → ["intent": "danger", "block": "true"]. */

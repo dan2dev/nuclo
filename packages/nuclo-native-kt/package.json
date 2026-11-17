@@ -1,0 +1,16 @@
+{
+	"name": "@nuclo/native-kt",
+	"private": true,
+	"version": "0.0.0",
+	"description": "POC: nuclo apps written in Kotlin Multiplatform: JavaScript on nuclo-core for the web, and native widgets on Android, iOS, macOS, Linux (GTK 4) and Windows (Win32).",
+	"license": "MIT",
+	"scripts": {
+		"test": "./gradlew -q :nuclo:macosArm64Test && scripts/test.sh headless all",
+		"web": "scripts/run.sh web",
+		"android": "scripts/run.sh android",
+		"ios": "scripts/run.sh ios",
+		"macos": "scripts/run.sh macos",
+		"linux": "scripts/run.sh linux",
+		"windows": "scripts/run.sh windows"
+	}
+}

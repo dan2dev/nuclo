@@ -1,0 +1,2 @@
+headers = gtk/gtk.h adwaita.h
+headerFilter = gtk/* gdk/* gsk/* glib/* glib-object.h glib.h gobject/* gio/* pango/* cairo* gdk-pixbuf/* graphene* adw* adwaita.h

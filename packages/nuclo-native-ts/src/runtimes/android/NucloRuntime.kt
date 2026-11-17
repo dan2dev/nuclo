@@ -2768,12 +2768,39 @@ object NJSON {
 // JavaScript semantics
 // ---------------------------------------------------------------------------
 
-/** Numbers the way JavaScript prints them: 3, not 3.0. */
-fun jsNum(d: Double): String = when {
-    d.isNaN() -> "NaN"
-    d.isInfinite() -> if (d > 0) "Infinity" else "-Infinity"
-    d == Math.rint(d) && kotlin.math.abs(d) < 1e15 -> d.toLong().toString()
-    else -> d.toString()
+/** Numbers the way JavaScript prints them: 3, not 3.0; 1e+21 and 1e-7, never 1.0E21 or 9.007199254740992E15. */
+fun jsNum(d: Double): String {
+    if (d.isNaN()) return "NaN"
+    if (d.isInfinite()) return if (d > 0) "Infinity" else "-Infinity"
+    if (d == 0.0) return "0"
+    if (d == Math.rint(d) && kotlin.math.abs(d) < 1e15) return d.toLong().toString()
+    // The fewest digits that read back as `d` (correctly rounded, so the closest such), laid out as JavaScript does.
+    val a = kotlin.math.abs(d)
+    for (precision in 1..17) {
+        val text = String.format(java.util.Locale.ROOT, "%.${precision - 1}e", a)
+        if (text.toDouble() != a) continue
+        val (mantissa, exponent) = text.split('e')
+        val digits = mantissa.replace(".", "")
+        return (if (d < 0) "-" else "") + jsLayout(digits, 1 + exponent.toInt())
+    }
+    return d.toString()
+}
+
+/** Number::toString's layout of the digits `digits` with the decimal point after `point` of them. */
+fun jsLayout(digits: String, point: Int): String {
+    var ds = digits.trimStart('0').ifEmpty { "0" }
+    val n = point - (digits.length - digits.trimStart('0').length)
+    ds = ds.trimEnd('0').ifEmpty { "0" }
+    val k = ds.length
+    return when {
+        n in k..21 -> ds + "0".repeat(n - k)
+        n in 1..21 -> ds.substring(0, n) + "." + ds.substring(n)
+        n in -5..0 -> "0." + "0".repeat(-n) + ds
+        else -> {
+            val e = n - 1
+            ds.substring(0, 1) + (if (k > 1) "." + ds.substring(1) else "") + "e" + (if (e >= 0) "+" else "-") + kotlin.math.abs(e)
+        }
+    }
 }
 
 fun jsFixed(d: Double, digits: Int) = String.format(java.util.Locale.ROOT, "%.${digits}f", d)
@@ -2803,6 +2830,122 @@ fun String.jsSlice(start: Int, end: Int?): String {
     val to = end?.let { if (it < 0) max(0, length + it) else min(it, length) } ?: length
     return if (from < to) substring(from, to) else ""
 }
+
+/**
+ * JavaScript's `sort`: stable, and the same merge sort on every target, so even a comparator that
+ * contradicts itself orders the same way everywhere (TimSort would throw). A positive result puts `b` first.
+ */
+fun <T> MutableList<T>.jsSort(cmp: (T, T) -> Double): MutableList<T> {
+    var a = toMutableList()
+    var b = toMutableList()
+    var width = 1
+    while (width < size) {
+        var start = 0
+        while (start < size) {
+            val mid = min(start + width, size)
+            val end = min(start + 2 * width, size)
+            var l = start
+            var r = mid
+            var k = start
+            while (l < mid && r < end) {
+                if (cmp(a[l], a[r]) > 0) b[k++] = a[r++] else b[k++] = a[l++]
+            }
+            while (l < mid) b[k++] = a[l++]
+            while (r < end) b[k++] = a[r++]
+            start += 2 * width
+        }
+        val t = a
+        a = b
+        b = t
+        width *= 2
+    }
+    for (i in indices) this[i] = a[i]
+    return this
+}
+
+fun <T> MutableList<T>.jsReverse(): MutableList<T> {
+    reverse()
+    return this
+}
+
+fun <T> MutableList<T>.jsShift(): T? = if (isEmpty()) null else removeAt(0)
+fun <T> List<T>.jsAtRel(i: Int): T? = getOrNull(if (i < 0) size + i else i)
+fun <T> List<T>.jsConcat(vararg parts: List<T>): MutableList<T> = (listOf(this) + parts).flatten().toMutableList()
+
+fun <T, U> List<T>.jsMapI(f: (T, Int) -> U): MutableList<U> = mapIndexed { i, x -> f(x, i) }.toMutableList()
+fun <T> List<T>.jsFilterI(f: (T, Int) -> Boolean): MutableList<T> = filterIndexed { i, x -> f(x, i) }.toMutableList()
+fun <T> List<T>.jsForEachI(f: (T, Int) -> Unit) = forEachIndexed { i, x -> f(x, i) }
+fun <T> List<T>.jsSomeI(f: (T, Int) -> Boolean): Boolean = withIndex().any { f(it.value, it.index) }
+fun <T> List<T>.jsEveryI(f: (T, Int) -> Boolean): Boolean = withIndex().all { f(it.value, it.index) }
+fun <T> List<T>.jsFindI(f: (T, Int) -> Boolean): T? = withIndex().firstOrNull { f(it.value, it.index) }?.value
+fun <T> List<T>.jsFindIndexI(f: (T, Int) -> Boolean): Int = withIndex().firstOrNull { f(it.value, it.index) }?.index ?: -1
+
+/** ToInt32, which the bitwise operators apply to their operands. */
+fun jsI32(x: Int): Int = x
+fun jsI32(x: Double): Int = if (x.isNaN() || x.isInfinite()) 0 else (x % 4294967296.0).toLong().toInt()
+fun jsUshr(a: Int, b: Int): Double = ((a ushr b).toLong() and 0xFFFFFFFFL).toDouble()
+
+fun jsSign(x: Double): Int = if (x > 0) 1 else if (x < 0) -1 else 0
+fun jsIsInteger(x: Double): Boolean = x.isFinite() && kotlin.math.truncate(x) == x
+
+/** JavaScript's white space and line terminators, which trim() removes. */
+private fun jsIsSpace(c: Char): Boolean = c in '\u0009'..'\u000D' || c == ' ' || c == '\u00A0' || c == '\u1680' || c in '\u2000'..'\u200A' ||
+    c == '\u2028' || c == '\u2029' || c == '\u202F' || c == '\u205F' || c == '\u3000' || c == '\uFEFF'
+
+fun String.jsTrim(): String = trim(::jsIsSpace)
+fun String.jsTrimStart(): String = trimStart(::jsIsSpace)
+fun String.jsTrimEnd(): String = trimEnd(::jsIsSpace)
+fun String.jsIndexOf(s: String, from: Int = 0): Int = indexOf(s, max(0, min(from, length)))
+fun String.jsLastIndexOf(s: String): Int = lastIndexOf(s)
+fun String.jsSplit(sep: String): MutableList<String> =
+    if (sep.isEmpty()) map { it.toString() }.toMutableList() else split(sep).toMutableList()
+fun String.jsRepeat(n: Int): String = repeat(max(0, n))
+fun String.jsPad(length: Int, fill: String, atStart: Boolean): String {
+    if (length <= this.length || fill.isEmpty()) return this
+    val pad = StringBuilder()
+    while (pad.length < length - this.length) pad.append(fill[pad.length % fill.length])
+    return if (atStart) pad.toString() + this else this + pad
+}
+
+/** `replace` / `replaceAll` with a string pattern, `$$ $& $` $'` in the replacement included. */
+fun String.jsReplace(pattern: String, replacement: String, all: Boolean): String {
+    val matches = mutableListOf<Int>()
+    var i = 0
+    while (i + pattern.length <= length) {
+        if (regionMatches(i, pattern, 0, pattern.length)) {
+            matches.add(i)
+            if (!all) break
+            i += max(pattern.length, 1)
+        } else i++
+    }
+    val out = StringBuilder()
+    var last = 0
+    for (at in matches) {
+        out.append(this, last, at)
+        var j = 0
+        while (j < replacement.length) {
+            val next = if (replacement[j] == '$' && j + 1 < replacement.length) replacement[j + 1] else ' '
+            when (next) {
+                '$' -> out.append('$')
+                '&' -> out.append(pattern)
+                '`' -> out.append(this, 0, at)
+                '\'' -> out.append(this, at + pattern.length, length)
+                else -> {
+                    out.append(replacement[j])
+                    j++
+                    continue
+                }
+            }
+            j += 2
+        }
+        last = at + pattern.length
+    }
+    out.append(this, last, length)
+    return out.toString()
+}
+
+/** `a < b` on strings: UTF-16 units in order, as JavaScript compares. */
+fun jsCompare(a: String, b: String): Int = a.compareTo(b).coerceIn(-1, 1)
 
 // ---------------------------------------------------------------------------
 // Activity
