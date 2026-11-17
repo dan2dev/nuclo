@@ -348,6 +348,12 @@ class Frontend {
    * box (`i__box`), made at the top of the body and written back to the loop's variable at its end
    * (and before a `continue`), so the step and the condition see what the turn left.
    */
+  /**
+   * `for (const row of rows)` where something mutates `row`: in JavaScript `row` is the element itself,
+   * and Swift would copy it. The loop runs over indices and `row` is `rows[i]`; a nested class using
+   * `row` keeps the index (and shares `rows`, boxed when it is a local).
+   */
+  private readonly elementLoops = new Map<ts.Symbol, { loop: ts.ForOfStatement; source: ts.Symbol; index: string }>();
   private readonly loopBoxes = new Map<ts.Symbol, { loop: ts.ForStatement | ts.ForOfStatement; name: string }>();
   /** Class expressions already lowered (where they are declared, or after the top level). */
   private readonly definedClasses = new Set<ts.ClassLikeDeclaration>();
@@ -743,9 +749,15 @@ class Frontend {
       }
       mutated.add(symbol);
     }
+    // A mutated element of the array a for-of goes over: reached through its index.
+    for (const value of mutated) {
+      const decl = value.valueDeclaration;
+      const loop = decl && this.loopOf(decl);
+      if (loop && ts.isForOfStatement(loop) && ts.isIdentifier((decl as ts.VariableDeclaration).name)) this.elementLoop(value, loop, mutated);
+    }
     // A nested class keeps its own copy of a captured array or map (Swift's are values).
-    for (const values of this.captures.values()) {
-      for (const value of values) if (mutated.has(value)) this.box(value, (value.valueDeclaration as ts.NamedDeclaration).name ?? value.valueDeclaration!);
+    for (const values of [...this.captures.values()]) {
+      for (const value of values) if (mutated.has(value) && !this.elementLoops.has(value)) this.box(value, (value.valueDeclaration as ts.NamedDeclaration).name ?? value.valueDeclaration!);
     }
     for (const { target, source } of this.destructuredArrays) {
       const symbol = this.checker.getSymbolAtLocation(target);
@@ -1039,13 +1051,60 @@ class Frontend {
    */
   private box(value: ts.Symbol, at: ts.Node) {
     const decl = value.valueDeclaration!;
-    if (this.loopOf(decl)) return void this.error(at, `A nested class uses "${value.name}", a loop's variable that is mutated: JavaScript gives each turn its own. Copy it (with .slice()) to a const in the body.`);
+    // A mutated array a loop declares. Each turn's binding is the same array in JavaScript unless something
+    // reassigns it: one box for the whole loop, made by its initializer, read in its header too.
+    const loop = this.loopOf(decl) ?? this.forInitOf(decl);
+    if (loop && ts.isForStatement(loop) && ts.isVariableDeclaration(decl) && ts.isIdentifier(decl.name) && !this.isReassigned(decl.name, loop)) {
+      this.boxed.add(value);
+      return;
+    }
+    if (loop && ts.isForStatement(loop)) {
+      return void this.error(at, `A nested class uses "${value.name}", an array a \`for\` loop declares, mutates and reassigns (or destructures): natively each turn's would be a copy (Swift arrays are values). Keep the array in a const outside the loop.`);
+    }
+    if (loop) return void this.error(at, `A nested class mutates "${value.name}", an element of the array the loop goes over: natively it would change a copy (Swift arrays are values). Index the array instead.`);
     // A destructured one is boxed where its pattern binds it (bindPattern): a `for-of` binds it again each turn.
-    if (this.forInitOf(decl)) return void this.error(at, `A nested class uses "${value.name}", a loop's variable that is mutated: JavaScript gives each turn its own. Copy it (with .slice()) to a const in the body.`);
     if (!ts.isBindingElement(decl) && (ts.isVariableDeclaration(decl) ? !decl.initializer || !ts.isIdentifier(decl.name) : !ts.isParameter(decl) || !ts.isIdentifier(decl.name))) {
       return void this.error(at, `A nested class uses "${value.name}", which is reassigned or mutated: declare it with an initial value so it can be shared.`);
     }
     this.boxed.add(value);
+  }
+
+  /**
+   * Makes `row` of `for (const row of rows)` the element `rows[i]`. `rows` must be a variable nothing
+   * reshapes or reassigns (an index would then reach another element than JavaScript's object), and
+   * not a parameter (Swift passes arrays by value). A nested class using `row` uses `rows` too.
+   */
+  private elementLoop(row: ts.Symbol, loop: ts.ForOfStatement, mutated: Set<ts.Symbol>) {
+    const decl = row.valueDeclaration as ts.VariableDeclaration;
+    const at = decl.name as ts.Identifier;
+    const source = ts.isIdentifier(loop.expression) ? this.resolveAlias(this.checker.getSymbolAtLocation(loop.expression)) : undefined;
+    const sourceDecl = source?.valueDeclaration;
+    if (sourceDecl && ts.isParameter(sourceDecl)) {
+      return void this.error(at, `"${row.name}" is mutated, and it is an element of the parameter "${source!.name}": Swift passes arrays by value, so the caller's array would not change. Return a new array instead.`);
+    }
+    if (!source || !sourceDecl || !ts.isVariableDeclaration(sourceDecl) || !ts.isIdentifier(sourceDecl.name)) {
+      return void this.error(at, `"${row.name}" is mutated, and it is an element of what the loop goes over: loop over a variable holding the array (natively the element is reached by its index, Swift arrays being values).`);
+    }
+    if (mutated.has(source) || this.isReassigned(sourceDecl.name, this.topLevelOf(sourceDecl).getSourceFile())) {
+      return void this.error(at, `"${row.name}" is mutated through its index in "${source.name}", which is itself reassigned or reshaped (push, splice, sort…): natively the index could reach another element. Leave "${source.name}" as it is.`);
+    }
+    if (this.isReassigned(at, loop.statement)) return void this.error(at, `"${row.name}" is mutated and reassigned: declare it with const.`);
+    this.elementLoops.set(row, { loop, source, index: `${row.name}__i` });
+    // Classes that use the element use the array too: shared, through a box when it is a local.
+    const local = ts.findAncestor(sourceDecl.parent, ts.isFunctionLike);
+    for (const values of this.captures.values()) {
+      if (!values.includes(row) || !local || values.includes(source)) continue;
+      values.push(source);
+      if (!this.boxed.has(source)) this.box(source, at);
+    }
+  }
+
+  /** A read of a variable here: its box's value, or the field of the nested class that captured it. */
+  private readAt(value: ts.Symbol, node: ts.Node): Expr {
+    const cls = this.nestedClassAt(node);
+    const captured: Expr | undefined = cls && this.captures.get(cls)!.includes(value) ? { e: "prop", obj: { e: "id", name: "this" }, name: this.captureField(cls, value) } : undefined;
+    const box = this.boxAt(value, node);
+    return box ? { e: "prop", obj: captured ?? { e: "id", name: box }, name: "value" } : (captured ?? { e: "id", name: value.name });
   }
 
   /** The loop a variable is declared by (`for (let i …)`, `for (const x of …)`). */
@@ -1150,7 +1209,7 @@ class Frontend {
     return (this.captures.get(cls) ?? []).map((value): Expr =>
       at && this.captures.get(at)!.includes(value)
         ? { e: "prop", obj: { e: "id", name: "this" }, name: this.captureField(at, value) }
-        : { e: "id", name: this.boxAt(value, site) ?? value.name, fnRef: this.functionSymbols.has(value) || undefined },
+        : { e: "id", name: this.elementLoops.get(value)?.index ?? this.boxAt(value, site) ?? value.name, fnRef: this.functionSymbols.has(value) || undefined },
     );
   }
 
@@ -1542,7 +1601,7 @@ class Frontend {
     }
     // Captured locals: hidden first parameters kept in fields, set before anything reads them; the base gets its own.
     const captured = this.captures.get(symbol) ?? [];
-    const capParams = captured.map((value): Param => ({ name: this.captureField(symbol, value), ty: this.boxed.has(value) || this.loopBoxes.has(value) ? this.refType(value) : this.tyOfSymbol(value, value.valueDeclaration!) }));
+    const capParams = captured.map((value): Param => ({ name: this.captureField(symbol, value), ty: this.elementLoops.has(value) ? T.int : this.boxed.has(value) || this.loopBoxes.has(value) ? this.refType(value) : this.tyOfSymbol(value, value.valueDeclaration!) }));
     // Those the base captures too are its fields: the base's constructor sets them.
     const inherited = new Set((baseClass ? (this.captures.get(baseClass) ?? []) : []).map((value) => this.captureField(symbol, value)));
     const ownCaps = capParams.filter((p) => !inherited.has(p.name));
@@ -2275,6 +2334,12 @@ class Frontend {
       const binding = decl.declarations[0]!.name;
       const inner = { ...ctx, continueWith: undefined };
       if (ts.isIdentifier(binding)) {
+        const element = this.elementLoops.get(this.checker.getSymbolAtLocation(binding)!);
+        if (element) {
+          // Over the indices: the element is read (and mutated) in the array itself.
+          const length: Expr = { e: "op", op: "arr.length", args: [this.readAt(element.source, node.expression)] };
+          return [{ s: "forRange", name: element.index, from: { e: "int", v: "0" }, to: length, inclusive: false, body: this.block(node.statement, inner) }];
+        }
         const turn = this.loopBox(binding);
         return [{ s: "forOf", name: binding.text, of: this.expr(node.expression, ctx), body: [...(turn ? [turn.make] : []), ...this.block(node.statement, inner)] }];
       }
@@ -2962,6 +3027,9 @@ class Frontend {
     const captured = this.captureRead(node);
     const x: Expr = captured ?? { e: "id", name: node.text, fnRef: this.functionSymbols.has(resolved) || undefined };
     const value = this.valueSymbol(node);
+    const element = value && this.elementLoops.get(value);
+    // The loop's element: the array at the index (the class's own copy of the index, in a nested class).
+    if (element) return { e: "index", obj: this.readAt(element.source, node), index: captured ?? { e: "id", name: element.index } };
     const box = this.boxAt(value, node);
     return this.unwrapIfNarrowed(box ? { e: "prop", obj: captured ?? { e: "id", name: box }, name: "value" } : x, node, resolved);
   }

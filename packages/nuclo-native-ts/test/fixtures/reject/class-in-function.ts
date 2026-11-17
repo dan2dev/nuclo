@@ -1,4 +1,4 @@
-// expect: a loop's variable that is mutated
+// expect: an array a `for` loop declares
 export function batches(sizes: number[][]): number[] {
   const out: number[] = [];
   for (let [batch = []] = sizes; batch.length < 3; ) {

@@ -525,7 +525,8 @@ export function classes(): string[] {
     classExpressions(),
     `${scoreRows([30, 12.5])} | ${nameRows(["ana", "rui"])} | ${capturedCells("$", 1.5)} | ${sharedLocals(5)}`,
     `${loopClasses()} | ${loopReassigned()}`,
-    `${destructuredShared([{ name: "ana", age: 30 }, { name: "rui", age: 7 }])} | ${patternLoops([3], { name: "eve", age: 3 })}`,
+    `${destructuredShared([{ name: "ana", age: 30 }, { name: "rui", age: 7 }])} | ${patternLoops([3], { name: "eve", age: 3 })} | ${arrayLoops()}`,
+    elementLoops(),
   ];
 }
 
@@ -833,6 +834,51 @@ function patternLoops(starts: number[], person: Person): string {
     who = who.toUpperCase();
   }
   return out.map((n) => n.label).join(" ");
+}
+
+// An array a `for` loop declares and a nested class mutates: every turn's binding is the same array.
+function arrayLoops(): string {
+  const out: Named[] = [];
+  for (let batch: string[] = []; batch.length < 3; ) {
+    class Filler implements Named {
+      get label(): string {
+        return batch.join("");
+      }
+      fill(): void {
+        batch.push(`${batch.length}`);
+      }
+    }
+    const filler = new Filler();
+    filler.fill();
+    out.push(filler);
+  }
+  return out.map((n) => n.label).join(" ");
+}
+
+// Mutating the element a for-of gives (an array in an array): natively it is reached by its index.
+interface Padded {
+  readonly label: string;
+  pad(n: number): void;
+}
+function elementLoops(): string {
+  const rows: number[][] = [[1], [2, 2], []];
+  const pads: Padded[] = [];
+  for (const row of rows) {
+    class Padder implements Padded {
+      get label(): string {
+        return row.join("+");
+      }
+      pad(n: number): void {
+        row.push(n);
+      }
+    }
+    const padder = new Padder();
+    padder.pad(0);
+    row.push(row.length);
+    pads.push(padder);
+  }
+  for (const p of pads) p.pad(9);
+  return `${pads.map((p) => p.label).join(" ")} | ${rows.map((r) => r.join("+")).join(" ")}`;
 }
 
 function classExpressions(): string {
