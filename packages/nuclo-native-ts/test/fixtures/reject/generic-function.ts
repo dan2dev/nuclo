@@ -1,4 +1,7 @@
-// expect: Generic functions are not supported
-export function first<T>(xs: T[]): T | undefined {
-  return xs[0];
+// expect: Declare generic functions at the top level
+export function outer(): number {
+  function inner<T>(x: T): T {
+    return x;
+  }
+  return inner(1);
 }

@@ -375,6 +375,23 @@ class Tally {
   static make(): Tally {
     return new Tally(10);
   }
+  private static stepSize = 1;
+  private static tag = "t";
+  static get defaultStep(): number {
+    return Tally.stepSize;
+  }
+  static set defaultStep(value: number) {
+    Tally.stepSize = Math.max(1, value);
+  }
+  static get tagged(): string {
+    return Tally.tag;
+  }
+  static set tagged(value: string) {
+    Tally.tag = value.toUpperCase();
+  }
+  static get banner(): string {
+    return `${Tally.tagged} x${Tally.defaultStep}`;
+  }
 }
 
 interface Named {
@@ -413,6 +430,70 @@ class Link {
   }
 }
 
+interface Dial {
+  level: number;
+}
+class Thermostat implements Dial {
+  private celsius = 20;
+  readonly log: string[] = [];
+  get level(): number {
+    return this.celsius;
+  }
+  set level(value: number) {
+    this.celsius = Math.max(10, Math.min(30, value));
+    this.log.push(`${this.celsius}`);
+  }
+  get fahrenheit(): number {
+    return (this.level * 9) / 5 + 32;
+  }
+  set fahrenheit(value: number) {
+    // Through `this.level`: a subclass's setter runs.
+    this.level = ((value - 32) * 5) / 9;
+  }
+}
+class StepThermostat extends Thermostat {
+  private steps = 0;
+  override get level(): number {
+    return this.steps * 5;
+  }
+  override set level(value: number) {
+    this.steps = Math.round(value / 5);
+  }
+}
+
+class BoostThermostat extends Thermostat {
+  boosts = 0;
+  // Through `super.level`: the base's getter and setter, on this object.
+  override get level(): number {
+    return super.level + 0.5;
+  }
+  override set level(value: number) {
+    super.level = value;
+    super.level += 1;
+    this.boosts++;
+  }
+}
+
+function thermostats(): string {
+  const t = new Thermostat();
+  t.level = 35;
+  t.level -= 4;
+  t.fahrenheit = 50;
+  t.level++;
+  const dial: Dial = t;
+  dial.level += 0.5;
+  const stepped: Dial = new StepThermostat();
+  stepped.level = 22;
+  const hot = new StepThermostat();
+  hot.fahrenheit = 212;
+  const boost: Dial = new BoostThermostat();
+  boost.level = 12;
+  boost.level += 40;
+  const boosted = new BoostThermostat();
+  boosted.fahrenheit = 59;
+  return `${t.level} ${t.fahrenheit} [${t.log.join(",")}] steps ${stepped.level} ${hot.level} ${hot.fahrenheit} [${hot.log.length}] boost ${boost.level} ${boosted.level} ${boosted.fahrenheit} [${boosted.log.join(",")}] ${boosted.boosts}`;
+}
+
 function describeAccount(named: Named): string {
   return named.label;
 }
@@ -437,7 +518,194 @@ export function classes(): string[] {
     `created ${BaseShape.created} perimeter ${rect.perimeter} same ${same === rect} ${shapes[0] === shapes[1]} largest ${big ? big.name : "none"}`,
     `tally ${tally.value} [${tally.history.join(",")}] made ${made.value} later ${twice()} instances ${Tally.instances}`,
     accounts(),
+    thermostats(),
+    statics(),
+    privates(),
+    kinds([new Rect(1, 2), new SquareShape(3), new Circle(0.5), new Rect(2, 2)]),
+    classExpressions(),
+    `${scoreRows([30, 12.5])} | ${nameRows(["ana", "rui"])} | ${capturedCells("$", 1.5)}`,
   ];
+}
+
+// #private members belong to the class that declares them: a subclass's #count is another field.
+class Vault {
+  static #opened = 0;
+  #count = 0;
+  readonly #owner: string;
+  constructor(owner: string) {
+    this.#owner = owner;
+  }
+  get #secret(): string {
+    return `${this.#owner}:${this.#count}`;
+  }
+  set #secret(value: string) {
+    this.#count = value.length;
+  }
+  #bump(by: number): void {
+    this.#count += by;
+  }
+  open(code: string): string {
+    Vault.#opened++;
+    this.#bump(2);
+    this.#secret = code;
+    return this.#secret;
+  }
+  get count(): number {
+    return this.#count;
+  }
+  static get opened(): number {
+    return Vault.#opened;
+  }
+}
+class AuditedVault extends Vault {
+  #count = 100;
+  override open(code: string): string {
+    this.#count++;
+    return `${super.open(code)} audit ${this.#count}`;
+  }
+}
+
+function privates(): string {
+  const vault = new Vault("ana");
+  const audited = new AuditedVault("rui");
+  return `${vault.open("abc")} ${vault.count} | ${audited.open("x")} ${audited.open("yz")} ${audited.count} | opened ${Vault.opened}`;
+}
+
+// instanceof tests the object's class (or a subclass), and narrows it: a subclass member can be read.
+function kinds(shapes: Shape[]): string {
+  const out: string[] = [];
+  for (const s of shapes) {
+    if (s instanceof SquareShape) out.push(`square ${s.perimeter}`);
+    else if (s instanceof Rect) out.push(`rect ${s.perimeter}`);
+    else if (s instanceof Circle) out.push(`circle r=${s.r}`);
+    else out.push("other");
+  }
+  const first = shapes[0] ?? null;
+  const missing: Shape | null = shapes.length > 9 ? first : null;
+  const base: BaseShape = new Circle(2);
+  let message = "";
+  try {
+    throw new Error("bad shape");
+  } catch (e) {
+    message = e instanceof Error ? e.message : "unknown";
+  }
+  return `${out.join(", ")} | ${first instanceof BaseShape} ${first instanceof Circle} ${missing instanceof Rect} ${base instanceof Rect} ${base instanceof Circle ? base.r : 0} | ${message}`;
+}
+
+// Class expressions: a class held by a `const`, or written where it is used (one native class each).
+const Greeter = class {
+  static made = 0;
+  constructor(readonly name: string) {
+    Greeter.made++;
+  }
+  greet(): string {
+    return `hi ${this.name}`;
+  }
+};
+const LoudGreeter = class Loud extends Greeter {
+  override greet(): string {
+    return `${super.greet().toUpperCase()}!`;
+  }
+};
+
+function anonymousShapes(): Shape[] {
+  const UnitShape = class extends BaseShape {
+    constructor() {
+      super("unit");
+    }
+    area(): number {
+      return 1;
+    }
+  };
+  const inline = new (class implements Shape {
+    readonly name = "inline";
+    area(): number {
+      return 2;
+    }
+    describe(): string {
+      return `${this.name} ${this.area()}`;
+    }
+  })();
+  return [new UnitShape(), inline];
+}
+
+// Classes declared inside functions: one native class each, even when two functions use one name.
+function scoreRows(scores: number[]): string {
+  class Row {
+    constructor(
+      readonly rank: number,
+      readonly score: number,
+    ) {}
+    text(): string {
+      return `#${this.rank}=${this.score}`;
+    }
+  }
+  const rows = scores.map((score, i) => new Row(i + 1, score));
+  return rows.map((r) => r.text()).join(" ");
+}
+
+function nameRows(names: string[]): string {
+  class Row extends Greeter {
+    override greet(): string {
+      return `[${super.greet()}]`;
+    }
+  }
+  class Plain implements Named {
+    readonly label = "plain";
+  }
+  const rows: Named[] = [new Plain()];
+  const greeted = names.map((n) => new Row(n));
+  const first = greeted[0];
+  return `${greeted.map((r) => r.greet()).join(" ")} ${first instanceof Row} ${first instanceof Greeter} ${rows[0]?.label ?? "-"}`;
+}
+
+// Nested classes using the function's locals: natively each is passed to the constructor.
+function capturedCells(prefix: string, scale: number): string {
+  // An object is shared with the classes (an array would be copied: Swift arrays are values).
+  const seen: Counter = { n: 0 };
+  function format(n: number): string {
+    return `${prefix}${n * scale}`;
+  }
+  class Cell {
+    constructor(readonly value: number) {}
+    text(): string {
+      seen.n++;
+      return format(this.value);
+    }
+  }
+  class BoldCell extends Cell {
+    override text(): string {
+      return `**${super.text()}**`;
+    }
+  }
+  // Captures nothing itself, but makes cells: it passes their locals on.
+  class Sheet {
+    cells(): Cell[] {
+      return [new Cell(1), new BoldCell(2)];
+    }
+  }
+  const tag = new (class {
+    label = `${prefix}!`;
+  })();
+  const cells = new Sheet().cells();
+  return `${cells.map((c) => c.text()).join(" ")} ${tag.label} seen ${seen.n}`;
+}
+
+function classExpressions(): string {
+  const ana = new Greeter("ana");
+  const rui = new LoudGreeter("rui");
+  return `${ana.greet()} ${rui.greet()} ${rui instanceof Greeter} ${ana instanceof LoudGreeter} made ${Greeter.made} | ${anonymousShapes().map((s) => s.describe()).join(", ")}`;
+}
+
+function statics(): string {
+  Tally.defaultStep = 0;
+  const low = Tally.defaultStep;
+  Tally.defaultStep += 2;
+  Tally.defaultStep++;
+  Tally.defaultStep *= 1.5;
+  Tally.tagged = "x";
+  Tally.tagged += "ally";
+  return `static ${low} ${Tally.defaultStep} ${Tally.banner}`;
 }
 
 function accounts(): string {
@@ -446,11 +714,170 @@ function accounts(): string {
   const second = account.deposit(4, "check");
   account.balance -= 1;
   const kid = new Kids("rui");
+  // A literal of an interface a class implements, with an inherited field and a method.
+  let saved = 0;
+  const jar: Account = {
+    label: "jar",
+    balance: 2,
+    deposit: (amount: number, note: string = "coins") => {
+      saved += amount;
+      return `${note} ${saved}`;
+    },
+  };
+  const coins = `${jar.deposit(3)} ${jar.deposit(0.5, "note")} ${jar.balance + saved}`;
   let chain: Link | null = new Link(1).append(2).append(3);
   const values: number[] = [];
   while (chain !== null) {
     values.push(chain.value);
     chain = chain.next;
   }
-  return `${first}, ${second}, ${account.balance} | ${describeAccount(account)} | ${describeAccount(kid)} | ${values.join("→")}`;
+  return `${first}, ${second}, ${account.balance} | ${describeAccount(account)} | ${describeAccount(kid)} | ${values.join("→")} | ${describeAccount(jar)} ${coins}`;
+}
+
+// ───────────────────────────── Generics ─────────────────────────────
+// Compiled once per instantiation: Stack<string> and Stack<number> are two native classes.
+
+function identity<T>(x: T): T {
+  return x;
+}
+
+function firstOr<T>(xs: T[], fallback: T): T {
+  return xs[0] ?? fallback;
+}
+
+function mapAll<T, U>(xs: T[], f: (x: T) => U): U[] {
+  const out: U[] = [];
+  for (const x of xs) out.push(f(x));
+  return out;
+}
+
+interface Pair<A, B> {
+  first: A;
+  second: B;
+}
+
+const pairUp = <A, B>(a: A, b: B): Pair<A, B> => ({ first: a, second: b });
+
+interface Page<T> {
+  items: T[];
+  total: number;
+  next: Page<T> | null;
+}
+
+type Outcome<T> = { ok: boolean; value: T | null; error: string };
+
+function ok<T>(value: T): Outcome<T> {
+  return { ok: true, value: value, error: "" };
+}
+
+function fail<T>(error: string): Outcome<T> {
+  return { ok: false, value: null, error: error };
+}
+
+function describeResult<T>(r: Outcome<T>, show: (v: T) => string): string {
+  return r.ok && r.value !== null ? `ok ${show(r.value)}` : `error ${r.error}`;
+}
+
+class Stack<T> {
+  private items: T[] = [];
+  push(item: T): void {
+    this.items.push(item);
+  }
+  pop(): T | undefined {
+    return this.items.pop();
+  }
+  peek(): T | undefined {
+    return this.items[this.items.length - 1];
+  }
+  get size(): number {
+    return this.items.length;
+  }
+}
+
+interface Container<T> {
+  get(): T;
+  describe(): string;
+}
+
+class Cell<T> implements Container<T> {
+  constructor(
+    private value: T,
+    private label: string,
+  ) {}
+  get(): T {
+    return this.value;
+  }
+  describe(): string {
+    return this.label;
+  }
+}
+
+class CounterCell extends Cell<number> {
+  constructor() {
+    super(3, "counter");
+  }
+  override describe(): string {
+    return `${super.describe()}=${this.get()}`;
+  }
+}
+
+function showContainer<T>(c: Container<T>): string {
+  return c.describe();
+}
+
+class Emitter<T> {
+  private listeners: ((value: T) => void)[] = [];
+  on(listener: (value: T) => void): void {
+    this.listeners.push(listener);
+  }
+  emit(value: T): number {
+    for (const l of this.listeners) l(value);
+    return this.listeners.length;
+  }
+}
+
+function bestBy<T>(xs: T[], score: (x: T) => number): T | null {
+  let best: T | null = null;
+  let bestScore = -Infinity;
+  for (const x of xs) {
+    const s = score(x);
+    if (s > bestScore) {
+      best = x;
+      bestScore = s;
+    }
+  }
+  return best;
+}
+
+export function generics(): string[] {
+  const s = new Stack<string>();
+  s.push("a");
+  s.push("b");
+  const n = new Stack<number>();
+  n.push(1.5);
+  n.push(2);
+  const top = s.pop() ?? "-";
+  const pair = pairUp("x", 3);
+  const page: Page<string> = { items: ["p1"], total: 2, next: { items: ["p2"], total: 2, next: null } };
+  const words = mapAll([1, 2, 3], (x) => `#${x}`);
+  const lengths = mapAll(["ab", "cde"], (w) => w.length);
+  const emitter = new Emitter<string>();
+  const heard: string[] = [];
+  emitter.on((v) => heard.push(`1:${v}`));
+  emitter.on((v) => heard.push(`2:${v}`));
+  const reached = emitter.emit("go");
+  const people: Person[] = [
+    { name: "ana", age: 31 },
+    { name: "rui", age: 40 },
+  ];
+  const oldest = bestBy(people, (p) => p.age);
+  return [
+    `identity ${identity(5)} ${identity("s")} ${identity(true)} firstOr ${firstOr([] as number[], 7)} ${firstOr(["z"], "y")}`,
+    `stack ${top} ${s.size} ${n.peek() ?? 0} ${n.size}`,
+    `pair ${pair.first} ${pair.second} page ${page.items.join()} then ${page.next !== null ? page.next.items.join() : "-"} of ${page.total}`,
+    `results ${describeResult(ok(42), (v) => `${v}`)} ${describeResult(fail<string>("nope"), (v) => v)}`,
+    `map ${words.join(",")} ${lengths.join(",")}`,
+    `cells ${showContainer(new Cell("hello", "greeting"))} ${showContainer(new CounterCell())} ${new Cell(2.5, "x").get()}`,
+    `emitter ${reached} ${heard.join(" ")} oldest ${oldest !== null ? oldest.name : "-"}`,
+  ];
 }

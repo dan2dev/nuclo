@@ -17,6 +17,7 @@ import {
   maps,
   numbers,
   classes,
+  generics,
 } from "./checks.ts";
 
 interface Check {
@@ -38,6 +39,7 @@ const checks: Check[] = [
   { name: "maps", lines: maps() },
   { name: "numbers", lines: numbers() },
   { name: "classes", lines: classes() },
+  { name: "generics", lines: generics() },
 ];
 
 const card: Style = { padding: 14, gap: 6, borderRadius: 10, backgroundColor: "#ffffff", borderWidth: 1, borderColor: "#e2e8f0" };

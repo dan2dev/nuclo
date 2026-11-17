@@ -63,7 +63,9 @@ export type Op =
   | "str.nonEmpty" | "str.or"
   | "num.toFixed" | "math.floor" | "math.ceil" | "math.round" | "math.trunc" | "math.abs" | "math.min" | "math.max"
   | "math.sqrt" | "math.pow" | "math.random" | "math.pi"
-  | "map.get" | "date.now" | "num.parse" | "int.parse" | "error.message"
+  | "map.get" | "date.now" | "num.parse" | "int.parse"
+  /** `${e}` of a caught error: "Error: <message>". `error.text` is `e.message`, the message alone. */
+  | "error.message" | "error.text"
   | "arr.concat" | "arr.sort" | "arr.reverse" | "arr.shift" | "arr.lastIndexOf" | "arr.reduce" | "arr.atRel"
   /** Callbacks that take the index as well: `xs.map((x, i) => …)`. */
   | "arr.mapI" | "arr.filterI" | "arr.forEachI" | "arr.someI" | "arr.everyI" | "arr.findI" | "arr.findIndexI"
@@ -87,8 +89,11 @@ export type Expr =
   | { e: "tpl"; parts: (string | Expr)[] }
   /** `fnRef`: a declared function used as a value (Kotlin needs `::name`). */
   | { e: "id"; name: string; fnRef?: boolean }
-  /** `optional`: `a?.b`. `chain`: a later link of an optional chain (`a?.b.c`'s `.c`): Kotlin needs `?.` there too. */
-  | { e: "prop"; obj: Expr; name: string; optional?: boolean; chain?: boolean }
+  /**
+   * `optional`: `a?.b`. `chain`: a later link of an optional chain (`a?.b.c`'s `.c`): Kotlin needs `?.` there too.
+   * `sup`: `super.x` (`obj` is `this`), a getter / setter of that base class.
+   */
+  | { e: "prop"; obj: Expr; name: string; optional?: boolean; chain?: boolean; sup?: string }
   | { e: "index"; obj: Expr; index: Expr }
   | { e: "call"; callee: Expr; args: Expr[]; await?: boolean }
   /** A runtime function (`div`, `list`, `A.onClick`…). Named args are labels (Swift) / named arguments (Kotlin). */
@@ -125,7 +130,11 @@ export type Expr =
    * `obj.m(…)`, a method of a class or a protocol, dispatched on the object. `sup`: `super.m(…)`, and
    * the class whose `m` runs. Getters are read with `prop`, as fields are.
    */
-  | { e: "invoke"; obj: Expr; name: string; args: Expr[]; sup?: string };
+  | { e: "invoke"; obj: Expr; name: string; args: Expr[]; sup?: string }
+  /** `x instanceof C`: `x` (an object of the app's classes or protocols) is a `C` or a subclass of it. */
+  | { e: "instanceOf"; x: Expr; cls: string }
+  /** `x` as the class TypeScript narrowed it to (after `instanceof`): a checked downcast. */
+  | { e: "downcast"; x: Expr; cls: string };
 
 export type BinOp = "+" | "-" | "*" | "/" | "%" | "==" | "!=" | "===" | "!==" | "<" | "<=" | ">" | ">=" | "&&" | "||";
 
@@ -176,6 +185,8 @@ export interface ClassDecl {
 export interface MethodDecl extends FnDecl {
   /** `get name()`: read as a property. */
   getter?: boolean;
+  /** `set name(value)`: written as a property. Its class declares the getter too. */
+  setter?: boolean;
   abstract?: boolean;
   /** A base class declares it too (Swift and Kotlin `override`). */
   overrides?: boolean;

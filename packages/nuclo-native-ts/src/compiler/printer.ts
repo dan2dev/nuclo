@@ -45,6 +45,7 @@ export abstract class Printer {
       case "neg":
         return `-${this.postfixOperand(x.x, ind)}`;
       case "prop":
+        if (x.sup) return `super.${this.name(x.name)}`;
         return `${this.postfixOperand(x.obj, ind)}${x.optional ? "?." : "."}${this.name(x.name)}`;
       case "index":
         return `${this.postfixOperand(x.obj, ind)}[${this.expr(x.index, ind)}]`;

@@ -143,18 +143,22 @@ class KotlinPrinter extends Printer {
     if (cls.fields.length) lines.push("");
     const delegate = cls.ctor.superArgs ? ` : ${this.call("super", cls.ctor.superArgs, [], i1, (l) => `${l} = `, false)}` : "";
     lines.push(`${i1}constructor(${this.params(cls.ctor.params, i1)})${delegate} {`, ...this.block(cls.ctor.body, i2), `${i1}}`);
-    for (const m of cls.methods) lines.push("", ...this.method(m, open));
+    // A setter is printed with its getter: one property.
+    for (const m of cls.methods) if (!m.setter) lines.push("", ...this.method(m, open, cls.methods.find((s) => s.setter && s.name === m.name)));
     lines.push("}");
     this.self = undefined;
     return lines;
   }
 
-  private method(m: MethodDecl, open: string): string[] {
+  private method(m: MethodDecl, open: string, setter?: MethodDecl): string[] {
     const i1 = INDENT;
     const modifiers = `${m.abstract ? "abstract " : m.overrides || m.implements ? "" : open}${m.overrides || m.implements ? "override " : ""}`;
     if (m.getter) {
-      const head = `${i1}${modifiers}val ${this.name(m.name)}: ${this.ty(m.ret)}`;
-      return m.abstract ? [head] : [head, `${i1}${i1}get() {`, ...this.block(m.body, i1 + i1 + i1), `${i1}${i1}}`];
+      const head = `${i1}${modifiers}${setter ? "var" : "val"} ${this.name(m.name)}: ${this.ty(m.ret)}`;
+      if (m.abstract) return [head];
+      const lines = [head, `${i1}${i1}get() {`, ...this.block(m.body, i1 + i1 + i1), `${i1}${i1}}`];
+      if (setter) lines.push(`${i1}${i1}set(${this.name(setter.params[0]!.name)}) {`, ...this.block(setter.body, i1 + i1 + i1), `${i1}${i1}}`);
+      return lines;
     }
     const head = `${i1}${modifiers}${this.signature(m.name, m.params, m.ret, i1)}`;
     return m.abstract ? [head] : [`${head} {`, ...this.block(m.body, i1 + i1), `${i1}}`];
@@ -277,6 +281,10 @@ class KotlinPrinter extends Printer {
         return `${x.type}.${x.member[0]!.toUpperCase()}${x.member.slice(1)}`;
       case "decoder":
         return `{ json -> ${this.decode(x.ty, "json", 0)} }`;
+      case "instanceOf":
+        return `(${this.postfixOperand(x.x, ind)} is ${this.ty({ k: "class", name: x.cls })})`;
+      case "downcast":
+        return `(${this.postfixOperand(x.x, ind)} as ${this.ty({ k: "class", name: x.cls })})`;
       case "launch":
         return `launch { ${this.expr(x.call, ind)} }`;
       default:
@@ -288,6 +296,8 @@ class KotlinPrinter extends Printer {
     // `"key" to value` inside mutableMapOf.
     if (x.e === "rt" && x.name === "__pair") return `${this.expr(x.args[0]!, ind)} to ${this.expr(x.args[1]!, ind)}`;
     // Kotlin doesn't short-circuit the rest of an optional chain: each later link is `?.` too.
+    // `super<Base>`: the base class, even when a protocol declares the property too.
+    if (x.e === "prop" && x.sup) return `super<${this.self?.base ?? x.sup}>.${this.name(x.name)}`;
     if (x.e === "prop" && x.chain && !x.optional) return `${this.postfixOperand(x.obj, ind)}?.${this.name(x.name)}`;
     if (x.e === "op" && x.chain) {
       const receiver = this.postfixOperand(x.args[0]!, ind);
@@ -491,6 +501,8 @@ class KotlinPrinter extends Printer {
         return `jsParseInt(${e(a!)})`;
       case "error.message":
         return `jsErrorMessage(${e(a!)})`;
+      case "error.text":
+        return `(${this.postfixOperand(a!, ind)}.message ?: ${this.postfixOperand(a!, ind)}.javaClass.simpleName)`;
     }
   }
 

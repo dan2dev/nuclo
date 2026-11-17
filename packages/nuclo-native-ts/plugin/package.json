@@ -1,0 +1,8 @@
+{
+	"name": "@nuclo/native-ts-plugin",
+	"private": true,
+	"version": "0.0.0",
+	"description": "TypeScript language service plugin: the native compiler's diagnostics in the editor.",
+	"license": "MIT",
+	"main": "index.js"
+}

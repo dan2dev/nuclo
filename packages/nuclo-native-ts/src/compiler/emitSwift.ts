@@ -104,15 +104,26 @@ class SwiftPrinter extends Printer {
     lines.push(`${i1}${same ? "override " : ""}init(${params}) {`);
     if (cls.ctor.superArgs) lines.push(`${i2}${this.call("super.init", cls.ctor.superArgs, [], i2, (l) => `${l}: `)}`);
     lines.push(...this.block(cls.ctor.body, i2), `${i1}}`);
-    for (const m of cls.methods) lines.push("", ...this.method(m));
+    // A setter is printed with its getter: one computed property.
+    for (const m of cls.methods) if (!m.setter) lines.push("", ...this.method(m, cls.methods.find((s) => s.setter && s.name === m.name)));
     lines.push("}");
     return lines;
   }
 
-  private method(m: MethodDecl): string[] {
+  private method(m: MethodDecl, setter?: MethodDecl): string[] {
     const i1 = INDENT;
-    const body = m.abstract ? [`${i1}${i1}fatalError("${m.name}() is abstract")`] : this.block(m.body, i1 + i1);
+    const abstract = (at: string) => [`${at}fatalError("${m.name} is abstract")`];
+    const body = m.abstract ? abstract(i1 + i1) : this.block(m.body, i1 + i1);
     const override = m.overrides ? "override " : "";
+    if (m.getter && setter) {
+      const [i3, value] = [i1 + i1 + i1, this.name(setter.params[0]!.name)];
+      return [
+        `${i1}${override}var ${this.name(m.name)}: ${this.ty(m.ret)} {`,
+        `${i1}${i1}get {`, ...(m.abstract ? abstract(i3) : this.block(m.body, i3)), `${i1}${i1}}`,
+        `${i1}${i1}set(${value}) {`, ...(setter.abstract ? abstract(i3) : this.block(setter.body, i3)), `${i1}${i1}}`,
+        `${i1}}`,
+      ];
+    }
     if (m.getter) return [`${i1}${override}var ${this.name(m.name)}: ${this.ty(m.ret)} {`, ...body, `${i1}}`];
     const attrs = m.ret.k === "void" ? "" : "@discardableResult ";
     return [`${i1}${attrs}${override}${this.signature(m.name, m.params, m.ret, i1)} {`, ...body, `${i1}}`];
@@ -270,6 +281,10 @@ class SwiftPrinter extends Printer {
         return x.member === "none" ? `${x.type}.none` : `.${x.member}`;
       case "decoder":
         return `{ json in ${this.decode(x.ty, "json", 0)} }`;
+      case "instanceOf":
+        return `(${this.postfixOperand(x.x, ind)} is ${this.ty({ k: "class", name: x.cls })})`;
+      case "downcast":
+        return `(${this.postfixOperand(x.x, ind)} as! ${this.ty({ k: "class", name: x.cls })})`;
       case "launch":
         return `Task { try await ${this.expr(x.call, ind)} }`;
       default:
@@ -440,6 +455,9 @@ class SwiftPrinter extends Printer {
         break;
       case "error.message":
         s = `jsErrorMessage(${e(a!)})`;
+        break;
+      case "error.text":
+        s = `((${e(a!)} as? NError)?.message ?? ${this.postfixOperand(a!, ind)}.localizedDescription)`;
         break;
       case "arr.concat":
         s = `(${args.map(e).join(" + ")})`;

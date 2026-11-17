@@ -5,6 +5,9 @@
 	"scripts": {
 		"lint": "bun run --filter='*' lint"
 	},
+	"devDependencies": {
+		"@nuclo/native-ts-plugin": "link:./packages/nuclo-native-ts/plugin"
+	},
 	"overrides": {
 		"nuclo": "workspace:*"
 	}

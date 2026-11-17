@@ -1,11 +1,18 @@
-// expect: create it with `new`, not an object literal
+// expect: `this` is supported in classes only
 interface Greeter {
-  greet(name: string): string;
+  readonly name: string;
+  greet(): string;
 }
 class Polite implements Greeter {
-  greet(name: string): string {
-    return `hello ${name}`;
+  readonly name = "polite";
+  greet(): string {
+    return `hello from ${this.name}`;
   }
 }
-export const loud: Greeter = { greet: (name: string) => `HEY ${name}` };
 export const polite: Greeter = new Polite();
+export const loud: Greeter = {
+  name: "loud",
+  greet() {
+    return `HEY from ${this.name}`;
+  },
+};

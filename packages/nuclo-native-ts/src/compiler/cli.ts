@@ -1,6 +1,10 @@
 #!/usr/bin/env bun
 /**
  * nuclo-native-ts build <entry.ts> --out <dir> [--target ios,android,web,…]
+ * nuclo-native-ts check <entry.ts>… [--json]
+ *
+ * `check` runs the front-end only: it reports what would stop a build and writes nothing
+ * (for CI, and with --json for the editor plugin in plugin/).
  *
  * Writes one folder per target under <dir>, each the complete source of that platform's app
  * (see the README for the host projects). Without --target every target is built.
@@ -12,7 +16,7 @@ import { emitRust } from "./emitRust.ts";
 import { emitSwift } from "./emitSwift.ts";
 import { emitWasmNative } from "./wasmNative.ts";
 import type { Program } from "./ir.ts";
-import { CompileError, transpile } from "./transpile.ts";
+import { CompileError, type Diagnostic, formatDiagnostic, transpile } from "./transpile.ts";
 import { buildWasm } from "./wasm.ts";
 import { buildWeb } from "./web.ts";
 
@@ -121,11 +125,32 @@ const TARGETS: Record<string, (input: TargetInput) => string | Promise<string>> 
 };
 
 function usage(): never {
-  console.error(`usage: nuclo-native-ts build <entry.ts> --out <dir> [--target ${Object.keys(TARGETS).join(",")}]`);
+  console.error(`usage: nuclo-native-ts build <entry.ts> --out <dir> [--target ${Object.keys(TARGETS).join(",")}]\n       nuclo-native-ts check <entry.ts>… [--json]`);
   process.exit(2);
 }
 
 const [command, entry, ...rest] = process.argv.slice(2);
+
+if (command === "check") {
+  const json = rest.includes("--json");
+  const entries = [entry, ...rest].filter((arg): arg is string => !!arg && arg !== "--json");
+  if (!entries.length) usage();
+  const started = performance.now();
+  // Entries may share files: each diagnostic once.
+  const found = new Map<string, Diagnostic>();
+  for (const file of entries) {
+    try {
+      transpile(file);
+    } catch (error) {
+      if (!(error instanceof CompileError)) throw error;
+      for (const d of error.diagnostics) found.set(formatDiagnostic(d), d);
+    }
+  }
+  if (json) console.log(JSON.stringify([...found.values()].map((d) => ({ ...d, file: path.resolve(d.file) }))));
+  else if (found.size) console.error(`${[...found.keys()].join("\n")}\n\n${found.size} error${found.size === 1 ? "" : "s"}.`);
+  else console.log(`${entries.join(", ")}: no errors (${Math.round(performance.now() - started)} ms)`);
+  process.exit(found.size ? 1 : 0);
+}
 const flag = (name: string) => {
   const at = rest.indexOf(name);
   return at >= 0 ? rest[at + 1] : undefined;

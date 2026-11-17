@@ -20,6 +20,8 @@
     "noImplicitOverride": true,
     "forceConsistentCasingInFileNames": true,
     "allowImportingTsExtensions": true,
-    "noEmit": true
+    "noEmit": true,
+    // The editor underlines what the native compiler rejects (plugin/; `nuclo-native-ts check` for CI).
+    "plugins": [{ "name": "@nuclo/native-ts-plugin" }]
   }
 }

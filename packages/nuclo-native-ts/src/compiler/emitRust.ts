@@ -205,11 +205,28 @@ class RustPrinter extends Printer {
       "",
     ];
     for (const cls of program.classes) out.push(...this.classDecl(cls), "");
+    if (program.objectClasses?.length) {
+      // What `instanceof` and downcasts need: any object as `Rc<dyn Any>`, which every trait reaches through its root.
+      out.push(
+        "/// Any object as `Rc<dyn Any>`: `instanceof` and downcasts test its struct.",
+        "pub trait ObjectAny {",
+        `${INDENT}fn as_any(self: Rc<Self>) -> Rc<dyn std::any::Any>;`,
+        "}",
+        "",
+        "impl<T: 'static> ObjectAny for T {",
+        `${INDENT}fn as_any(self: Rc<Self>) -> Rc<dyn std::any::Any> {`,
+        `${INDENT}${INDENT}self`,
+        `${INDENT}}`,
+        "}",
+        "",
+      );
+    }
     for (const p of program.protocols ?? []) out.push(...this.traitDecl(p.name), "");
     for (const c of program.objectClasses ?? []) {
       if (c.open) out.push(...this.traitDecl(c.name), "");
       if (!c.abstract) out.push(...this.structDecl(c), "");
     }
+    for (const c of program.objectClasses ?? []) out.push(...this.castFn(c), "");
     for (const fn of classFns) out.push(...this.fn(fn, "", new Map()), "");
     if (program.globals.length) {
       out.push("/// The app's top-level variables. `nuclo_main` runs their initializers in order.", "mod g {", `${INDENT}use super::*;`, `${INDENT}thread_local! {`);
@@ -307,16 +324,16 @@ class RustPrinter extends Printer {
       // A class's own fields are set through its trait by its constructor.
       for (const f of c.fields) field(f, true);
       for (const m of c.methods) {
-        if (m.getter) field({ name: m.name, ty: m.ret }, false);
-        else own.push({ rust: m.name, kind: "method", name: m.name, params: m.params, ret: m.ret });
+        if (m.getter) field({ name: m.name, ty: m.ret }, c.methods.some((x) => x.setter && x.name === m.name));
+        else if (!m.setter) own.push({ rust: m.name, kind: "method", name: m.name, params: m.params, ret: m.ret });
       }
     }
     return own.filter((m) => !inherited.has(m.rust));
   }
 
-  /** The class in a chain that defines a method or getter with a body. */
-  private definer(cls: string, name: string): string | undefined {
-    return this.chain(cls).find((c) => c.methods.some((m) => m.name === name && !m.abstract))?.name;
+  /** The class in a chain that defines a method or getter (or the setter) with a body. */
+  private definer(cls: string, name: string, setter = false): string | undefined {
+    return this.chain(cls).find((c) => c.methods.some((m) => m.name === name && !m.abstract && !!m.setter === setter))?.name;
   }
 
   /** What `name` is on a value of a class or protocol: its type, and for a method its parameters. */
@@ -326,7 +343,7 @@ class RustPrinter extends Printer {
       for (const k of this.chain(cls)) {
         const f = k.fields.find((x) => x.name === name);
         if (f) return { kind: "field", ty: f.ty, params: [] };
-        const m = k.methods.find((x) => x.name === name);
+        const m = k.methods.find((x) => x.name === name && !x.setter);
         if (m) return { kind: m.getter ? "getter" : "method", ty: m.ret, params: m.params };
       }
     }
@@ -344,7 +361,7 @@ class RustPrinter extends Printer {
     return undefined;
   }
 
-  /** A class's constructor (`init__C`) and methods (`m__C__name`) as free functions of `this`. */
+  /** A class's constructor (`init__C`), methods and getters (`m__C__name`) and setters (`m__C__set_name`) as free functions of `this`. */
   private classFns(c: ObjectClassDecl): FnDecl[] {
     const self: Param = { name: "this", ty: { k: "class", name: c.name } };
     const base: Stmt[] = c.base
@@ -352,13 +369,26 @@ class RustPrinter extends Printer {
       : [];
     return [
       { name: `init__${c.name}`, params: [self, ...c.ctor.params], ret: { k: "void" }, async: false, body: [...base, ...c.ctor.body] },
-      ...c.methods.filter((m) => !m.abstract).map((m): FnDecl => ({ name: `m__${c.name}__${m.name}`, params: [self, ...m.params], ret: m.ret, async: false, body: m.body })),
+      ...c.methods.filter((m) => !m.abstract).map((m): FnDecl => ({ name: `m__${c.name}__${m.setter ? "set_" : ""}${m.name}`, params: [self, ...m.params], ret: m.ret, async: false, body: m.body })),
+    ];
+  }
+
+  /** `cast__C`: the object as a `C` if its struct is `C`'s or a subclass's (`instanceof`, downcasts). */
+  private castFn(c: ObjectClassDecl): string[] {
+    const want = this.ty({ k: "class", name: c.name });
+    const structs = [...this.objects.values()].filter((s) => !s.abstract && this.chain(s.name).includes(c));
+    return [
+      `pub fn cast__${c.name}(x: Rc<dyn std::any::Any>) -> Option<${want}> {`,
+      ...structs.flatMap((s) => [`${INDENT}if let Ok(o) = x.clone().downcast::<${this.structName(s)}>() {`, `${INDENT}${INDENT}return Some(o as ${want});`, `${INDENT}}`]),
+      `${INDENT}None`,
+      "}",
     ];
   }
 
   private traitDecl(name: string): string[] {
     const i1 = INDENT;
-    const supers = this.supertraits(name);
+    // A root trait extends ObjectAny, so every trait object has one `as_any`.
+    const supers = this.supertraits(name).length ? this.supertraits(name) : ["ObjectAny"];
     const lines = [`pub trait ${name}${supers.length ? `: ${supers.join(" + ")}` : ""} {`];
     for (const m of this.traitMembers(name)) lines.push(`${i1}${this.traitSignature(m)};`);
     lines.push("}", "");
@@ -406,7 +436,8 @@ class RustPrinter extends Printer {
         const definer = this.definer(c.name, m.name);
         const isField = fields.some((f) => f.name === m.name);
         const body =
-          m.kind === "set" ? `self.${this.name(m.name)}.set(value)`
+          m.kind === "set" && !isField ? `m__${this.definer(c.name, m.name, true)}__set_${m.name}(self, value)`
+          : m.kind === "set" ? `self.${this.name(m.name)}.set(value)`
           : m.kind === "get" && isField ? `self.${this.name(m.name)}.get()`
           : `m__${definer}__${m.name}(${["self", ...args].join(", ")})`;
         lines.push(`${i1}${this.traitSignature(m)} {`, `${i2}${body}`, `${i1}}`);
@@ -696,6 +727,10 @@ class RustPrinter extends Printer {
       case "new":
       case "construct":
         return { k: "class", name: x.cls };
+      case "instanceOf":
+        return { k: "bool" };
+      case "downcast":
+        return { k: "class", name: x.cls };
       case "invoke": {
         const obj = x.sup ? ({ k: "class", name: x.sup } as Typ) : this.typeOf(x.obj);
         return obj.k === "class" ? (this.member(obj.name, x.name)?.ty ?? UNKNOWN) : UNKNOWN;
@@ -831,6 +866,7 @@ class RustPrinter extends Printer {
       case "str.or":
       case "num.toFixed":
       case "error.message":
+      case "error.text":
         return { k: "string" };
       case "math.abs":
       case "math.min":
@@ -985,6 +1021,10 @@ class RustPrinter extends Printer {
       }
       case "invoke":
         return this.invoke(x, ind);
+      case "instanceOf":
+        return `cast__${x.cls}(${this.atom(x.x, ind)}.as_any()).is_some()`;
+      case "downcast":
+        return `cast__${x.cls}(${this.atom(x.x, ind)}.as_any()).unwrap()`;
       case "arr": {
         const of = x.of.k === "class" && !this.classes.has(x.of.name) && !this.objects.has(x.of.name) && !this.protocols.has(x.of.name) ? undefined : x.of;
         if (!of || this.isMods({ k: "array", of })) {
@@ -1090,6 +1130,7 @@ class RustPrinter extends Printer {
   }
 
   private prop(x: Extract<Expr, { e: "prop" }>, ind: string): string {
+    if (x.sup) return this.callExpr({ e: "call", callee: { e: "id", name: `m__${x.sup}__${x.name}` }, args: [x.obj] }, ind);
     const obj = this.typeOf(x.obj);
     if ((x.optional || x.chain) && obj.k === "optional") {
       // `a?.b`: the access runs on the value inside the optional.
@@ -1660,6 +1701,8 @@ class RustPrinter extends Printer {
         return `js_parse_int(${s(a!)})`;
       case "error.message":
         return `js_error_message(&${r()})`;
+      case "error.text":
+        return `${r()}.message.clone()`;
     }
   }
 
@@ -1770,10 +1813,23 @@ class RustPrinter extends Printer {
       if (s.op === "=") return `${name} = ${value}`;
       return ty.k === "string" ? `${name}.push_str(&${value})` : `${name} ${s.op} ${value}`;
     }
+    if (target.e === "prop" && target.sup) {
+      // `super.x = …`: the base's setter on `this`.
+      const [set, get] = [`m__${target.sup}__set_${target.name}`, `m__${target.sup}__${target.name}`];
+      if (s.op === "=") return `${set}(${this.expr(target.obj, ind)}, ${value})`;
+      return `{ let o__ = ${this.expr(target.obj, ind)}; ${set}(o__.clone(), ${next(`${get}(o__.clone())`)}) }`;
+    }
     const objTy = target.e === "prop" ? this.typeOf(target.obj) : undefined;
     if (target.e === "prop" && objTy?.k === "class" && this.isTrait(objTy.name)) {
       if (s.op === "=") return `${this.atom(target.obj, ind)}.set_${target.name}(${value})`;
       return `{ let o__ = ${this.expr(target.obj, ind)}; o__.clone().set_${target.name}(${next(`o__.clone().get_${target.name}()`)}) }`;
+    }
+    if (target.e === "prop" && objTy?.k === "class" && this.member(objTy.name, target.name)?.kind === "getter") {
+      // A property with a setter, on a class without subclasses: its free functions.
+      const set = `m__${this.definer(objTy.name, target.name, true)}__set_${target.name}`;
+      const get = `m__${this.definer(objTy.name, target.name)}__${target.name}`;
+      if (s.op === "=") return `${set}(${this.expr(target.obj, ind)}, ${value})`;
+      return `{ let o__ = ${this.expr(target.obj, ind)}; ${set}(o__.clone(), ${next(`${get}(o__.clone())`)}) }`;
     }
     if (target.e === "prop") {
       const on = this.receiver(target.obj, ind);

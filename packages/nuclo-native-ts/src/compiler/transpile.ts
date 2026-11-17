@@ -27,6 +27,10 @@ export interface Diagnostic {
   line: number;
   column: number;
   message: string;
+  /** How much of the source it covers, for an editor's underline. */
+  length?: number;
+  /** TypeScript's own error code; absent on the native compiler's diagnostics. */
+  code?: number;
 }
 
 export class CompileError extends Error {
@@ -251,6 +255,36 @@ const MATH_CONSTANTS: Record<string, number> = {
   "Number.MAX_VALUE": Number.MAX_VALUE, "Number.MIN_VALUE": Number.MIN_VALUE,
 };
 
+type GenericDecl = ts.FunctionDeclaration | ts.ArrowFunction | ts.FunctionExpression | ts.InterfaceDeclaration | ts.TypeAliasDeclaration | ts.ClassDeclaration;
+
+/** A native type as part of a name: `Box<number[]>` → `Box__Arr_Double`. */
+function mangle(t: Ty): string {
+  switch (t.k) {
+    case "int":
+      return "Int";
+    case "double":
+      return "Double";
+    case "string":
+      return "String";
+    case "bool":
+      return "Bool";
+    case "void":
+      return "Void";
+    case "array":
+      return `Arr_${mangle(t.of)}`;
+    case "map":
+      return `Map_${mangle(t.of)}`;
+    case "optional":
+      return `Opt_${mangle(t.of)}`;
+    case "class":
+      return t.name;
+    case "rt":
+      return t.name;
+    case "fn":
+      return `Fn_${t.params.map(mangle).join("_")}_To_${mangle(t.ret)}`;
+  }
+}
+
 interface Ctx {
   async: boolean;
   /** The enclosing function's return type. */
@@ -280,6 +314,8 @@ export function transpile(entry: string): Program {
           line: pos.line + 1,
           column: pos.character + 1,
           message: ts.flattenDiagnosticMessageText(d.messageText, "\n"),
+          length: d.length,
+          code: d.code,
         };
       }),
     );
@@ -296,8 +332,29 @@ class Frontend {
   private readonly functionSymbols = new Set<ts.Symbol>();
   private readonly classes = new Map<ts.Symbol, ClassDecl>();
   /** The app's classes, and the interfaces some class implements (protocols), by symbol. */
-  private readonly objectClasses = new Map<ts.Symbol, ts.ClassDeclaration>();
+  private readonly objectClasses = new Map<ts.Symbol, ts.ClassLikeDeclaration>();
+  /** Native names of class expressions (TypeScript calls an anonymous one `__class`): `X` for `const X = class …`, else `Class__1`. */
+  private readonly classNames = new Map<ts.Symbol, string>();
+  /** The locals of the surrounding functions that a nested class uses (and passes on), in order: hidden constructor parameters. */
+  private readonly captures = new Map<ts.Symbol, ts.Symbol[]>();
+  /** Class expressions already lowered (where they are declared, or after the top level). */
+  private readonly definedClasses = new Set<ts.ClassLikeDeclaration>();
   private readonly protocols = new Map<ts.Symbol, ts.InterfaceDeclaration>();
+  /** The class an object literal of a protocol builds (`Shape__Literal`), by protocol name: made on first use. */
+  private readonly literalClasses = new Map<string, ObjectClassDecl>();
+  /**
+   * Generics are compiled once per instantiation (`Box<number>` → `Box__Double`), so every native
+   * value keeps one concrete type. `env` binds the type parameters while one instantiation is
+   * lowered; a bound type may name outer parameters, which the same environment binds.
+   */
+  private env = new Map<ts.Symbol, ts.Type>();
+  /** The app's generic functions, interfaces and classes, by symbol. */
+  private readonly generics = new Map<ts.Symbol, GenericDecl>();
+  /** Every instantiation by its native name, and those still to lower (functions and classes). */
+  private readonly instances = new Map<string, { decl: GenericDecl; env: Map<ts.Symbol, ts.Type> }>();
+  private readonly pendingInstances: string[] = [];
+  private readonly instanceClasses = new Map<string, ClassDecl>();
+  private readonly instanceProtocols = new Map<string, ProtocolDecl>();
   private readonly asyncFunctions = new Set<ts.Node>();
   /** Arrays are values in Swift: what mutates an array, and what makes two bindings share one (see checkArrays). */
   private readonly mutations: ts.Expression[] = [];
@@ -333,6 +390,7 @@ class Frontend {
   run(source: string): Program {
     for (const sf of this.files) this.collectStyling(sf);
     this.collectClasses();
+    this.collectCaptures();
     for (const sf of this.files) this.collect(sf);
     for (const sf of this.files) this.collectFunctionReferences(sf);
     this.linkMembers();
@@ -343,8 +401,20 @@ class Frontend {
     for (const sf of this.files) {
       for (const statement of sf.statements) this.topLevel(statement, out);
     }
-    out.classes = [...this.classes.values()];
-    if (this.protocols.size) out.protocols = [...this.protocols.values()].map((node) => this.protocolDecl(node));
+    // Class expressions inside functions and expressions: one native class each, declared at the top level.
+    for (const node of this.objectClasses.values()) if (!this.definedClasses.has(node) && !node.typeParameters?.length) this.classDef(node, out);
+    const plain = [...this.protocols.values()].filter((node) => !node.typeParameters?.length).map((node) => this.protocolDecl(node));
+    // Generic functions and classes, once per instantiation the program (or another instantiation) uses.
+    for (let name = this.pendingInstances.shift(); name; name = this.pendingInstances.shift()) {
+      const { decl, env } = this.instances.get(name)!;
+      this.withEnv(env, () => {
+        if (ts.isClassDeclaration(decl)) this.classDef(decl, out, name);
+        else if (ts.isFunctionDeclaration(decl) || ts.isArrowFunction(decl) || ts.isFunctionExpression(decl)) out.functions.push(this.fnDecl(name, decl));
+      });
+    }
+    out.classes = this.allClasses();
+    if (plain.length || this.instanceProtocols.size) out.protocols = [...plain, ...this.instanceProtocols.values()];
+    if (this.literalClasses.size) out.objectClasses = [...(out.objectClasses ?? []), ...this.literalClasses.values()];
     if (out.objectClasses) {
       // Bases first: a printer that flattens a class (Rust) finds its base already declared.
       const order: ObjectClassDecl[] = [];
@@ -382,7 +452,7 @@ class Frontend {
     const file = displayPath(sf.fileName);
     // One error per line: the first is the cause, the rest follow from it.
     if (!this.diagnostics.some((d) => d.file === file && d.line === line + 1)) {
-      this.diagnostics.push({ file, line: line + 1, column: character + 1, message });
+      this.diagnostics.push({ file, line: line + 1, column: character + 1, message, length: node.getEnd() - node.getStart() });
     }
     return { e: "nil" };
   }
@@ -396,16 +466,16 @@ class Frontend {
       this.reject(node);
 
       if (ts.isInterfaceDeclaration(node) && this.protocols.has(this.checker.getSymbolAtLocation(node.name)!)) {
-        if (node.typeParameters?.length) this.error(node.name, "Generic interfaces are not supported natively; declare a concrete interface per type.");
+        if (node.typeParameters?.length) this.generics.set(this.checker.getSymbolAtLocation(node.name)!, node);
         for (const member of node.members) {
           if (ts.isPropertySignature(member)) this.declareSlot(member.name, member.type);
           else if (!ts.isMethodSignature(member)) this.error(member, "Only properties and methods are supported in an interface a class implements.");
         }
       } else if (ts.isInterfaceDeclaration(node) || (ts.isTypeAliasDeclaration(node) && ts.isTypeLiteralNode(node.type))) {
         const symbol = this.checker.getSymbolAtLocation(node.name);
-        if (symbol) this.classes.set(symbol, { name: node.name.text, fields: [], decodable: true });
+        if (symbol && node.typeParameters?.length) this.generics.set(symbol, node);
+        else if (symbol) this.classes.set(symbol, { name: node.name.text, fields: [], decodable: true });
         if (RESERVED_TYPES.has(node.name.text) || IMPLICIT_NAMES.has(node.name.text)) this.error(node.name, `"${node.name.text}" is reserved by the native runtimes; rename the type.`);
-        if (node.typeParameters?.length) this.error(node.name, "Generic interfaces are not supported natively; declare a concrete interface per type.");
         const members = ts.isInterfaceDeclaration(node) ? node.members : (node.type as ts.TypeLiteralNode).members;
         for (const member of members) {
           if (!ts.isPropertySignature(member)) {
@@ -431,7 +501,14 @@ class Frontend {
         }
       }
       if ((ts.isFunctionDeclaration(node) || this.isFunctionNode(node)) && node.typeParameters?.length) {
-        this.error(node, "Generic functions are not supported natively; write one function per type.");
+        // A top-level generic function is compiled once per instantiation; elsewhere it would have to capture.
+        const holder = ts.isFunctionDeclaration(node) ? node : node.parent;
+        const name = ts.isFunctionDeclaration(node) ? node.name : ts.isVariableDeclaration(holder) && ts.isIdentifier(holder.name) ? holder.name : undefined;
+        const topLevel = !!name && ts.isSourceFile(this.topLevelOf(ts.isFunctionDeclaration(node) ? node : holder)) && (ts.isFunctionDeclaration(node) || !!(ts.getCombinedNodeFlags(holder) & ts.NodeFlags.Const));
+        const symbol = topLevel && name ? this.checker.getSymbolAtLocation(name) : undefined;
+        if (symbol && !ts.isMethodDeclaration(node)) this.generics.set(symbol, node as GenericDecl);
+        else if (ts.isMethodDeclaration(node)) this.error(node, "Generic methods are not supported natively; make the class generic, or write a generic top-level function.");
+        else this.error(node, "Declare generic functions at the top level of a module (a nested one would capture its surroundings in every instantiation).");
       }
       if (ts.isVariableDeclaration(node) && node.initializer) this.aliases.push({ target: node.name, source: node.initializer });
       if (ts.isBinaryExpression(node) && node.operatorToken.kind === ts.SyntaxKind.EqualsToken) {
@@ -484,7 +561,7 @@ class Frontend {
         }
       }
       if (ts.isGetAccessor(node)) this.declareSlot(node.name, node.type);
-      if (ts.isPropertyDeclaration(node) && ts.isClassDeclaration(node.parent)) {
+      if (ts.isPropertyDeclaration(node) && ts.isClassLike(node.parent)) {
         this.declareSlot(node.name, node.type);
         if (node.initializer) this.write(node.name, node.initializer);
       }
@@ -526,6 +603,19 @@ class Frontend {
       }
       if (ts.isObjectLiteralExpression(node)) {
         const ctx = this.checker.getContextualType(node);
+        // A function given for a protocol's method is that method: one kind for its parameters and result.
+        for (const prop of ctx ? node.properties : []) {
+          if (!prop.name || !ts.isIdentifier(prop.name)) continue;
+          const fn = ts.isMethodDeclaration(prop) ? prop : ts.isPropertyAssignment(prop) && (ts.isArrowFunction(prop.initializer) || ts.isFunctionExpression(prop.initializer)) ? prop.initializer : undefined;
+          const decl = this.checker.getNonNullableType(ctx!).getProperty(prop.name.text)?.valueDeclaration;
+          if (!fn || !decl || !ts.isMethodSignature(decl)) continue;
+          this.link(fn, decl);
+          fn.parameters.forEach((param, i) => {
+            const mine = this.checker.getSymbolAtLocation(param.name);
+            const theirs = decl.parameters[i] && this.checker.getSymbolAtLocation(decl.parameters[i]!.name);
+            if (mine && theirs) this.link(mine, theirs);
+          });
+        }
         if (ctx) {
           for (const prop of node.properties) {
             if (!(ts.isPropertyAssignment(prop) || ts.isShorthandPropertyAssignment(prop)) || !ts.isIdentifier(prop.name)) continue;
@@ -641,6 +731,14 @@ class Frontend {
       }
       mutated.add(symbol);
     }
+    // A nested class keeps its own copy of a captured array or map (Swift's are values).
+    for (const values of this.captures.values()) {
+      for (const value of values) {
+        if (!mutated.has(value) || !value.valueDeclaration) continue;
+        const name = (value.valueDeclaration as ts.NamedDeclaration).name ?? value.valueDeclaration;
+        this.error(name, `"${value.name}" is used by a nested class and mutated: natively the class keeps a copy (Swift arrays and maps are values). Keep it in an object, or in a field of the class.`);
+      }
+    }
     for (const { target, source } of this.destructuredArrays) {
       const symbol = this.checker.getSymbolAtLocation(target);
       if ((symbol && mutated.has(symbol)) || (source && mutated.has(source))) {
@@ -713,11 +811,12 @@ class Frontend {
   /** Constructs with no native equivalent. */
   private reject(node: ts.Node) {
     if (node.kind === ts.SyntaxKind.AnyKeyword) this.error(node, "`any` cannot be compiled to a native type; give the value a real type.");
-    else if (ts.isClassExpression(node)) this.error(node, "Class expressions are not supported; declare the class at the top level.");
-    else if (ts.isClassDeclaration(node)) this.checkClass(node);
+    else if (ts.isBinaryExpression(node) && node.operatorToken.kind === ts.SyntaxKind.InKeyword && ts.isPrivateIdentifier(node.left)) this.error(node, "Unsupported: `#x in obj` (a native object's class is known statically).");
+    else if (ts.isClassDeclaration(node) || ts.isClassExpression(node)) this.checkClass(node);
     else if (ts.isEnumDeclaration(node)) this.checkEnum(node);
     else if (ts.isModuleDeclaration(node)) this.error(node, "Namespaces are not supported.");
     else if (node.kind === ts.SyntaxKind.ThisKeyword && this.isStaticContext(node)) this.error(node, "`this` in a static member is not supported; name the class.");
+    else if (node.kind === ts.SyntaxKind.ThisKeyword && !this.inClass(node)) this.error(node, "`this` is supported in classes only; in an object literal's method, use the variable that holds the object.");
     else if (ts.isDeleteExpression(node) && !this.isMapEntry(node.expression)) this.error(node, "`delete` is supported on Record<string, T> entries; use a nullable property.");
     else if (ts.isIdentifier(node) && node.text === "eval") this.error(node, "`eval` cannot be compiled ahead of time.");
     else if (ts.isPropertyAccessExpression(node) && (node.name.text === "prototype" || node.name.text === "__proto__")) {
@@ -743,37 +842,94 @@ class Frontend {
       this.protocols.set(symbol, decl);
       pending.push(decl);
     };
-    for (const sf of this.files) {
-      for (const statement of sf.statements) {
-        if (!ts.isClassDeclaration(statement) || !statement.name) continue;
-        this.objectClasses.set(this.checker.getSymbolAtLocation(statement.name)!, statement);
-        for (const clause of statement.heritageClauses ?? []) {
-          if (clause.token === ts.SyntaxKind.ImplementsKeyword) clause.types.forEach((t) => addProtocol(t.expression));
-        }
+    const taken = new Set<string>();
+    // A nested class keeps its name unless another class has it (two functions may each declare a `Row`).
+    const unique = (name: string) => {
+      let native = name;
+      for (let n = 2; taken.has(native); n++) native = `${name}__${n}`;
+      return native;
+    };
+    const add = (node: ts.ClassLikeDeclaration) => {
+      const symbol = this.classSymbol(node);
+      if (!symbol) return;
+      this.objectClasses.set(symbol, node);
+      const nested = ts.isClassDeclaration(node) ? !ts.isSourceFile(node.parent) : !this.isTopLevelClass(node);
+      if (ts.isClassExpression(node) && !nested) this.classNames.set(symbol, (node.parent as ts.VariableDeclaration).name.getText());
+      else if (nested) this.classNames.set(symbol, unique(node.name?.text ?? "Class"));
+      taken.add(this.className(symbol));
+      for (const clause of node.heritageClauses ?? []) {
+        if (clause.token === ts.SyntaxKind.ImplementsKeyword) clause.types.forEach((t) => addProtocol(t.expression));
       }
+    };
+    for (const sf of this.files) for (const statement of sf.statements) if (ts.isClassDeclaration(statement) && statement.name) add(statement);
+    for (const sf of this.files) {
+      const visit = (node: ts.Node): void => {
+        if (ts.isClassExpression(node) && this.isTopLevelClass(node)) add(node);
+        ts.forEachChild(node, visit);
+      };
+      visit(sf);
+    }
+    for (const sf of this.files) {
+      const visit = (node: ts.Node): void => {
+        if ((ts.isClassExpression(node) && !this.isTopLevelClass(node)) || (ts.isClassDeclaration(node) && node.name && !ts.isSourceFile(node.parent))) add(node);
+        ts.forEachChild(node, visit);
+      };
+      visit(sf);
     }
     for (let decl = pending.pop(); decl; decl = pending.pop()) {
       for (const clause of decl.heritageClauses ?? []) clause.types.forEach((t) => addProtocol(t.expression));
     }
   }
 
+  /** A class's symbol (an anonymous class expression has no name to ask). */
+  private classSymbol(node: ts.ClassLikeDeclaration): ts.Symbol | undefined {
+    return (node.name && this.checker.getSymbolAtLocation(node.name)) || this.checker.getTypeAtLocation(node).getSymbol();
+  }
+
+  /** A class's native name: its own, or the one given to a class expression. */
+  private className(symbol: ts.Symbol): string {
+    return this.classNames.get(symbol) ?? symbol.name;
+  }
+
+  /** `const X = class …` at the top level of a module: the class `X`. */
+  private isTopLevelClass(node: ts.ClassExpression): boolean {
+    const decl = node.parent;
+    return ts.isVariableDeclaration(decl) && ts.isIdentifier(decl.name) && !!(ts.getCombinedNodeFlags(decl) & ts.NodeFlags.Const) && ts.isSourceFile(this.topLevelOf(decl));
+  }
+
+  /** The app's class an expression names (`C`, a `const` holding a class expression, `(class {…})`), by its symbol. */
+  private classRef(node: ts.Expression): ts.Symbol | undefined {
+    const symbol = this.resolveAlias(this.checker.getSymbolAtLocation(node));
+    if (symbol && this.objectClasses.has(symbol)) return symbol;
+    // Through its type, `typeof C` (an instance's type names the class too, but it can't be constructed).
+    const type = this.checker.getTypeAtLocation(node);
+    const viaType = type.getConstructSignatures().length ? type.getSymbol() : undefined;
+    return viaType && this.objectClasses.has(viaType) ? viaType : undefined;
+  }
+
   /** What a class may contain natively. */
-  private checkClass(node: ts.ClassDeclaration) {
-    if (!node.name || !ts.isSourceFile(node.parent)) return void this.error(node, "Declare classes at the top level of a module.");
-    if (RESERVED_TYPES.has(node.name.text) || IMPLICIT_NAMES.has(node.name.text)) this.error(node.name, `"${node.name.text}" is reserved by the native runtimes; rename the class.`);
-    if (node.typeParameters?.length) this.error(node.name, "Generic classes are not supported natively; declare a concrete class per type.");
+  private checkClass(node: ts.ClassLikeDeclaration) {
+    if (ts.isClassDeclaration(node) && !node.name) return void this.error(node, "A class declaration needs a name.");
+    const symbol = this.classSymbol(node);
+    const native = symbol ? this.className(symbol) : "";
+    if (RESERVED_TYPES.has(native) || IMPLICIT_NAMES.has(native)) this.error(node.name ?? node, `"${native}" is reserved by the native runtimes; rename the class.`);
+    const nested = ts.isClassDeclaration(node) ? !ts.isSourceFile(node.parent) : !this.isTopLevelClass(node);
+    if (nested) this.checkNestedClass(node);
+    if ((ts.isClassExpression(node) || nested) && node.typeParameters?.length) return void this.error(node, "Generic class expressions and generic classes inside functions are not supported natively; declare a generic class at the top level.");
+    if (node.typeParameters?.length) {
+      // Each instantiation is a class of its own: a static member would be one per instantiation, not one shared.
+      for (const member of node.members) {
+        if (ts.getCombinedModifierFlags(member) & ts.ModifierFlags.Static) this.error(member, "Static members of a generic class are not supported natively (each instantiation would have its own); use a top-level variable or function.");
+      }
+      if (symbol && ts.isClassDeclaration(node)) this.generics.set(symbol, node);
+    }
     if (ts.getDecorators(node)?.length) this.error(node, "Decorators are not supported.");
     const base = this.heritage(node, ts.SyntaxKind.ExtendsKeyword)[0];
-    if (base) {
-      const symbol = this.resolveAlias(this.checker.getSymbolAtLocation(base.expression));
-      if (!symbol || !this.objectClasses.has(symbol)) this.error(base, "A class can extend only another class of the app.");
-    }
+    if (base && !this.classRef(base.expression)) this.error(base, "A class can extend only another class of the app.");
     for (const member of node.members) {
       const isStatic = !!(ts.getCombinedModifierFlags(member) & ts.ModifierFlags.Static);
-      if (member.name && ts.isPrivateIdentifier(member.name)) this.error(member.name, "#private members are not supported; use the `private` modifier.");
-      else if (member.name && !ts.isIdentifier(member.name)) this.error(member.name, "Class members need plain names natively.");
-      else if (ts.isSetAccessor(member)) this.error(member, "Setters are not supported natively; use a method.");
-      else if (ts.isGetAccessor(member) && isStatic) this.error(member, "Static getters are not supported natively; use a static method.");
+      if (member.name && !ts.isIdentifier(member.name) && !ts.isPrivateIdentifier(member.name)) this.error(member.name, "Class members need plain names natively.");
+      else if ((ts.isGetAccessor(member) || ts.isSetAccessor(member)) && !this.checkAccessor(node, member)) continue;
       else if (ts.isMethodDeclaration(member) && ts.getCombinedModifierFlags(member) & ts.ModifierFlags.Async) this.error(member, "Async methods are not supported natively; call an async function from the method.");
       else if (ts.isMethodDeclaration(member) && member.asteriskToken) this.error(member, "Generators are not supported.");
       else if (ts.isPropertyDeclaration(member) && isStatic && !member.initializer) this.error(member, "A static field needs an initial value natively.");
@@ -783,17 +939,169 @@ class Frontend {
         const first = member.body?.statements[0];
         const isSuper = first && ts.isExpressionStatement(first) && ts.isCallExpression(first.expression) && first.expression.expression.kind === ts.SyntaxKind.SuperKeyword;
         if (!isSuper) this.error(member, "Call super(…) as the constructor's first statement.");
-      } else if (!(ts.isPropertyDeclaration(member) || ts.isMethodDeclaration(member) || ts.isGetAccessor(member) || ts.isConstructorDeclaration(member) || ts.isSemicolonClassElement(member))) {
-        this.error(member, "Unsupported class member: use fields, a constructor, methods, getters and static members.");
+      } else if (!(ts.isPropertyDeclaration(member) || ts.isMethodDeclaration(member) || ts.isGetAccessor(member) || ts.isSetAccessor(member) || ts.isConstructorDeclaration(member) || ts.isSemicolonClassElement(member))) {
+        this.error(member, "Unsupported class member: use fields, a constructor, methods, getters, setters and static members.");
       }
     }
   }
 
-  private heritage(node: ts.ClassDeclaration, token: ts.SyntaxKind.ExtendsKeyword | ts.SyntaxKind.ImplementsKeyword): readonly ts.ExpressionWithTypeArguments[] {
+  /**
+   * A class declared inside a function, or a class expression there or in an expression, is one native
+   * class, declared at the top level: the function's locals it uses are passed to it (collectCaptures),
+   * and it can't have statics (JavaScript makes a new class, with new statics, each time the
+   * declaration or expression runs).
+   */
+  private checkNestedClass(node: ts.ClassLikeDeclaration) {
+    for (const member of node.members) {
+      if (ts.getCombinedModifierFlags(member) & ts.ModifierFlags.Static) this.error(member, "Static members of a class inside a function or an expression are not supported natively (JavaScript makes a new class each time); declare the class at the top level.");
+    }
+  }
+
+  private isNested(node: ts.ClassLikeDeclaration): boolean {
+    return ts.isClassDeclaration(node) ? !ts.isSourceFile(node.parent) : !this.isTopLevelClass(node);
+  }
+
+  /**
+   * The locals of the functions around a nested class that its members use: natively the class is
+   * declared at the top level, so each is a hidden constructor parameter kept in a `cap__x` field,
+   * which every `new` passes. A class that makes or extends another nested class passes that one's
+   * too. The value is copied when the object is made, so a captured variable must not be reassigned
+   * (arrays and objects are still shared).
+   */
+  private collectCaptures() {
+    const nested = [...this.objectClasses].filter(([, node]) => this.isNested(node));
+    const inside = (n: ts.Node, node: ts.Node) => n.pos >= node.pos && n.end <= node.end;
+    const deps = new Map<ts.Symbol, ts.Symbol[]>();
+    for (const [symbol, node] of nested) {
+      const found: ts.Symbol[] = [];
+      const uses: ts.Symbol[] = [];
+      const visit = (n: ts.Node): void => {
+        if (ts.isTypeNode(n)) return;
+        if (ts.isNewExpression(n)) {
+          const cls = this.classRef(n.expression);
+          if (cls && cls !== symbol) uses.push(cls);
+        }
+        if (ts.isIdentifier(n)) {
+          const value = this.valueSymbol(n);
+          const decl = value?.valueDeclaration;
+          if (value && decl && !inside(decl, node) && this.isCapturable(decl) && !found.includes(value)) {
+            found.push(value);
+            if (this.isReassignedLocal(decl)) this.error(n, `This class uses "${n.text}", which the function reassigns: natively the class keeps the value it had when the object was made. Copy it to a const first.`);
+          }
+        }
+        ts.forEachChild(n, visit);
+      };
+      node.members.forEach(visit);
+      const base = this.heritage(node, ts.SyntaxKind.ExtendsKeyword)[0];
+      const baseClass = base && this.classRef(base.expression);
+      if (baseClass) uses.push(baseClass);
+      this.captures.set(symbol, found);
+      deps.set(symbol, uses);
+    }
+    for (let changed = true; changed; ) {
+      changed = false;
+      for (const [symbol, node] of nested) {
+        const own = this.captures.get(symbol)!;
+        for (const dep of deps.get(symbol)!) {
+          for (const value of this.captures.get(dep) ?? []) {
+            // A local of this class's own method is at hand where it makes the other class.
+            if (own.includes(value) || inside(value.valueDeclaration!, node)) continue;
+            own.push(value);
+            changed = true;
+          }
+        }
+      }
+    }
+  }
+
+  /** The variable, parameter or local function an identifier reads (`{ x }` reads x, not the property). */
+  private valueSymbol(n: ts.Identifier): ts.Symbol | undefined {
+    if (ts.isShorthandPropertyAssignment(n.parent) && n.parent.name === n) return this.checker.getShorthandAssignmentValueSymbol(n.parent);
+    return this.resolveAlias(this.checker.getSymbolAtLocation(n));
+  }
+
+  /** A local of a function (a variable, a parameter, a local function), not one holding a class. */
+  private isCapturable(decl: ts.Declaration): boolean {
+    if (!ts.findAncestor(decl.parent, ts.isFunctionLike)) return false;
+    if (ts.isVariableDeclaration(decl)) return !(decl.initializer && ts.isClassExpression(decl.initializer));
+    return ts.isParameter(decl) || ts.isBindingElement(decl) || ts.isFunctionDeclaration(decl);
+  }
+
+  private isReassignedLocal(decl: ts.Declaration): boolean {
+    if (ts.isFunctionDeclaration(decl) || !("name" in decl) || !ts.isIdentifier(decl.name as ts.Node)) return false;
+    if (ts.isVariableDeclaration(decl) && ts.getCombinedNodeFlags(decl) & ts.NodeFlags.Const) return false;
+    const scope = ts.findAncestor(decl.parent, ts.isFunctionLike);
+    return !!scope && this.isReassigned(decl.name as ts.Identifier, scope);
+  }
+
+  /** The class a node is inside (the innermost), if it is nested. */
+  private nestedClassAt(node: ts.Node): ts.Symbol | undefined {
+    const cls = ts.findAncestor(node.parent, ts.isClassLike);
+    const symbol = cls && this.classSymbol(cls);
+    return symbol && this.captures.has(symbol) ? symbol : undefined;
+  }
+
+  /** A captured local read inside the class that captured it: its `cap__x` field. */
+  private captureRead(node: ts.Identifier): Expr | undefined {
+    const value = this.valueSymbol(node);
+    const cls = this.nestedClassAt(node);
+    if (!value || !cls || !this.captures.get(cls)!.includes(value)) return undefined;
+    return { e: "prop", obj: { e: "id", name: "this" }, name: this.captureField(cls, value) };
+  }
+
+  private captureField(cls: ts.Symbol, value: ts.Symbol): string {
+    const list = this.captures.get(cls)!;
+    const same = list.filter((v) => v.name === value.name);
+    return same.length > 1 ? `cap__${value.name}__${same.indexOf(value) + 1}` : `cap__${value.name}`;
+  }
+
+  /** What a `new` of a nested class passes for its captures: the locals, or the fields of the class the `new` is in. */
+  private captureArgs(cls: ts.Symbol, site: ts.Node): Expr[] {
+    const at = this.nestedClassAt(site);
+    return (this.captures.get(cls) ?? []).map((value): Expr =>
+      at && this.captures.get(at)!.includes(value)
+        ? { e: "prop", obj: { e: "id", name: "this" }, name: this.captureField(at, value) }
+        : { e: "id", name: value.name, fnRef: this.functionSymbols.has(value) || undefined },
+    );
+  }
+
+  /**
+   * A getter and a setter are one native property: a setter comes with its getter, and a class that
+   * replaces one of a pair it inherits replaces both (JavaScript would lose the other half). A getter
+   * standing for a writable property of a protocol needs its setter.
+   */
+
+  private checkAccessor(node: ts.ClassLikeDeclaration, member: ts.GetAccessorDeclaration | ts.SetAccessorDeclaration): boolean {
+    const name = this.memberName(member.name);
+    const own = (test: (m: ts.ClassElement) => boolean) => node.members.some((m) => test(m) && m.name && this.memberName(m.name) === name);
+    const hasGet = own(ts.isGetAccessor);
+    const hasSet = own(ts.isSetAccessor);
+    if (ts.isSetAccessor(member)) {
+      if (!hasGet) return this.error(member, "A setter needs its getter in the same class natively (they are one property)."), false;
+      return true;
+    }
+    if (hasSet || ts.getCombinedModifierFlags(member) & ts.ModifierFlags.Static) return true;
+    for (const other of this.counterparts(node, name)) {
+      const decls = other.declarations ?? [];
+      if (decls.some(ts.isSetAccessor)) return this.error(member, "Override the getter and the setter together: natively they are one property."), false;
+      if (decls.some((d) => ts.isPropertySignature(d) && !d.modifiers?.some((m) => m.kind === ts.SyntaxKind.ReadonlyKeyword))) {
+        return this.error(member, `"${name}" is writable in the interface: give this getter a setter, or make the property readonly.`), false;
+      }
+    }
+    return true;
+  }
+
+  private heritage(node: ts.ClassLikeDeclaration, token: ts.SyntaxKind.ExtendsKeyword | ts.SyntaxKind.ImplementsKeyword): readonly ts.ExpressionWithTypeArguments[] {
     return node.heritageClauses?.find((c) => c.token === token)?.types ?? [];
   }
 
   /** Whether `this` here is the class (a static member) rather than an instance. Arrow functions see their parent's. */
+  /** Whether `this` here is an instance of one of the app's classes (arrow functions see their parent's). */
+  private inClass(node: ts.Node): boolean {
+    const container = ts.findAncestor(node.parent, (n) => (ts.isFunctionLike(n) && !ts.isArrowFunction(n)) || ts.isPropertyDeclaration(n) || ts.isSourceFile(n));
+    return !!container && !ts.isSourceFile(container) && ts.isClassLike(container.parent);
+  }
+
   private isStaticContext(node: ts.Node): boolean {
     const container = ts.findAncestor(node.parent, (n) => ts.isFunctionLike(n) && !ts.isArrowFunction(n) || ts.isPropertyDeclaration(n) || ts.isClassStaticBlockDeclaration(n));
     return !!container && (ts.isClassStaticBlockDeclaration(container) || !!(ts.getCombinedModifierFlags(container as ts.Declaration) & ts.ModifierFlags.Static));
@@ -818,11 +1126,13 @@ class Frontend {
     };
     for (const node of this.objectClasses.values()) {
       for (const member of node.members) {
-        if (!member.name || !ts.isIdentifier(member.name)) continue;
+        if (!member.name || !(ts.isIdentifier(member.name) || ts.isPrivateIdentifier(member.name))) continue;
         const symbol = this.checker.getSymbolAtLocation(member.name);
         if (ts.isGetAccessor(member) && symbol) this.link(member, symbol);
+        const value = ts.isSetAccessor(member) ? member.parameters[0] && this.checker.getSymbolAtLocation(member.parameters[0].name) : undefined;
+        if (value && symbol) this.link(value, symbol);
         if (ts.getCombinedModifierFlags(member) & ts.ModifierFlags.Static) continue;
-        for (const other of this.counterparts(node, member.name.text)) {
+        for (const other of ts.isIdentifier(member.name) ? this.counterparts(node, member.name.text) : []) {
           const decl = other.valueDeclaration ?? other.declarations?.[0];
           if (symbol && !ts.isMethodDeclaration(member)) this.link(symbol, other);
           if (decl && ts.isGetAccessor(decl)) this.link(other, decl);
@@ -859,7 +1169,7 @@ class Frontend {
   }
 
   /** The members named `name` of a class's base and of the interfaces it implements. */
-  private counterparts(node: ts.ClassDeclaration, name: string): ts.Symbol[] {
+  private counterparts(node: ts.ClassLikeDeclaration, name: string): ts.Symbol[] {
     const out: ts.Symbol[] = [];
     for (const clause of node.heritageClauses ?? []) {
       for (const t of clause.types) {
@@ -873,34 +1183,118 @@ class Frontend {
   /** The class or protocol a declaration belongs to, by name. */
   private ownerOf(decl: ts.Node): string | undefined {
     const parent = decl.parent;
-    if ((ts.isClassDeclaration(parent) || ts.isInterfaceDeclaration(parent)) && parent.name) {
+    if (ts.isClassLike(parent)) {
+      const symbol = this.classSymbol(parent);
+      if (symbol && this.objectClasses.has(symbol)) return this.className(symbol);
+    }
+    if (ts.isInterfaceDeclaration(parent)) {
       const symbol = this.checker.getSymbolAtLocation(parent.name);
-      if (symbol && (this.objectClasses.has(symbol) || this.protocols.has(symbol))) return parent.name.text;
+      if (symbol && this.protocols.has(symbol)) return parent.name.text;
     }
     return undefined;
   }
 
   /** The base class and the protocols a class or protocol name conforms to, transitively. */
   private supertypes(name: string, out = new Set<string>()): Set<string> {
-    const find = <T extends ts.ClassDeclaration | ts.InterfaceDeclaration>(map: Map<ts.Symbol, T>) => [...map].find(([s]) => s.name === name)?.[1];
-    const decl = find(this.objectClasses) ?? find(this.protocols);
-    for (const clause of decl?.heritageClauses ?? []) {
-      for (const t of clause.types) {
-        const symbol = this.resolveAlias(this.checker.getSymbolAtLocation(t.expression));
-        if (!symbol || out.has(symbol.name)) continue;
-        out.add(symbol.name);
-        this.supertypes(symbol.name, out);
-      }
+    const decl = this.declOfName(name);
+    const env = this.instances.get(name)?.env ?? this.env;
+    const direct = this.withEnv(env, () => (decl?.heritageClauses ?? []).flatMap((clause) => clause.types.map((t) => this.heritageName(t)).filter((n): n is string => !!n)));
+    for (const n of direct) {
+      if (out.has(n)) continue;
+      out.add(n);
+      this.supertypes(n, out);
     }
     return out;
   }
 
-  private protocolDecl(node: ts.InterfaceDeclaration): ProtocolDecl {
-    const decl: ProtocolDecl = { name: node.name.text, bases: [], fields: [], methods: [] };
+  /** The class or protocol a native name stands for: `Box` or an instantiation `Box__Double`. */
+  private declOfName(name: string): ts.ClassLikeDeclaration | ts.InterfaceDeclaration | undefined {
+    const instance = this.instances.get(name)?.decl;
+    if (instance) return ts.isClassDeclaration(instance) || ts.isInterfaceDeclaration(instance) ? instance : undefined;
+    const find = <T extends ts.ClassLikeDeclaration | ts.InterfaceDeclaration>(map: Map<ts.Symbol, T>) => [...map].find(([s]) => this.className(s) === name)?.[1];
+    return find(this.objectClasses) ?? find(this.protocols);
+  }
+
+  /** The native name of an `extends` / `implements` entry: `Base`, or `Base__Double` for `Base<number>`. */
+  private heritageName(t: ts.ExpressionWithTypeArguments): string | undefined {
+    const generic = this.genericRef(this.bound(this.checker.getTypeAtLocation(t)));
+    if (generic) return this.instantiate(generic.decl, generic.args, t);
+    const cls = this.classRef(t.expression);
+    return cls ? this.className(cls) : this.resolveAlias(this.checker.getSymbolAtLocation(t.expression))?.name;
+  }
+
+  /** A protocol (an instantiation of a generic one included) by its native name. */
+  private protocolByName(name: string): ProtocolDecl | undefined {
+    const instance = this.instanceProtocols.get(name);
+    if (instance) return instance;
+    const node = [...this.protocols].find(([symbol, decl]) => symbol.name === name && !decl.typeParameters?.length)?.[1];
+    return node && this.protocolDecl(node);
+  }
+
+  /**
+   * An object literal of a protocol: a `new` of the class generated for the protocol's literals,
+   * which keeps each field and, for each method, the function given for it (an `fn__` field the method calls).
+   */
+  private protocolLiteral(node: ts.ObjectLiteralExpression, protocol: ProtocolDecl, ctx: Ctx): Expr {
+    const cls = this.literalClass(protocol);
+    const given = new Map<string, ts.Expression | ts.MethodDeclaration>();
+    for (const prop of node.properties) {
+      if (ts.isPropertyAssignment(prop) && ts.isIdentifier(prop.name)) given.set(prop.name.text, prop.initializer);
+      else if (ts.isShorthandPropertyAssignment(prop)) given.set(prop.name.text, prop.name);
+      else if (ts.isMethodDeclaration(prop) && ts.isIdentifier(prop.name) && !prop.asteriskToken) given.set(prop.name.text, prop);
+      else this.error(prop, "Unsupported member in an object literal of an interface a class implements: give each property and method by name (no spread).");
+    }
+    const args = cls.ctor.params.map((param): Expr => {
+      const value = given.get(param.name.replace(/^fn__/, ""));
+      if (!value) return { e: "nil" };
+      const fn = param.ty.k === "fn" ? param.ty : undefined;
+      if (fn && (ts.isMethodDeclaration(value) || ts.isArrowFunction(value) || ts.isFunctionExpression(value))) return this.lambda(value, ctx, fn, true);
+      if (ts.isMethodDeclaration(value)) return this.error(value, "A method needs a function-typed member here.");
+      return this.expr(value, ctx, param.ty);
+    });
+    return { e: "construct", cls: cls.name, args };
+  }
+
+  /** The class of a protocol's object literals: a field per property, and per method a function field it calls. */
+  private literalClass(protocol: ProtocolDecl): ObjectClassDecl {
+    const name = `${protocol.name}__Literal`;
+    const existing = this.literalClasses.get(name);
+    if (existing) return existing;
+    // The protocol's members and those of the protocols it extends (the first declaration of a name wins).
+    const fields: ProtocolDecl["fields"] = [];
+    const methods: ProtocolDecl["methods"] = [];
+    const visit = (p: ProtocolDecl) => {
+      for (const f of p.fields) if (!fields.some((x) => x.name === f.name)) fields.push(f);
+      for (const m of p.methods) if (!methods.some((x) => x.name === m.name)) methods.push(m);
+      for (const base of p.bases) {
+        const next = this.protocolByName(base);
+        if (next) visit(next);
+      }
+    };
+    visit(protocol);
+    const self: Expr = { e: "id", name: "this" };
+    const cls: ObjectClassDecl = { name, protocols: [protocol.name], abstract: false, open: false, fields: [], ctor: { params: [], body: [] }, methods: [] };
+    const store = (fieldName: string, ty: Ty, readonly: boolean, optional: boolean, fromProtocol: boolean) => {
+      cls.fields.push({ name: fieldName, ty, readonly, optional, ...(fromProtocol ? { implements: true } : {}) });
+      cls.ctor.params.push({ name: fieldName, ty });
+      cls.ctor.body.push({ s: "assign", target: { e: "prop", obj: self, name: fieldName }, op: "=", value: { e: "id", name: fieldName } });
+    };
+    for (const f of fields) store(f.name, f.ty, f.readonly, f.optional, true);
+    for (const m of methods) {
+      store(`fn__${m.name}`, { k: "fn", params: m.params.map((p) => p.ty), ret: m.ret }, true, false, false);
+      const call: Expr = { e: "call", callee: { e: "prop", obj: self, name: `fn__${m.name}` }, args: m.params.map((p): Expr => ({ e: "id", name: p.name })) };
+      cls.methods.push({ name: m.name, params: m.params, ret: m.ret, async: false, body: [m.ret.k === "void" ? { s: "expr", x: call } : { s: "return", x: call }], implements: true });
+    }
+    this.literalClasses.set(name, cls);
+    return cls;
+  }
+
+  private protocolDecl(node: ts.InterfaceDeclaration, instance?: string): ProtocolDecl {
+    const decl: ProtocolDecl = { name: instance ?? node.name.text, bases: [], fields: [], methods: [] };
     for (const clause of node.heritageClauses ?? []) {
       for (const t of clause.types) {
-        const symbol = this.resolveAlias(this.checker.getSymbolAtLocation(t.expression));
-        if (symbol) decl.bases.push(symbol.name);
+        const base = this.heritageName(t);
+        if (base) decl.bases.push(base);
       }
     }
     for (const member of node.members) {
@@ -924,7 +1318,7 @@ class Frontend {
    * the parameter is optional natively, callers pass nil for it, and the body starts with
    * `p = p ?? default`. A method and what it overrides or implements must agree on which are optional.
    */
-  private calleeDefaults(method: MethodDecl, node: ts.MethodDeclaration | ts.GetAccessorDeclaration, cls: ts.ClassDeclaration) {
+  private calleeDefaults(method: MethodDecl, node: ts.MethodDeclaration | ts.AccessorDeclaration, cls: ts.ClassLikeDeclaration) {
     const optional = (p: ts.ParameterDeclaration | undefined) => !!p && (!!p.questionToken || !!p.initializer || !!p.dotDotDotToken);
     for (const other of this.counterparts(cls, method.name)) {
       const decl = other.valueDeclaration;
@@ -933,8 +1327,13 @@ class Frontend {
         if (optional(p) !== optional(decl.parameters[i])) this.error(p, "Make this parameter optional (or defaulted) in every class and interface that declares the method, or in none: natively they are one method.");
       });
     }
-    method.params.forEach((p, i) => {
-      const param = node.parameters[i]!;
+    this.ownDefaults(method.params, node.parameters, method.body);
+  }
+
+  /** Optional and default parameters that the function applies itself: `p: T?`, and the body starts with `p = p ?? default`. */
+  private ownDefaults(params: Param[], nodes: readonly ts.ParameterDeclaration[], body: Stmt[]) {
+    params.forEach((p, i) => {
+      const param = nodes[i]!;
       if (!p.default || param.dotDotDotToken) return;
       const value = p.default;
       delete p.default;
@@ -943,23 +1342,30 @@ class Frontend {
       p.ty = T.optional(ty);
       const fill: Expr = { e: "coalesce", l: { e: "id", name: p.name }, r: value };
       // The body may already shadow the parameter (it is reassigned): that variable starts with the default.
-      const shadow = method.body.find((st): st is Extract<Stmt, { s: "let" }> => st.s === "let" && st.name === p.name && st.init?.e === "id" && st.init.name === p.name);
+      const shadow = body.find((st): st is Extract<Stmt, { s: "let" }> => st.s === "let" && st.name === p.name && st.init?.e === "id" && st.init.name === p.name);
       if (shadow) shadow.init = fill;
-      else method.body.unshift({ s: "let", name: p.name, ty, init: fill, mutable: false });
+      else body.unshift({ s: "let", name: p.name, ty, init: fill, mutable: false });
     });
   }
 
   /** A class: its fields, constructor and methods; its static members become globals and functions. */
-  private classDef(node: ts.ClassDeclaration, out: Program) {
-    const name = node.name!.text;
-    const symbol = this.checker.getSymbolAtLocation(node.name!)!;
+  private classDef(node: ts.ClassLikeDeclaration, out: Program, instance?: string) {
+    const symbol = this.classSymbol(node)!;
+    const name = instance ?? this.className(symbol);
+    this.definedClasses.add(node);
     const top: Ctx = { async: false, ret: T.void, voidUnion: false, inTry: false };
     const self: Expr = { e: "id", name: "this" };
     const baseNode = this.heritage(node, ts.SyntaxKind.ExtendsKeyword)[0];
-    const base = baseNode && this.resolveAlias(this.checker.getSymbolAtLocation(baseNode.expression))?.name;
-    const protocols = this.heritage(node, ts.SyntaxKind.ImplementsKeyword).map((t) => this.resolveAlias(this.checker.getSymbolAtLocation(t.expression))!.name);
+    const base = baseNode && this.heritageName(baseNode);
+    const baseClass = baseNode && this.classRef(baseNode.expression);
+    const protocols = this.heritage(node, ts.SyntaxKind.ImplementsKeyword).map((t) => this.heritageName(t)!);
     const inBase = (member: string) => !!baseNode && !!this.checker.getTypeAtLocation(baseNode).getProperty(member);
-    const inProtocol = (member: string) => [...this.supertypes(name)].some((p) => [...this.protocols].some(([s, d]) => s.name === p && !!this.checker.getDeclaredTypeOfSymbol(s).getProperty(member) && !!d));
+    const inProtocol = (member: string) =>
+      [...this.supertypes(name)].some((p) => {
+        const decl = this.declOfName(p);
+        const symbol = decl && ts.isInterfaceDeclaration(decl) ? this.checker.getSymbolAtLocation(decl.name) : undefined;
+        return !!symbol && this.protocols.has(symbol) && !!this.checker.getDeclaredTypeOfSymbol(symbol).getProperty(member);
+      });
     const cls: ObjectClassDecl = {
       name,
       base,
@@ -980,11 +1386,11 @@ class Frontend {
     };
     let ctorNode: ts.ConstructorDeclaration | undefined;
     for (const member of node.members) {
-      if (!member.name || !ts.isIdentifier(member.name)) {
+      if (!member.name || !(ts.isIdentifier(member.name) || ts.isPrivateIdentifier(member.name))) {
         if (ts.isConstructorDeclaration(member) && member.body) ctorNode = member;
         continue;
       }
-      const memberName = member.name.text;
+      const memberName = this.memberName(member.name);
       const isStatic = !!(ts.getCombinedModifierFlags(member) & ts.ModifierFlags.Static);
       if (ts.isPropertyDeclaration(member)) {
         const memberSymbol = this.checker.getSymbolAtLocation(member.name)!;
@@ -1001,14 +1407,16 @@ class Frontend {
           init.kind === ts.SyntaxKind.FalseKeyword || init.kind === ts.SyntaxKind.NullKeyword || (ts.isArrayLiteralExpression(init) && !init.elements.length);
         if (literal) f.init = this.expr(init, top, f.ty);
         else inits.push({ s: "assign", target: { e: "prop", obj: self, name: memberName }, op: "=", value: this.expr(init, top, f.ty) });
-      } else if (ts.isMethodDeclaration(member) || ts.isGetAccessor(member)) {
+      } else if (ts.isMethodDeclaration(member) || ts.isGetAccessor(member) || ts.isSetAccessor(member)) {
         if (isStatic) {
-          out.functions.push(this.fnDecl(`${name}__${memberName}`, member));
+          // A static getter is the function `C__x`, its setter `C__set_x` (staticAccessor reads and writes through them).
+          out.functions.push(this.fnDecl(`${name}__${ts.isSetAccessor(member) ? "set_" : ""}${memberName}`, member));
           continue;
         }
         const method: MethodDecl = this.fnDecl(memberName, member);
         this.calleeDefaults(method, member, node);
         if (ts.isGetAccessor(member)) method.getter = true;
+        if (ts.isSetAccessor(member)) method.setter = true;
         if (!member.body) method.abstract = true;
         if (inBase(memberName)) method.overrides = true;
         if (inProtocol(memberName)) method.implements = true;
@@ -1036,13 +1444,27 @@ class Frontend {
       // The super(…) statement itself lowers to nothing (stmt): the class declares the call.
       rest = this.body(ctorNode, top);
     } else if (base) {
-      // The base's parameters, defaults included (the base is declared first).
+      // The base's parameters, defaults included (the base is declared first), less its captures.
       const baseDecl = out.objectClasses?.find((c) => c.name === base);
+      const baseCaptures = baseClass ? (this.captures.get(baseClass)?.length ?? 0) : 0;
       const [signature] = this.checker.getSignaturesOfType(this.checker.getTypeOfSymbol(symbol), ts.SignatureKind.Construct);
-      cls.ctor.params = baseDecl ? baseDecl.ctor.params.map((p) => ({ ...p })) : (signature?.getParameters() ?? []).map((p) => ({ name: p.name, ty: this.tyOfSymbol(p, node) }));
+      cls.ctor.params = baseDecl ? baseDecl.ctor.params.slice(baseCaptures).map((p) => ({ ...p })) : (signature?.getParameters() ?? []).map((p) => ({ name: p.name, ty: this.tyOfSymbol(p, node) }));
       cls.ctor.superArgs = cls.ctor.params.map((p): Expr => ({ e: "id", name: p.name }));
     }
-    cls.ctor.body = [...inits, ...assigns, ...rest];
+    // Captured locals: hidden first parameters kept in fields, set before anything reads them; the base gets its own.
+    const captured = this.captures.get(symbol) ?? [];
+    const capParams = captured.map((value): Param => ({ name: this.captureField(symbol, value), ty: this.tyOfSymbol(value, value.valueDeclaration!) }));
+    // Those the base captures too are its fields: the base's constructor sets them.
+    const inherited = new Set((baseClass ? (this.captures.get(baseClass) ?? []) : []).map((value) => this.captureField(symbol, value)));
+    const ownCaps = capParams.filter((p) => !inherited.has(p.name));
+    for (const p of ownCaps) cls.fields.push({ name: p.name, ty: p.ty, readonly: true, optional: false });
+    cls.ctor.params = [...capParams, ...cls.ctor.params];
+    if (baseClass && this.captures.get(baseClass)?.length) {
+      const passed = this.captures.get(baseClass)!.map((value): Expr => ({ e: "id", name: this.captureField(symbol, value) }));
+      cls.ctor.superArgs = [...passed, ...(cls.ctor.superArgs ?? [])];
+    }
+    const capAssigns = ownCaps.map((p): Stmt => ({ s: "assign", target: { e: "prop", obj: self, name: p.name }, op: "=", value: { e: "id", name: p.name } }));
+    cls.ctor.body = [...capAssigns, ...inits, ...assigns, ...rest];
     (out.objectClasses ??= []).push(cls);
   }
 
@@ -1084,7 +1506,7 @@ class Frontend {
 
   /** An expression with no effects, which may be read more than once: `a`, `a.b.c`, `a!`. */
   private isPure(node: ts.Expression): boolean {
-    if (ts.isIdentifier(node)) return true;
+    if (ts.isIdentifier(node) || node.kind === ts.SyntaxKind.ThisKeyword || node.kind === ts.SyntaxKind.SuperKeyword) return true;
     if (ts.isParenthesizedExpression(node) || ts.isNonNullExpression(node)) return this.isPure(node.expression);
     return ts.isPropertyAccessExpression(node) && !node.questionDotToken && this.isPure(node.expression);
   }
@@ -1211,7 +1633,102 @@ class Frontend {
   // -------------------------------------------------------------------------
 
   private typeOf(node: ts.Node): ts.Type {
-    return this.checker.getTypeAtLocation(node);
+    return this.bound(this.checker.getTypeAtLocation(node));
+  }
+
+  /** A type parameter as the instantiation being lowered binds it (followed through outer bindings). */
+  private bound(type: ts.Type): ts.Type {
+    for (let depth = 0; depth < 64 && type.flags & ts.TypeFlags.TypeParameter; depth++) {
+      const next = type.symbol && this.env.get(type.symbol);
+      if (!next) break;
+      type = next;
+    }
+    return type;
+  }
+
+  /** A union's members, each bound. */
+  private members(type: ts.Type): ts.Type[] {
+    return type.isUnion() ? type.types.map((t) => this.bound(t)) : [type];
+  }
+
+  private nonNull(type: ts.Type): ts.Type {
+    return this.bound(this.checker.getNonNullableType(this.bound(type)));
+  }
+
+  /** Lowers `run` with the type parameters of one instantiation bound. */
+  private withEnv<R>(env: Map<ts.Symbol, ts.Type>, run: () => R): R {
+    const saved = this.env;
+    this.env = env;
+    try {
+      return run();
+    } finally {
+      this.env = saved;
+    }
+  }
+
+  /**
+   * The native name of `decl` instantiated with `args` (TypeScript types, read in the current
+   * environment): `name__Arg1_Arg2`. The first request schedules it; functions and classes are
+   * lowered after the rest of the program, interfaces at once (they are only fields).
+   */
+  private instantiate(decl: GenericDecl, args: readonly ts.Type[], at: ts.Node): string {
+    const params = decl.typeParameters ?? [];
+    const env = new Map(this.env);
+    params.forEach((p, i) => {
+      const symbol = this.checker.getSymbolAtLocation(p.name)!;
+      const arg = args[i] ?? (p.default ? this.checker.getTypeFromTypeNode(p.default) : undefined);
+      if (arg) env.set(symbol, this.bound(arg));
+    });
+    const tys = params.map((p) => this.withEnv(env, () => this.ty(this.checker.getTypeAtLocation(p), at)));
+    const holder = ts.isArrowFunction(decl) || ts.isFunctionExpression(decl) ? decl.parent : decl;
+    const base = (holder as ts.NamedDeclaration).name?.getText() ?? "anonymous";
+    const name = `${base}__${tys.map(mangle).join("_")}`;
+    if (this.instances.has(name)) return name;
+    // Each instantiation can request others: a type that grows with every one never ends.
+    if (this.instances.size >= 500 || name.length > 200) return this.error(at, `Too many instantiations of ${base} (a generic that instantiates itself with a bigger type?).`), name;
+    this.instances.set(name, { decl, env });
+    const symbol = ts.isInterfaceDeclaration(decl) ? this.checker.getSymbolAtLocation(decl.name) : undefined;
+    if (ts.isInterfaceDeclaration(decl) && symbol && this.protocols.has(symbol)) this.instanceProtocols.set(name, this.withEnv(env, () => this.protocolDecl(decl, name)));
+    else if (ts.isInterfaceDeclaration(decl) || ts.isTypeAliasDeclaration(decl)) this.interfaceInstance(name, decl, env);
+    else this.pendingInstances.push(name);
+    return name;
+  }
+
+  /** The fields of an instantiated generic interface: a native class of its own. */
+  private interfaceInstance(name: string, decl: ts.InterfaceDeclaration | ts.TypeAliasDeclaration, env: Map<ts.Symbol, ts.Type>) {
+    const cls: ClassDecl = { name, fields: [], decodable: true };
+    this.instanceClasses.set(name, cls);
+    this.withEnv(env, () => {
+      const symbol = this.checker.getSymbolAtLocation(decl.name)!;
+      for (const prop of this.checker.getPropertiesOfType(this.checker.getDeclaredTypeOfSymbol(symbol))) {
+        const member = prop.valueDeclaration;
+        if (!member || !ts.isPropertySignature(member) || !ts.isIdentifier(member.name)) {
+          this.error(member ?? decl, "Only properties are supported in interfaces (they become native classes).");
+          continue;
+        }
+        const ty = this.tyOfSymbol(prop, member);
+        const readonly = !!member.modifiers?.some((m) => m.kind === ts.SyntaxKind.ReadonlyKeyword);
+        cls.fields.push({ name: member.name.text, ty, readonly, optional: !!member.questionToken });
+        if (!this.decodable(ty)) cls.decodable = false;
+      }
+    });
+  }
+
+  /** The type arguments of a reference to a generic interface, alias or class (`Box<number>`), if it is one. */
+  private genericRef(type: ts.Type): { decl: GenericDecl; args: readonly ts.Type[] } | undefined {
+    // `this` in a generic class: the class instantiated with its own parameters.
+    if (type.flags & ts.TypeFlags.TypeParameter && (type as ts.TypeParameter & { isThisType?: boolean }).isThisType) type = type.getConstraint() ?? type;
+    const alias = type.aliasSymbol && this.generics.get(type.aliasSymbol);
+    if (alias) return { decl: alias, args: type.aliasTypeArguments ?? [] };
+    const symbol = type.getSymbol();
+    const decl = symbol && this.generics.get(symbol);
+    if (!decl || ts.isFunctionDeclaration(decl) || ts.isArrowFunction(decl) || ts.isFunctionExpression(decl)) return undefined;
+    return { decl, args: type.flags & ts.TypeFlags.Object && (type as ts.ObjectType).objectFlags & ts.ObjectFlags.Reference ? this.checker.getTypeArguments(type as ts.TypeReference) : [] };
+  }
+
+  /** Every interface class: declared ones and instantiations of generic ones. */
+  private allClasses(): ClassDecl[] {
+    return [...this.classes.values(), ...this.instanceClasses.values()];
   }
 
   private isApi(node: ts.Node): boolean {
@@ -1348,24 +1865,28 @@ class Frontend {
   }
 
   private isNumber(type: ts.Type): boolean {
-    const t = this.checker.getNonNullableType(type);
-    return !!(t.flags & ts.TypeFlags.NumberLike) || (t.isUnion() && t.types.every((u) => !!(u.flags & ts.TypeFlags.NumberLike)));
+    const t = this.nonNull(type);
+    return !!(t.flags & ts.TypeFlags.NumberLike) || (t.isUnion() && this.members(t).every((u) => !!(u.flags & ts.TypeFlags.NumberLike)));
   }
 
   private isString(type: ts.Type): boolean {
-    return !!(type.flags & ts.TypeFlags.StringLike) || (type.isUnion() && type.types.every((u) => !!(u.flags & ts.TypeFlags.StringLike)));
+    type = this.bound(type);
+    return !!(type.flags & ts.TypeFlags.StringLike) || (type.isUnion() && this.members(type).every((u) => !!(u.flags & ts.TypeFlags.StringLike)));
   }
 
   private isBoolean(type: ts.Type): boolean {
-    return !!(type.flags & ts.TypeFlags.BooleanLike) || (type.isUnion() && type.types.every((u) => !!(u.flags & ts.TypeFlags.BooleanLike)));
+    type = this.bound(type);
+    return !!(type.flags & ts.TypeFlags.BooleanLike) || (type.isUnion() && this.members(type).every((u) => !!(u.flags & ts.TypeFlags.BooleanLike)));
   }
 
   private isNullable(type: ts.Type): boolean {
-    return type.isUnion() && type.types.some((u) => !!(u.flags & (ts.TypeFlags.Null | ts.TypeFlags.Undefined | ts.TypeFlags.Void)));
+    type = this.bound(type);
+    return type.isUnion() && this.members(type).some((u) => !!(u.flags & (ts.TypeFlags.Null | ts.TypeFlags.Undefined | ts.TypeFlags.Void)) || this.isNullable(u));
   }
 
   /** An array, or a tuple (TypeScript's type for `[1, 2]` in destructuring), which is one natively. */
   private isArray(type: ts.Type): boolean {
+    type = this.bound(type);
     return this.checker.isArrayType(type) || this.checker.isTupleType(type);
   }
 
@@ -1374,12 +1895,17 @@ class Frontend {
   }
 
   private isClassType(type: ts.Type): boolean {
+    type = this.bound(type);
+    if (this.genericRef(type)) return true;
     const symbol = type.aliasSymbol ?? type.getSymbol();
-    return !!symbol && [...this.classes.keys(), ...this.objectClasses.keys(), ...this.protocols.keys()].some((s) => s === symbol || s.name === symbol.name);
+    // By name too: a property read can give a transient copy of the symbol. Class expressions are told apart by their native names.
+    return !!symbol && [...this.classes.keys(), ...this.objectClasses.keys(), ...this.protocols.keys()].some((s) => s === symbol || this.className(s) === this.className(symbol));
   }
 
   /** The IR type of a TypeScript type; `num` is the kind a number takes here. */
   private ty(type: ts.Type, node: ts.Node, num: NumKind = "double"): Ty {
+    type = this.bound(type);
+    if (type.flags & ts.TypeFlags.TypeParameter && !(type as ts.TypeParameter & { isThisType?: boolean }).isThisType) return this.error(node, `The type parameter ${type.symbol?.name ?? ""} has no native type here (only top-level generic functions, interfaces and classes are instantiated).`), T.string;
     if (type.flags & ts.TypeFlags.Any) return this.error(node, "`any` cannot be compiled to a native type."), T.string;
     if (type.flags & ts.TypeFlags.Unknown) return T.rt("Error");
     if (this.isString(type)) return T.string;
@@ -1387,13 +1913,16 @@ class Frontend {
     if (this.isNumber(type) && !this.isNullable(type)) return num === "int" ? T.int : T.double;
     if (type.flags & (ts.TypeFlags.Void | ts.TypeFlags.Undefined | ts.TypeFlags.Never)) return T.void;
     if (type.isUnion()) {
-      const rest = type.types.filter((u) => !(u.flags & (ts.TypeFlags.Null | ts.TypeFlags.Undefined | ts.TypeFlags.Void)));
-      if (rest.length === type.types.length) {
+      const all = this.members(type);
+      const rest = all.filter((u) => !(u.flags & (ts.TypeFlags.Null | ts.TypeFlags.Undefined | ts.TypeFlags.Void)));
+      if (rest.length === all.length) {
         if (rest.every((u) => u.flags & ts.TypeFlags.StringLike)) return T.string;
         return this.error(node, `The union ${this.checker.typeToString(type)} has no native equivalent.`), T.string;
       }
       const inner = rest.length === 1 ? rest[0]! : this.checker.getNonNullableType(type);
-      return T.optional(this.ty(inner, node, num));
+      // `T | null` with T bound to `U | null`: one optional.
+      const of = this.ty(inner, node, num);
+      return of.k === "optional" ? of : T.optional(of);
     }
     if (this.checker.isArrayType(type)) {
       const [elem] = this.checker.getTypeArguments(type as ts.TypeReference);
@@ -1421,7 +1950,9 @@ class Frontend {
     }
     if (symbol?.name === "Error" && decl?.getSourceFile().isDeclarationFile) return T.rt("Error");
     if (symbol?.name === "Promise") return this.error(node, "A promise must be awaited where it is created."), T.void;
-    if (this.isClassType(type)) return { k: "class", name: symbol!.name };
+    const generic = this.genericRef(type);
+    if (generic) return { k: "class", name: this.instantiate(generic.decl, generic.args, node) };
+    if (this.isClassType(type)) return { k: "class", name: this.objectClasses.has(symbol!) ? this.className(symbol!) : symbol!.name };
     const index = type.getStringIndexType();
     if (index && type.getProperties().length === 0) return T.map(this.ty(index, node));
     const [signature] = type.getCallSignatures();
@@ -1442,7 +1973,7 @@ class Frontend {
   }
 
   private tyOfSymbol(symbol: ts.Symbol, node: ts.Node): Ty {
-    return this.ty(this.checker.getTypeOfSymbolAtLocation(symbol, node), node, this.slotKind(symbol));
+    return this.ty(this.bound(this.checker.getTypeOfSymbolAtLocation(symbol, node)), node, this.slotKind(symbol));
   }
 
   // -------------------------------------------------------------------------
@@ -1450,12 +1981,19 @@ class Frontend {
   // -------------------------------------------------------------------------
 
   private topLevel(node: ts.Statement, out: Program) {
+    if ((ts.isFunctionDeclaration(node) || ts.isInterfaceDeclaration(node) || ts.isTypeAliasDeclaration(node) || ts.isClassDeclaration(node)) && node.typeParameters?.length) return;
     if (ts.isImportDeclaration(node) || ts.isExportDeclaration(node) || ts.isTypeAliasDeclaration(node)) {
       if (ts.isTypeAliasDeclaration(node) && ts.isTypeLiteralNode(node.type)) this.classDecl(node);
       return;
     }
     if (ts.isInterfaceDeclaration(node)) return this.classDecl(node);
     if (ts.isClassDeclaration(node)) return node.name ? this.classDef(node, out) : undefined;
+    // `const X = class …`: the class X, lowered here (its statics initialize in order); X itself is no variable natively.
+    if (ts.isVariableStatement(node) && node.declarationList.declarations.some((d) => d.initializer && ts.isClassExpression(d.initializer))) {
+      const [decl, ...rest] = node.declarationList.declarations;
+      if (rest.length || !decl || !this.isTopLevelClass(decl.initializer as ts.ClassExpression)) return void this.error(node, "Declare a class expression alone in a `const`.");
+      return this.classDef(decl.initializer as ts.ClassExpression, out);
+    }
     if (ts.isEnumDeclaration(node)) return;
     if (ts.isFunctionDeclaration(node) && node.name && node.body) {
       out.functions.push(this.fnDecl(node.name.text, node));
@@ -1476,6 +2014,7 @@ class Frontend {
         }
         if (this.nativeComponents.has(this.checker.getSymbolAtLocation(decl.name)!)) continue;
         if (decl.initializer && this.isFunctionNode(decl.initializer) && node.declarationList.flags & ts.NodeFlags.Const) {
+          if (decl.initializer.typeParameters?.length) continue;
           out.functions.push(this.fnDecl(decl.name.text, decl.initializer as ts.ArrowFunction));
         } else {
           const [stmt] = this.varDecl(decl, node.declarationList, { async: false, ret: T.void, voidUnion: false, inTry: false });
@@ -1516,7 +2055,7 @@ class Frontend {
       case "bool":
         return true;
       case "class":
-        return [...this.classes.values()].find((c) => c.name === ty.name)?.decodable ?? true;
+        return this.allClasses().find((c) => c.name === ty.name)?.decodable ?? true;
       case "array":
       case "optional":
       case "map":
@@ -1530,7 +2069,7 @@ class Frontend {
     return ts.isArrowFunction(node) || ts.isFunctionExpression(node) || ts.isMethodDeclaration(node);
   }
 
-  private fnDecl(name: string, node: ts.FunctionDeclaration | ts.ArrowFunction | ts.FunctionExpression | ts.MethodDeclaration | ts.GetAccessorDeclaration): FnDecl {
+  private fnDecl(name: string, node: ts.FunctionDeclaration | ts.ArrowFunction | ts.FunctionExpression | ts.MethodDeclaration | ts.AccessorDeclaration): FnDecl {
     const isAsync = this.asyncFunctions.has(node);
     const signature = this.checker.getSignatureFromDeclaration(node)!;
     let retType = signature.getReturnType();
@@ -1678,7 +2217,8 @@ class Frontend {
     }
     if (ts.isSwitchStatement(node)) return [this.switchStmt(node, ctx)];
     if (ts.isFunctionDeclaration(node) && node.name && node.body) return [{ s: "fn", decl: this.fnDecl(node.name.text, node) }];
-    if (ts.isEmptyStatement(node) || ts.isInterfaceDeclaration(node) || ts.isTypeAliasDeclaration(node)) return [];
+    // A class declared in a function is declared at the top level natively (run lowers it).
+    if (ts.isEmptyStatement(node) || ts.isInterfaceDeclaration(node) || ts.isTypeAliasDeclaration(node) || ts.isClassDeclaration(node)) return [];
     return [this.unsupported(node, `the statement ${ts.SyntaxKind[node.kind]}`)];
   }
 
@@ -1689,6 +2229,8 @@ class Frontend {
 
   private varDecl(decl: ts.VariableDeclaration, list: ts.VariableDeclarationList, ctx: Ctx): Stmt[] {
     const mutable = !(list.flags & ts.NodeFlags.Const);
+    // `const K = class …` in a function: the class is declared at the top level, K is no variable natively.
+    if (decl.initializer && ts.isClassExpression(decl.initializer)) return mutable ? [this.unsupported(decl, "a class expression in a `let`; use `const`")] : [];
     if (!ts.isIdentifier(decl.name)) {
       if (!decl.initializer) return [this.unsupported(decl, "destructuring without a value")];
       // The value is read once: a temporary unless it is a variable already.
@@ -1942,6 +2484,10 @@ class Frontend {
   /** An expression in statement position: assignments, increments, calls, launches. */
   private exprStmt(node: ts.Expression, ctx: Ctx): Stmt[] {
     if (ts.isParenthesizedExpression(node)) return this.exprStmt(node.expression, ctx);
+    const assigned = ts.isBinaryExpression(node) && this.isAssignment(node.operatorToken.kind) ? node.left
+      : (ts.isPrefixUnaryExpression(node) || ts.isPostfixUnaryExpression(node)) && this.isIncrement(node) ? node.operand : undefined;
+    const accessor = assigned && this.staticAccessor(assigned);
+    if (accessor) return [this.staticAssign(node, assigned!, accessor, ctx)];
     if (ts.isBinaryExpression(node) && node.operatorToken.kind === ts.SyntaxKind.CommaToken) return [...this.exprStmt(node.left, ctx), ...this.exprStmt(node.right, ctx)];
     if (ts.isCallExpression(node)) {
       const optional = this.optionalCall(node, ctx);
@@ -2017,7 +2563,8 @@ class Frontend {
     if (ts.isIdentifier(node)) return { e: "id", name: node.text };
     const staticField = this.staticField(node);
     if (staticField) return staticField;
-    if (ts.isPropertyAccessExpression(node)) return { e: "prop", obj: this.expr(node.expression, ctx), name: node.name.text };
+    if (ts.isPropertyAccessExpression(node) && node.expression.kind === ts.SyntaxKind.SuperKeyword) return this.superProperty(node, true)!;
+    if (ts.isPropertyAccessExpression(node)) return { e: "prop", obj: this.expr(node.expression, ctx), name: this.memberName(node.name) };
     if (ts.isElementAccessExpression(node)) return { e: "index", obj: this.expr(node.expression, ctx), index: this.expr(node.argumentExpression, ctx, this.indexTy(node)) };
     return this.error(node, "Unsupported assignment target.");
   }
@@ -2093,8 +2640,10 @@ class Frontend {
     if (this.isArray(type)) return this.classNameOf(this.checker.getNonNullableType(this.checker.getTypeArguments(type as ts.TypeReference)[0]!));
     const index = type.getStringIndexType();
     if (index && type.getProperties().length === 0) return this.classNameOf(this.checker.getNonNullableType(index));
+    const generic = this.genericRef(this.bound(type));
+    if (generic) return this.instantiate(generic.decl, generic.args, generic.decl);
     const symbol = type.aliasSymbol ?? type.getSymbol();
-    return symbol && this.isClassType(type) ? symbol.name : undefined;
+    return symbol && this.isClassType(type) ? this.className(symbol) : undefined;
   }
 
   /** A function passed where one with more parameters is expected gets the extra ones, unused. */
@@ -2234,9 +2783,9 @@ class Frontend {
     if (ts.isObjectLiteralExpression(node)) return this.object(node, ctx, want);
     if (node.kind === ts.SyntaxKind.ThisKeyword) return { e: "id", name: "this" };
     if (ts.isNewExpression(node)) {
-      const symbol = ts.isIdentifier(node.expression) ? this.resolveAlias(this.checker.getSymbolAtLocation(node.expression)) : undefined;
+      const symbol = this.classRef(node.expression);
       const signature = this.checker.getResolvedSignature(node);
-      if (symbol && this.objectClasses.has(symbol) && signature) return { e: "construct", cls: symbol.name, args: this.callArgs(node, signature, ctx) };
+      if (symbol && signature) return { e: "construct", cls: this.classNameOf(this.typeOf(node)) ?? this.className(symbol), args: [...this.captureArgs(symbol, node), ...this.callArgs(node, signature, ctx)] };
       return this.error(node, "Unsupported: `new` of anything but the app's classes (and `throw new Error(...)`).");
     }
     if (ts.isTypeOfExpression(node)) return this.error(node, "Unsupported: `typeof` at run time.");
@@ -2246,6 +2795,7 @@ class Frontend {
   /** `x++`, `--obj.count`, `xs[i]++` as a value. The target is read and written, so it must have no effects. */
   private increment(node: ts.PrefixUnaryExpression | ts.PostfixUnaryExpression, ctx: Ctx): Expr {
     const target = node.operand;
+    if (this.staticAccessor(target)) return this.error(node, "Unsupported: ++/-- on a static getter / setter inside an expression; use it as a statement.");
     const pure = this.isPure(target) || (ts.isElementAccessExpression(target) && this.isPure(target.expression) && this.isPure(target.argumentExpression));
     if (!pure) return this.error(node, "Unsupported: ++/-- on a computed target inside an expression; read it into a variable first.");
     const ty = this.lvalueTy(target);
@@ -2290,11 +2840,15 @@ class Frontend {
     const resolved = this.resolveAlias(symbol)!;
     if (resolved.flags & ts.SymbolFlags.Enum) return this.error(node, `The enum ${node.text} exists natively only through its members (${node.text}.Member).`);
     if (resolved.flags & ts.SymbolFlags.ValueModule) return this.error(node, `The module ${node.text} exists natively only through its members (${node.text}.name).`);
-    if (resolved.flags & ts.SymbolFlags.Class) return this.error(node, `The class ${node.text} exists natively only through \`new\` and its static members.`);
+    if (resolved.flags & ts.SymbolFlags.Class || this.classRef(node)) return this.error(node, `The class ${node.text} exists natively only through \`new\` and its static members.`);
     const decl = resolved.valueDeclaration ?? resolved.declarations?.[0];
     if (decl && this.isApi(decl)) return this.error(node, `${node.text} must be called, not used as a value.`);
     if (decl?.getSourceFile().isDeclarationFile) return this.error(node, `${node.text} is not available natively.`);
-    const x: Expr = { e: "id", name: node.text, fnRef: this.functionSymbols.has(resolved) || undefined };
+    if (this.generics.has(resolved) && !this.isLvalue(node)) {
+      return this.error(node, `${node.text} is generic: pass it as a callback that calls it (x => ${node.text}(x)), so its types are known.`);
+    }
+    const captured = this.captureRead(node);
+    const x: Expr = captured ?? { e: "id", name: node.text, fnRef: this.functionSymbols.has(resolved) || undefined };
     return this.unwrapIfNarrowed(x, node, resolved);
   }
 
@@ -2303,7 +2857,42 @@ class Frontend {
     if (this.isLvalue(node)) return x;
     const declared = this.checker.getTypeOfSymbol(symbol);
     const here = this.typeOf(node);
-    return this.isNullable(declared) && !this.isNullable(here) && !(here.flags & ts.TypeFlags.Never) ? { e: "unwrap", x } : x;
+    const read: Expr = this.isNullable(declared) && !this.isNullable(here) && !(here.flags & ts.TypeFlags.Never) ? { e: "unwrap", x } : x;
+    // Narrowed to a subclass (`if (s instanceof Circle) s.radius`): a downcast natively.
+    const [from, to] = [this.objectClassName(this.checker.getNonNullableType(declared)), this.objectClassName(this.checker.getNonNullableType(here))];
+    if (!from || !to || from === to || this.isNullable(here) || !this.supertypes(to).has(from)) return read;
+    return { e: "downcast", x: read, cls: to };
+  }
+
+  /** The app's class or protocol a type is, if it is exactly one. */
+  private objectClassName(type: ts.Type): string | undefined {
+    const symbol = type.aliasSymbol ?? type.getSymbol();
+    if (!symbol || type.isUnion() || type.isIntersection()) return undefined;
+    const name = this.isClassType(type) ? this.ty(type, symbol.valueDeclaration ?? symbol.declarations![0]!) : undefined;
+    return name?.k === "class" && (this.isObjectClass(name.name) || this.protocolByName(name.name)) ? name.name : undefined;
+  }
+
+  private isObjectClass(name: string): boolean {
+    return [...this.objectClasses.keys()].some((s) => this.className(s) === name) || this.instances.has(name);
+  }
+
+  /** `x instanceof C`. In a `catch`, `e instanceof Error` is always true natively (only `new Error(…)` is thrown). */
+  private instanceOf(node: ts.BinaryExpression, ctx: Ctx): Expr {
+    const right = ts.isIdentifier(node.right) ? this.resolveAlias(this.checker.getSymbolAtLocation(node.right)) : undefined;
+    if (right?.name === "Error" && right.declarations?.[0]?.getSourceFile().isDeclarationFile && this.ty(this.typeOf(node.left), node.left).k === "rt") return { e: "bool", v: true };
+    const classSymbol = this.classRef(node.right);
+    const decl = classSymbol && this.objectClasses.get(classSymbol);
+    if (!decl) return this.error(node.right, "instanceof works with the app's classes natively (and `e instanceof Error` in a catch).");
+    if (decl.typeParameters?.length) return this.error(node.right, "instanceof a generic class is not supported natively (its instantiations are different classes).");
+    const leftType = this.typeOf(node.left);
+    if (!this.objectClassName(this.checker.getNonNullableType(leftType))) return this.error(node.left, "instanceof tests a value of the app's classes or of an interface they implement natively.");
+    const test = (x: Expr): Expr => ({ e: "instanceOf", x, cls: this.className(classSymbol!) });
+    if (!this.isNullable(leftType)) return test(this.expr(node.left, ctx));
+    // `null instanceof C` is false: the optional is tested first (and read twice).
+    if (!this.isPure(node.left)) return this.error(node.left, "instanceof on a nullable computed value: read it into a variable first.");
+    const x = this.expr(node.left, ctx);
+    const optional = x.e === "unwrap" ? x.x : x;
+    return { e: "bin", op: "&&", l: { e: "bin", op: "!=", l: optional, r: { e: "nil" } }, r: test({ e: "unwrap", x: optional }) };
   }
 
   private isLvalue(node: ts.Node): boolean {
@@ -2321,13 +2910,17 @@ class Frontend {
     }
     const unqualified = this.unNamespace(node);
     if (unqualified !== node) return this.identifier(unqualified as ts.Identifier);
+    const sup = this.superProperty(node, false);
+    if (sup) return sup;
+    const accessor = this.staticAccessor(node);
+    if (accessor) return { e: "call", callee: { e: "id", name: accessor.get }, args: [] };
     const staticField = this.staticField(node);
     if (staticField) return staticField;
     const memberDecl = this.checker.getSymbolAtLocation(node.name)?.valueDeclaration;
     if (memberDecl && (ts.isMethodDeclaration(memberDecl) || ts.isMethodSignature(memberDecl)) && this.ownerOf(memberDecl)) {
       return this.error(node, "A method can only be called natively (JavaScript would lose its `this`); wrap it in an arrow function.");
     }
-    const name = node.name.text;
+    const name = this.memberName(node.name);
     const objType = this.typeOf(node.expression);
     if (ts.isIdentifier(node.expression) && node.expression.text === "Math" && name === "PI") return { e: "op", op: "math.pi", args: [] };
     const constant = ts.isIdentifier(node.expression) ? MATH_CONSTANTS[`${node.expression.text}.${name}`] : undefined;
@@ -2338,7 +2931,7 @@ class Frontend {
     if (node.questionDotToken && name === "length") return this.error(node, "Unsupported: ?.length; narrow the value first.");
     if (name === "length" && this.isArray(this.checker.getNonNullableType(objType))) return { e: "op", op: "arr.length", args: [this.expr(node.expression, ctx)], chain };
     if (name === "length" && this.isString(this.checker.getNonNullableType(objType))) return { e: "op", op: "str.length", args: [this.expr(node.expression, ctx)], chain };
-    if (name === "message" && this.ty(objType, node).k === "rt") return { e: "op", op: "error.message", args: [this.expr(node.expression, ctx)] };
+    if (name === "message" && this.ty(objType, node).k === "rt") return { e: "op", op: "error.text", args: [this.expr(node.expression, ctx)] };
     const obj = this.expr(node.expression, ctx);
     // Record<string, T>: a map lookup, optional unless TypeScript narrowed it.
     if (objType.getStringIndexType() && objType.getProperties().length === 0) {
@@ -2355,6 +2948,7 @@ class Frontend {
     const lt = this.typeOf(node.left);
     const rt = this.typeOf(node.right);
     if (this.isAssignment(kind)) return this.error(node, "Unsupported: assignment inside an expression; make it a statement.");
+    if (kind === ts.SyntaxKind.InstanceOfKeyword) return this.instanceOf(node, ctx);
     if (kind === ts.SyntaxKind.QuestionQuestionToken) {
       const ty = this.tyOfExpr(node);
       const left = this.expr(node.left, ctx);
@@ -2431,8 +3025,8 @@ class Frontend {
     const ctxType = this.checker.getContextualType(node) ?? this.typeOf(node);
     const ty = target && target.k !== "fn" ? target : this.ty(this.checker.getNonNullableType(ctxType), node);
     if (ty.k === "rt" && ty.name === "Style") return this.style(node, ctx);
-    if (ty.k === "class" && [...this.classes.values()].some((c) => c.name === ty.name)) {
-      const cls = [...this.classes.values()].find((c) => c.name === ty.name)!;
+    if (ty.k === "class" && this.allClasses().some((c) => c.name === ty.name)) {
+      const cls = this.allClasses().find((c) => c.name === ty.name)!;
       // Later members win, as in JavaScript: `{ ...base, x: 1 }` and `{ x: 1, ...base }` differ.
       const given = new Map<string, ts.Expression | Expr>();
       for (const prop of node.properties) {
@@ -2472,7 +3066,9 @@ class Frontend {
         }),
       };
     }
-    if (ty.k === "class") return this.error(node, `${ty.name} is a class or an interface a class implements: create it with \`new\`, not an object literal.`);
+    const protocol = ty.k === "class" ? this.protocolByName(ty.name) : undefined;
+    if (protocol) return this.protocolLiteral(node, protocol, ctx);
+    if (ty.k === "class") return this.error(node, `${ty.name} is a class: create it with \`new\`, not an object literal.`);
     return this.error(node, "An object literal needs an interface type to become a native class.");
   }
 
@@ -2731,7 +3327,8 @@ class Frontend {
   // Functions and calls
   // -------------------------------------------------------------------------
 
-  private lambda(node: ts.ArrowFunction | ts.FunctionExpression | ts.MethodDeclaration, ctx: Ctx, want?: Extract<Ty, { k: "fn" }>): Expr {
+  /** `ownDefaults`: a protocol method's function, which applies its own optional and default parameters (callers pass nil). */
+  private lambda(node: ts.ArrowFunction | ts.FunctionExpression | ts.MethodDeclaration, ctx: Ctx, want?: Extract<Ty, { k: "fn" }>, ownDefaults = false): Expr {
     if (ts.getCombinedModifierFlags(node) & ts.ModifierFlags.Async) {
       return this.error(node, "Unsupported: async callbacks; move the body into an async function and call it.");
     }
@@ -2742,9 +3339,11 @@ class Frontend {
     const voidUnion = ret.k === "optional" && ret.of.k === "fn";
     if (want && declaredRet && ret.k !== "void" && !voidUnion && declaredRet.flags & ts.TypeFlags.Void) ret = T.void;
     const inner: Ctx = { async: false, ret, voidUnion, inTry: false };
-    const params = this.params(node);
+    const params = this.params(node, ownDefaults ? inner : undefined);
     const destructures = node.parameters.some((p) => !ts.isIdentifier(p.name));
-    const body = node.body && !ts.isBlock(node.body) && ret.k !== "void" && !voidUnion && !destructures ? this.expr(node.body, inner, ret) : this.body(node, inner);
+    const defaults = ownDefaults && params.some((p) => p.default);
+    const body = node.body && !ts.isBlock(node.body) && ret.k !== "void" && !voidUnion && !destructures && !defaults ? this.expr(node.body, inner, ret) : this.body(node, inner);
+    if (Array.isArray(body)) this.ownDefaults(params, node.parameters, body);
     return { e: "lambda", params, ret, body };
   }
 
@@ -2788,7 +3387,9 @@ class Frontend {
     const args = this.callArgs(node, signature, ctx);
     // A declared function is called by name; a function value (maybe narrowed from null) is read as one.
     const symbol = ts.isIdentifier(callee) ? this.resolveAlias(this.checker.getSymbolAtLocation(callee)) : undefined;
-    const fn = symbol && this.functionSymbols.has(symbol) ? ({ e: "id", name: (callee as ts.Identifier).text } as Expr) : this.expr(callee, ctx);
+    const generic = symbol && this.generics.get(symbol);
+    if (generic) return { e: "call", callee: { e: "id", name: this.instantiate(generic, this.checker.getTypeArgumentsForResolvedSignature(signature) ?? [], node) }, args };
+    const fn = symbol && this.functionSymbols.has(symbol) && !this.captureRead(callee as ts.Identifier) ? ({ e: "id", name: (callee as ts.Identifier).text } as Expr) : this.expr(callee, ctx);
     return { e: "call", callee: fn, args };
   }
 
@@ -2800,12 +3401,43 @@ class Frontend {
     const signature = this.checker.getResolvedSignature(node);
     if (!signature) return this.error(node, "Cannot resolve this call.");
     const args = this.callArgs(node, signature, ctx);
-    if (ts.getCombinedModifierFlags(decl) & ts.ModifierFlags.Static) return { e: "call", callee: { e: "id", name: `${owner}__${callee.name.text}` }, args };
+    const name = this.memberName(callee.name);
+    if (ts.getCombinedModifierFlags(decl) & ts.ModifierFlags.Static) return { e: "call", callee: { e: "id", name: `${owner}__${name}` }, args };
     // Left-out optional arguments are nil: the method applies its own defaults.
     const declared = decl.parameters.filter((p) => !p.dotDotDotToken).length;
     while (args.length < declared) args.push({ e: "nil" });
-    if (callee.expression.kind === ts.SyntaxKind.SuperKeyword) return { e: "invoke", obj: { e: "id", name: "this" }, name: callee.name.text, args, sup: owner };
-    return { e: "invoke", obj: this.expr(callee.expression, ctx), name: callee.name.text, args };
+    if (callee.expression.kind === ts.SyntaxKind.SuperKeyword) {
+      return { e: "invoke", obj: { e: "id", name: "this" }, name, args, sup: this.superOwner(node, name, ts.isMethodDeclaration) ?? owner };
+    }
+    return { e: "invoke", obj: this.expr(callee.expression, ctx), name, args };
+  }
+
+  /**
+   * The base class that declares what `super.name` reaches, as this class extends it (`Base__Double`
+   * for `extends Base<number>`): the nearest one with a member that passes `test`.
+   */
+  private superOwner(node: ts.Node, name: string, test: (m: ts.ClassElement) => boolean): string | undefined {
+    const cls = ts.findAncestor(node, ts.isClassLike);
+    let clause = cls && this.heritage(cls, ts.SyntaxKind.ExtendsKeyword)[0];
+    let env = this.env;
+    for (let depth = 0; clause && depth < 32; depth++) {
+      const base = this.withEnv(env, () => this.heritageName(clause!));
+      const decl = base && this.declOfName(base);
+      if (!base || !decl || !ts.isClassDeclaration(decl)) break;
+      if (decl.members.some((m) => m.name && ts.isIdentifier(m.name) && m.name.text === name && test(m))) return base;
+      env = this.instances.get(base)?.env ?? env;
+      clause = this.heritage(decl, ts.SyntaxKind.ExtendsKeyword)[0];
+    }
+    return undefined;
+  }
+
+  /** `super.x`: the base's getter (and setter), run on `this`. Only accessors can be reached: fields live on the object. */
+  private superProperty(node: ts.PropertyAccessExpression, write: boolean): Expr | undefined {
+    if (node.expression.kind !== ts.SyntaxKind.SuperKeyword) return undefined;
+    const name = node.name.text;
+    const sup = this.superOwner(node, name, write ? ts.isSetAccessor : ts.isGetAccessor);
+    if (!sup) return this.error(node, `super.${name} reaches a base class's ${write ? "setter" : "getter"} only; there is none.`);
+    return { e: "prop", obj: { e: "id", name: "this" }, name, sup };
   }
 
   /** A static field of one of the app's classes (`C.count`): the global `C__count`. */
@@ -2813,7 +3445,50 @@ class Frontend {
     if (!ts.isPropertyAccessExpression(node)) return undefined;
     const decl = this.checker.getSymbolAtLocation(node.name)?.valueDeclaration;
     const owner = decl && ts.isPropertyDeclaration(decl) && ts.getCombinedModifierFlags(decl) & ts.ModifierFlags.Static ? this.ownerOf(decl) : undefined;
-    return owner ? { e: "id", name: `${owner}__${node.name.text}` } : undefined;
+    return owner ? { e: "id", name: `${owner}__${this.memberName(node.name)}` } : undefined;
+  }
+
+  /**
+   * A class member's native name. `#x` is private to the class that declares it, and a subclass may
+   * declare its own `#x`: natively it is `x__Class` (one struct holds both in Rust, one name space in Swift and Kotlin).
+   */
+  private memberName(name: ts.Node): string {
+    if (ts.isIdentifier(name)) return name.text;
+    if (!ts.isPrivateIdentifier(name)) return name.getText();
+    const decl = this.checker.getSymbolAtLocation(name)?.valueDeclaration ?? name.parent;
+    const cls = ts.findAncestor(decl, ts.isClassLike);
+    const symbol = cls && this.classSymbol(cls);
+    return `${name.text.slice(1)}__${symbol ? this.className(symbol) : "anonymous"}`;
+  }
+
+  /** `C.x` where `x` is a static getter (and maybe setter): the functions `C__x` and `C__set_x`. */
+  private staticAccessor(node: ts.Expression): { get: string; set: string } | undefined {
+    if (!ts.isPropertyAccessExpression(node)) return undefined;
+    const decl = this.checker.getSymbolAtLocation(node.name)?.declarations?.find((d) => ts.isGetAccessor(d) || ts.isSetAccessor(d));
+    const owner = decl && ts.getCombinedModifierFlags(decl) & ts.ModifierFlags.Static ? this.ownerOf(decl) : undefined;
+    const name = this.memberName(node.name);
+    return owner ? { get: `${owner}__${name}`, set: `${owner}__set_${name}` } : undefined;
+  }
+
+  /** An assignment (`=`, `+=`…, `++`, `--`) to a static accessor: its setter, called with the new value. */
+  private staticAssign(node: ts.Expression, target: ts.Expression, accessor: { get: string; set: string }, ctx: Ctx): Stmt {
+    const ty = this.lvalueTy(target);
+    const current: Expr = { e: "call", callee: { e: "id", name: accessor.get }, args: [] };
+    const set = (value: Expr): Stmt => ({ s: "expr", x: { e: "call", callee: { e: "id", name: accessor.set }, args: [value] } });
+    const one: Expr = ty.k === "int" ? { e: "int", v: "1" } : { e: "double", v: "1.0" };
+    if (ts.isPrefixUnaryExpression(node) || ts.isPostfixUnaryExpression(node)) {
+      return set({ e: "bin", op: node.operator === ts.SyntaxKind.PlusPlusToken ? "+" : "-", l: current, r: one });
+    }
+    const { operatorToken: op, right } = node as ts.BinaryExpression;
+    if (op.kind === ts.SyntaxKind.EqualsToken) return set(this.expr(right, ctx, ty));
+    if (op.kind === ts.SyntaxKind.PlusEqualsToken && ty.k === "string") return set({ e: "tpl", parts: [current, this.str(right, ctx)] });
+    const arithmetic: Partial<Record<ts.SyntaxKind, BinOp>> = {
+      [ts.SyntaxKind.PlusEqualsToken]: "+", [ts.SyntaxKind.MinusEqualsToken]: "-", [ts.SyntaxKind.AsteriskEqualsToken]: "*",
+      [ts.SyntaxKind.SlashEqualsToken]: "/", [ts.SyntaxKind.PercentEqualsToken]: "%",
+    };
+    const bin = arithmetic[op.kind];
+    if (!bin) return this.unsupported(node, "this assignment operator on a static getter / setter; write `C.x = …`");
+    return set({ e: "bin", op: bin, l: current, r: this.expr(right, ctx, ty) });
   }
 
   /** The arguments of a call to the app's own function: a rest parameter receives the trailing ones as an array. */
@@ -3496,7 +4171,7 @@ class Frontend {
    */
   private nativeView(component: { name: string; props: ts.Type }, node: ts.CallExpression, ctx: Ctx): Expr {
     const propsTy = this.ty(component.props, node);
-    const cls = propsTy.k === "class" ? [...this.classes.values()].find((c) => c.name === propsTy.name) : undefined;
+    const cls = propsTy.k === "class" ? this.allClasses().find((c) => c.name === propsTy.name) : undefined;
     if (!cls) return this.error(node, "A native component's props must be an interface of the app.");
     this.usedComponents.set(component.name, cls.name);
     const [first, ...rest] = node.arguments;

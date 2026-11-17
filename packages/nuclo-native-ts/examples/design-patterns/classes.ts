@@ -43,7 +43,10 @@ export function strategyClasses(): string[] {
   const items = [20, 5.5, 14.5];
   const regular = checkout.total(items);
   checkout.use(new SalePrice(25));
-  return [regular, checkout.total(items)];
+  const sale = checkout.total(items);
+  // An object literal is a strategy too: any value with the interface's members.
+  checkout.use({ price: (base: number) => Math.min(base, 10), label: () => "capped at 10" });
+  return [regular, sale, checkout.total(items)];
 }
 
 // Observer: subscribers register with a source, which notifies each one.
@@ -86,11 +89,17 @@ export function observerClasses(): string[] {
   const log = new LogSubscriber("log");
   source.subscribe(log);
   const counter = new CountingSubscriber(source);
+  const shouted: string[] = [];
+  source.subscribe({
+    notify(event: string) {
+      shouted.push(event.toUpperCase());
+    },
+  });
   source.emit("open");
   source.emit("save");
   source.unsubscribe(log);
   source.emit("close");
-  return [log.lines.join(", "), `counter saw ${counter.count}, ${source.size} still subscribed`];
+  return [log.lines.join(", "), `counter saw ${counter.count}, ${source.size} still subscribed, shouted ${shouted.join(" ")}`];
 }
 
 // State: the light delegates to its current state object, which picks the next one.
