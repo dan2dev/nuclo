@@ -5,7 +5,7 @@ ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 cd "$ROOT"
 
 HOST=$(uname -s)
-SIM=${NUCLO_IOS_SIM:-iPhone 17 Pro}
+SIM=${NUCLO_IOS_SIM:-3BC7191A-883C-42BF-B4F3-F8CAA4504F32} # iPhone 18 Pro Max, iOS 27.2 (name is ambiguous across runtimes)
 IOS_ID=dev.nuclo.nativekt
 ANDROID_ID=dev.nuclo.nativekt
 if [ "$HOST" = Darwin ]; then

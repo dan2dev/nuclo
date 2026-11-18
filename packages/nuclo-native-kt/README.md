@@ -22,7 +22,7 @@ fun main() = runApp { render(::App) }
 | --- | --- | --- | --- |
 | `web` | Kotlin/JS | `nuclo-core` on the DOM | built, run in headless Chrome |
 | `android` | Kotlin/JVM | Android Views | built, run on the `Medium_Phone` emulator |
-| `ios` | Kotlin/Native `iosSimulatorArm64` (`iosArm64` compiles) | UIKit | built, run on the iPhone 17 Pro simulator |
+| `ios` | Kotlin/Native `iosSimulatorArm64` (`iosArm64` compiles) | UIKit | built, run on the iPhone 18 Pro Max simulator |
 | `macos` | Kotlin/Native `macosArm64` | AppKit | built and run |
 | `linux` | Kotlin/Native `linuxX64` (GTK 4 + libadwaita through cinterop) | GTK 4 | **run only through `:gtk-preview`** (the same sources on macOS against Homebrew GTK 4.24); the real `linuxX64` target was never built (it needs a Linux x86-64 host) |
 | `windows` | Kotlin/Native `mingwX64` | Win32 + GDI+ | **cross-compiled and linked, never launched** |
@@ -63,7 +63,7 @@ Everything below was run in the session that wrote this file; nothing here is fr
 | `scripts/test.sh headless all` | PASS: counter, todo, styles, layouts, layout-matrix, navigation, fetch, gestures, native-components, gauges, select |
 | `scripts/test.sh web all` | PASS, same 11 examples (structure and texts compared with headless; the browser's own fonts decide the pixels) |
 | `scripts/test.sh macos all` | PASS, 11 examples, frames within 1 px of headless |
-| `scripts/test.sh ios all` | PASS on the iPhone 17 Pro simulator, 11 examples |
+| `scripts/test.sh ios all` | PASS on the iPhone 18 Pro Max simulator, 11 examples |
 | `scripts/test.sh android all` | PASS on the `Medium_Phone` emulator, 11 examples |
 | `scripts/test.sh linux all` | PASS through `:gtk-preview` (macOS host, Homebrew GTK 4.24), 11 examples. **Not** the `linuxX64` target |
 | `scripts/test.sh windows all` | the 11 examples **link** (0 compiler warnings in the link of each tried). **Never launched** |
