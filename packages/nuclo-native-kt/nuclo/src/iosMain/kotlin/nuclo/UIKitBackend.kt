@@ -117,6 +117,27 @@ internal class NucloViewController : UIViewController {
     override fun viewDidLayoutSubviews() { super.viewDidLayoutSubviews(); onLayout?.invoke() }
 }
 
+/** One screen of the native navigation: its view is the scroll view that holds the screen's root. */
+internal class ScreenController(val info: Screen, private val relayout: (ScreenController) -> Unit) : UIViewController(nibName = null, bundle = null) {
+    val scroll = UIScrollView()
+    var watcher: ScrollWatcher? = null
+    override fun loadView() { view = scroll }
+    override fun viewDidLayoutSubviews() { super.viewDidLayoutSubviews(); relayout(this) }
+}
+
+/** UIKit's navigation callbacks: bar visibility per screen, pops by the user, tab taps, swipe-dismissed sheets. */
+internal class NavDelegate(
+    private val will: (UINavigationController, UIViewController, Boolean) -> Unit,
+    private val did: (UINavigationController) -> Unit,
+    private val tab: (Int) -> Unit,
+    private val dismissed: (UIViewController) -> Unit,
+) : NSObject(), UINavigationControllerDelegateProtocol, UITabBarControllerDelegateProtocol, UIAdaptivePresentationControllerDelegateProtocol {
+    @ObjCSignatureOverride override fun navigationController(navigationController: UINavigationController, willShowViewController: UIViewController, animated: Boolean) = will(navigationController, willShowViewController, animated)
+    @ObjCSignatureOverride override fun navigationController(navigationController: UINavigationController, didShowViewController: UIViewController, animated: Boolean) = did(navigationController)
+    override fun tabBarController(tabBarController: UITabBarController, didSelectViewController: UIViewController) = tab(tabBarController.selectedIndex.toInt())
+    override fun presentationControllerDidDismiss(presentationController: UIPresentationController) = dismissed(presentationController.presentedViewController)
+}
+
 internal class UIKitBackend(private val controller: NucloViewController) : Backend {
     private val views = HashMap<ViewId, UView>()
     private var nextId = 1
@@ -125,6 +146,15 @@ internal class UIKitBackend(private val controller: NucloViewController) : Backe
     private var screenRoot: ViewId = 0
     private var screenWatcher: ScrollWatcher? = null
     private val overlays = ArrayList<ViewId>()
+    private val navs = ArrayList<UINavigationController>()
+    private val tracked = ArrayList<ArrayList<ScreenController>>()   // per tab: the screens of its stack, modals included
+    private var tabController: UITabBarController? = null
+    private val navDelegate = NavDelegate(
+        will = { nav, vc, animated -> nav.setNavigationBarHidden(!((vc as? ScreenController)?.info?.header ?: true), animated) },
+        did = { nav -> popped(nav) },
+        tab = { Host.navTabSelected(it) },
+        dismissed = { presented -> dismissed(presented) },
+    )
 
     init {
         controller.view.backgroundColor = UIColor.whiteColor
@@ -497,7 +527,105 @@ internal class UIKitBackend(private val controller: NucloViewController) : Backe
     }
 
     // UIKit lays out before it draws (viewDidLayoutSubviews → layoutPass): no frame shows stale positions.
-    override fun requestLayout() { controller.view.setNeedsLayout() }
+    override fun requestLayout() { controller.view.setNeedsLayout(); tracked.forEach { l -> l.forEach { it.scroll.setNeedsLayout() } } }
+
+    // ---- navigation: UINavigationController per tab, in a UITabBarController when there are tabs
+
+    private val icons = mapOf("home" to "house", "list" to "list.bullet", "cloud" to "cloud", "star" to "star", "person" to "person", "settings" to "gearshape", "search" to "magnifyingglass")
+
+    override fun navCreate(tabs: List<TabInfo>, active: Int) {
+        navs.clear(); tracked.clear()
+        repeat(max(1, tabs.size)) { i ->
+            val nav = UINavigationController()
+            nav.delegate = navDelegate
+            tabs.getOrNull(i)?.let { t ->
+                nav.tabBarItem = UITabBarItem(title = t.title, image = icons[t.icon]?.let { UIImage.systemImageNamed(it) }, tag = i.toLong())
+            }
+            navs.add(nav); tracked.add(ArrayList())
+        }
+        val top: UIViewController = if (tabs.isEmpty()) navs[0] else UITabBarController().also {
+            it.setViewControllers(navs, false)
+            it.selectedIndex = active.toULong()
+            it.delegate = navDelegate
+            tabController = it
+        }
+        controller.addChildViewController(top)
+        top.view.setFrame(controller.view.bounds)
+        top.view.autoresizingMask = UIViewAutoresizingFlexibleWidth or UIViewAutoresizingFlexibleHeight
+        controller.view.addSubview(top.view)
+        top.didMoveToParentViewController(controller)
+    }
+
+    private fun screenController(tab: Int, screen: Screen): ScreenController {
+        tracked[tab].firstOrNull { it.info.root == screen.root }?.let { return it }
+        val c = ScreenController(screen) { layoutScreen(it) }
+        c.title = screen.title
+        c.scroll.contentInsetAdjustmentBehavior = UIScrollViewContentInsetAdjustmentBehavior.UIScrollViewContentInsetAdjustmentAutomatic
+        c.scroll.addSubview(v(screen.root))
+        val w = ScrollWatcher { s ->
+            val y = s.contentOffset.useContents { y } + s.adjustedContentInset.useContents { top }
+            Host.screenScrolled(screen.root, y.toFloat(), s.bounds.useContents { size.height }.toFloat())
+        }
+        c.scroll.delegate = w
+        c.watcher = w
+        return c
+    }
+
+    // ponytail: left/right safe-area insets (landscape notch) are subtracted from the width, not added as an offset
+    private fun layoutScreen(c: ScreenController) {
+        val (w, h) = c.scroll.bounds.useContents { size.width to size.height }
+        if (w <= 0.0) return
+        val (l, t, r, b) = c.scroll.safeAreaInsets.useContents { listOf(left, top, right, bottom) }
+        val sw = w - l - r
+        val height = max(Host.measureRoot(c.info.root, sw.toFloat()).toDouble(), h - t - b)
+        val root = v(c.info.root)
+        root.setFrame(CGRectMake(0.0, 0.0, sw, height))
+        root.paint?.let { applyPaint(root, it) }
+        c.scroll.setContentSize(CGSizeMake(sw, height))
+        Host.layoutRoot(c.info.root, sw.toFloat(), height.toFloat())
+    }
+
+    private fun presenter(tab: Int): UIViewController { var p: UIViewController = navs[tab]; while (true) p = p.presentedViewController ?: return p }
+
+    override fun navPush(tab: Int, screen: Screen, animated: Boolean) {
+        val c = screenController(tab, screen)
+        tracked[tab].add(c)
+        if (screen.modal) {
+            val content: UIViewController = if (screen.header) UINavigationController(rootViewController = c).also { it.delegate = navDelegate } else c
+            content.presentationController?.delegate = navDelegate
+            presenter(tab).presentViewController(content, animated, null)
+        } else navs[tab].pushViewController(c, animated)
+    }
+
+    override fun navPop(tab: Int, animated: Boolean) {
+        val c = tracked[tab].removeLastOrNull() ?: return
+        if (c.info.modal) (c.navigationController?.takeIf { it !== navs[tab] } ?: c).presentingViewController?.dismissViewControllerAnimated(animated, null)
+        else navs[tab].popViewControllerAnimated(animated)
+    }
+
+    override fun navReplace(tab: Int, screen: Screen) {
+        val c = screenController(tab, screen)
+        navs[tab].presentedViewController?.dismissViewControllerAnimated(false, null)
+        tracked[tab].clear(); tracked[tab].add(c)
+        navs[tab].setViewControllers(listOf(c), false)
+    }
+
+    override fun navSelectTab(tab: Int) { tabController?.selectedIndex = tab.toULong() }
+
+    /** The user popped screens with the back button or the edge swipe: report each one the router does not know yet. */
+    private fun popped(nav: UINavigationController) {
+        val tab = navs.indexOf(nav)
+        if (tab < 0) return
+        val now = nav.viewControllers
+        for (c in tracked[tab].filter { !it.info.modal && !now.contains(it) }.asReversed()) { tracked[tab].remove(c); Host.navPopped(tab, c.info.root) }
+    }
+
+    /** The user swiped a sheet away. */
+    private fun dismissed(presented: UIViewController) {
+        val c = presented as? ScreenController ?: (presented as? UINavigationController)?.viewControllers?.firstOrNull() as? ScreenController ?: return
+        val tab = tracked.indexOfFirst { it.contains(c) }
+        if (tab >= 0) { tracked[tab].remove(c); Host.navPopped(tab, c.info.root) }
+    }
 
     private fun safeFrame(): CValue<CGRect> {
         val ins = controller.view.safeAreaInsets

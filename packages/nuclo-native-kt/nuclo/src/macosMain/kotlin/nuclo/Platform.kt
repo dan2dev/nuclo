@@ -24,6 +24,8 @@ internal actual fun platformRunApp(entry: () -> Unit) {
     val window = NSWindow(NSMakeRect(0.0, 0.0, w, h),
         NSWindowStyleMaskTitled or NSWindowStyleMaskClosable or NSWindowStyleMaskResizable, NSBackingStoreBuffered, false)
     window.title = "nuclo"
+    // screens are white with black text: a dark system appearance would draw the controls for a dark background
+    window.appearance = NSAppearance.appearanceNamed(NSAppearanceNameAqua)
     val backend = AppKitBackend(window)
     val delegate = WindowDelegate { backend }
     window.delegate = delegate

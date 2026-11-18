@@ -12,6 +12,12 @@ import kotlin.math.min
 
 /** The macOS backend: every ViewId is an NSView in a flipped, layer-backed tree. Text and buttons draw themselves,
  *  so a click lands on the view that owns it. Frames are law: no auto layout anywhere. */
+/** AppKit writes a layer-backed view's transform itself (back to identity) as it lays out: this layer keeps the one the view set. */
+internal class TransformLayer : platform.QuartzCore.CALayer() {
+    var owned: kotlinx.cinterop.CValue<platform.QuartzCore.CATransform3D> = platform.QuartzCore.CATransform3DIdentity.readValue()
+    override fun setTransform(transform: kotlinx.cinterop.CValue<platform.QuartzCore.CATransform3D>) { super.setTransform(owned) }
+}
+
 internal class NView : NSView {
     @OverrideInit constructor(frame: CValue<CGRect>) : super(frame)
 
@@ -340,6 +346,11 @@ internal class AppKitBackend(private val window: NSWindow) : Backend {
         v.setNeedsDisplay(true)
     }
 
+    private fun setOwned(layer: platform.QuartzCore.CALayer, t: kotlinx.cinterop.CValue<platform.QuartzCore.CATransform3D>) {
+        (layer as? TransformLayer)?.let { it.owned = t }
+        layer.setTransform(t)
+    }
+
     private fun applyPaint(v: NView, paint: Paint) {
         val layer = v.layer ?: return
         val (w, h) = v.bounds.useContents { size.width to size.height }
@@ -352,8 +363,8 @@ internal class AppKitBackend(private val window: NSWindow) : Backend {
             t = CGAffineTransformRotate(t, paint.rotate.toDouble() * kotlin.math.PI / 180.0)
             t = CGAffineTransformTranslate(t, paint.translateX.toDouble(), paint.translateY.toDouble())
             t = CGAffineTransformTranslate(t, w / 2, h / 2)
-            layer.setAffineTransform(t)
-        } else layer.setAffineTransform(CGAffineTransformIdentity.readValue())
+            setOwned(layer, platform.QuartzCore.CATransform3DMakeAffineTransform(t))
+        } else setOwned(layer, platform.QuartzCore.CATransform3DIdentity.readValue())
         v.hidden = !paint.visible
     }
 
