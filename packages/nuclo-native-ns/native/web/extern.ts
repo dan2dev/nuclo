@@ -27,6 +27,8 @@ globalStyle(":where(.nn, .nn *)", { boxSizing: "border-box", margin: 0, display:
 globalStyle(":where(.nn input, .nn textarea)", { userSelect: "text", font: "inherit", color: "inherit", border: "none", outline: "none", backgroundColor: "transparent", padding: "8px", resize: "none" } as never);
 globalStyle(":where(.nn button)", { border: "none", backgroundColor: "transparent", font: "inherit", cursor: "pointer", alignItems: "center", justifyContent: "center", textAlign: "center", padding: "8px 14px", color: "#2563eb" } as never);
 globalStyle(":where(.nn img)", { objectFit: "cover", WebkitUserDrag: "none", backgroundColor: "rgba(127,127,127,0.12)" } as never);
+// An icon (icons.ns) has no placeholder behind it.
+globalStyle(':where(.nn img[src^="data:image/svg"])', { objectFit: "contain", backgroundColor: "transparent" } as never);
 globalStyle(":where(.nn h1)", { fontSize: "32px", fontWeight: 700 });
 globalStyle(":where(.nn h2)", { fontSize: "22px", fontWeight: 700 });
 globalStyle(":where(.nn h3)", { fontSize: "19px", fontWeight: 700 });
@@ -285,7 +287,12 @@ function attributes(a: Attributes): Child[] {
   if (a.className) { const f = a.className; o.className = () => f().cls.className; }
   if (a.value) o.value = a.value;
   if (a.checked) o.checked = a.checked;
-  if (a.src != null) { o.src = a.src; o.loading = "lazy"; o.decoding = "async"; o.draggable = false; }
+  if (a.src != null) {
+    // An icon (icons.ns): an inline SVG, its text percent-encoded for the URL.
+    const svg = "data:image/svg+xml;utf8,";
+    if (a.src.startsWith(svg)) { o.src = svg + encodeURIComponent(a.src.slice(svg.length)); o.draggable = false; }
+    else { o.src = a.src; o.loading = "lazy"; o.decoding = "async"; o.draggable = false; }
+  }
   if (a.placeholder != null) o.placeholder = a.placeholder;
   if (a.label != null) o["aria-label"] = a.label;
   if (a.inputType != null) o.type = a.inputType;
@@ -601,6 +608,25 @@ export function overlay(view: () => View) {
 // ---- platform ------------------------------------------------------------------------
 
 export const later = (ms: number, f: () => void) => { window.setTimeout(f, ms); };
+// The platform's own components: a browser has none that fit a phone (no action sheet, no bottom sheet,
+// no menu at a point), so kit.ns draws them.
+export const nativeAlert = (_t: string, _m: string, _a: unknown[]) => false;
+export const nativeActions = (_t: string, _a: unknown[]) => false;
+export const nativeMenu = (_x: number, _y: number, _t: string, _a: unknown[]) => false;
+export const nativeSheet = (_t: string, _d: string, _c: () => unknown) => false;
+export const nativeCloseSheet = () => false;
+export const nativeToast = (_t: string) => false;
+// Of the controls, a browser has its own slider (a range input); kit.ns draws the segmented control and chips.
+export const hasControl = (kind: string) => kind === "slider";
+export const segmentedControl = (_o: string[], _a: () => number, _p: (i: number) => void): View => div();
+export const chipControl = (_l: string, _on: () => boolean, _p: () => void): View => div();
+export const sliderControl = (value: () => number, color: string, change: (v: number) => void): View =>
+  input({
+    type: "range", min: "0", max: "1", step: "0.001", value: () => String(value()),
+    style: { width: "100%", margin: "8px 0", accentColor: color || "var(--nn-accent, #0a7cff)" } as never,
+    onInput: (e: Event) => change(Number((e.target as HTMLInputElement).value)),
+  });
+export const prefetch = (url: string) => { const i = new Image(); i.decoding = "async"; i.src = url; };
 export const haptic = (kind: string) => { navigator.vibrate?.(kind === "success" ? [10, 40, 10] : kind === "medium" ? 15 : 8); };
 export const platform = () => "web";
 export const viewport = () => ({ width: window.innerWidth, height: window.innerHeight });

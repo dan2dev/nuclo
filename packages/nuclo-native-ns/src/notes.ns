@@ -1,10 +1,10 @@
 // Notes: create, edit, color, pin, and delete, kept in the device's database (SQLite natively). A
 // two-column board on wide windows; long press a note for its menu, swipe it left to delete it.
 
-import { css, div, p, span, button, input, textarea, list, when, update, go, back, later, haptic, View, Pan, Point } from "./ui"
+import { css, div, p, span, button, input, textarea, list, when, update, go, back, later, haptic, View, Pan, Point, Action } from "./ui"
 import { t, space, radius, font, themed } from "./theme"
 import { Note, allNotes, note, createNote, updateNote, recolorNote, togglePin, deleteNote, noteColors } from "./state"
-import { page, column, headline, footnote, caption, empty, toast, menuAt, alert, act, destructive, submenu, Action } from "./kit"
+import { page, column, headline, footnote, caption, empty, toast, menuAt, alert, act, destructive, submenu } from "./kit"
 
 const board = css({ flexDirection: "row", flexWrap: "wrap", gap: space.md, padding: space.lg })
 fn noteCard(n: Note, dx: number) => css({

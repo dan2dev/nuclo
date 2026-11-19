@@ -7,7 +7,7 @@ import { User, Post, users, user, postsBy, photoUrl, compact } from "./data"
 import { profile, saveProfile, isFollowing, toggleFollow, myPostList, savedIds, findAnyPost } from "./state"
 import {
   page, column, row, gapSm, gapMd, title2, headline, sub, footnote, caption, body, smallBtn, primaryBtn,
-  secondaryBtn, iconBtn, avatar, verifiedBadge, segmented, empty, toast, actionSheet, menuAt, act, destructive,
+  secondaryBtn, iconButton, avatar, verifiedBadge, segmented, empty, toast, actionSheet, menuAt, act, destructive, notePress, pressedAt,
 } from "./kit"
 import { personCell, photoGrid } from "./feed"
 
@@ -83,7 +83,7 @@ export fn userScreen(id: string): View {
             onClick: () => { toggleFollow(id); haptic("light"); update() },
           }),
           button(halfGhost, "Message", { onClick: () => go(`/chat/${(toIntId(id) % 10) + 1}`) }),
-          button(squareGhost, "⋯", { label: "More", onClick: () => profileMenu(u, { x: 0.0, y: 0.0, pageX: 9999.0, pageY: 300.0 }) }),
+          button(squareGhost, "⋯", { label: "More", onPointerDown: (pt: Point) => notePress(pt), onClick: () => profileMenu(u, pressedAt()) }),
         ),
         highlightsRow(toIntId(id)),
       ),
@@ -166,8 +166,8 @@ export fn meScreen(): View {
     div(column,
       div(meTop,
         p(meHandle, () => profile().handle),
-        button(iconBtn, "＋", { label: "New post", onClick: () => go("/compose") }),
-        button(iconBtn, "☰", { label: "Menu", onClick: () => moreMenu({ x: 0.0, y: 0.0, pageX: 9999.0, pageY: 100.0 }) }),
+        iconButton("plusSquare", "New post", () => go("/compose")),
+        iconButton("menu", "Menu", () => moreMenu(pressedAt())),
       ),
       div(meHead,
         avatar(profile().avatar, 88),
@@ -187,7 +187,7 @@ export fn meScreen(): View {
       div(segBox, segmented(["Posts", "Saved"], () => meTab, (i) => { meTab = i })),
       when(() => meTab == 0 && myPostList().length == 0, () => div(gapMd, empty("◎", "Share your first photo", "Your posts show up here."), div(css({ alignItems: "center" }), button(smallBtn, "New post", { onClick: () => go("/compose") })))),
       when(() => meTab == 0 && myPostList().length > 0, () => div(list(() => [myPostList().length], (n, i) => photoGrid(myPostList())))),
-      when(() => meTab == 1, () => div(list(() => [savedIds().length], (n, i) => savedIds().length == 0 ? empty("☆", "Nothing saved", "Tap ☆ on a post to keep it here.") : photoGrid(savedPosts())))),
+      when(() => meTab == 1, () => div(list(() => [savedIds().length], (n, i) => savedIds().length == 0 ? empty("☆", "Nothing saved", "Tap the bookmark on a post to keep it here.") : photoGrid(savedPosts())))),
     ),
   )
 }
@@ -196,7 +196,7 @@ export fn meScreen(): View {
 export fn savedScreen(): View {
   return div(page, div(column,
     p(css({ px: space.lg, py: space.md, fontSize: font.footnote, color: t().muted }), "Only you can see what you've saved. Kept in this device's database."),
-    list(() => [savedIds().length], (n, i) => savedIds().length == 0 ? empty("☆", "Nothing saved", "Tap ☆ on a post to keep it here.") : photoGrid(savedPosts())),
+    list(() => [savedIds().length], (n, i) => savedIds().length == 0 ? empty("☆", "Nothing saved", "Tap the bookmark on a post to keep it here.") : photoGrid(savedPosts())),
   ))
 }
 

@@ -2,7 +2,8 @@
 // navigation, and the overlay layer (menus, sheets, toasts, alerts). Every platform's shell calls `main`.
 //
 // 51 screens, in five tabs. A route's kind: "push" under the navigation bar, "bare" with no bar (the
-// screen draws its own), "modal" in the platform's sheet. "/notes/new" comes before "/notes/:id": the
+// screen draws its own), "modal" in the platform's sheet, "full" over everything (the
+// tabs and, where the platform can, the system bars: a story, a photo). "/notes/new" comes before "/notes/:id": the
 // first pattern that matches wins.
 
 import { route, navigate, overlay, Route } from "./ui"
@@ -33,8 +34,8 @@ fn routes(): Route[] {
     route("/post/:id", (_) => "Post", (id) => postScreen(id), "push"),
     route("/post/:id/comments", (_) => "Comments", (id) => commentsScreen(id), "push"),
     route("/post/:id/likes", (_) => "Likes", (id) => likesScreen(id), "push"),
-    route("/photo/:id", (_) => "Photo", (id) => photoScreen(id), "bare"),
-    route("/story/:id", (_) => "Story", (id) => storyScreen(id), "bare"),
+    route("/photo/:id", (_) => "Photo", (id) => photoScreen(id), "full"),
+    route("/story/:id", (_) => "Story", (id) => storyScreen(id), "full"),
     route("/compose", (_) => "New post", (_) => composeScreen(), "modal"),
     route("/messages", (_) => "Messages", (_) => messagesScreen(), "push"),
     route("/chat/:id", (id) => user((chat(id)?.user ?? "1")).name, (id) => chatScreen(id), "push"),

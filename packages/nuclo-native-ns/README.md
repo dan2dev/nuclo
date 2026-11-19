@@ -21,15 +21,37 @@ src/*.ns ──nns --target ts────▶ build/web ──bun─────
          └─nns --target rs────▶ build/linux, build/linux-gpui ──cargo──▶ binaries
 ```
 
+## The platform's own components
+
+`kit.ns` asks the platform first (`nativeAlert`, `nativeActions`, `nativeMenu`, `nativeSheet`, `nativeToast`, `nativeCloseSheet`,
+and `hasControl` with `segmentedControl`, `chipControl`, `sliderControl` in `ui.ns`) and draws its own only where the platform
+has none. On GTK the controls take the app's accent through libadwaita's accent colours (`native/linux/controls.rs`).
+
+| | Android (Material 3, `material` 1.14.0) | iOS | macOS | GTK (libadwaita) | web, GPUI |
+| --- | --- | --- | --- | --- | --- |
+| navigation | MaterialToolbar, BottomNavigationView, shared axis transitions, predictive back (Android 14+) | UINavigationController, UITabBarController | the same, on AppKit | AdwNavigationView, AdwViewSwitcherBar | drawn |
+| alert | MaterialAlertDialog | UIAlertController | NSAlert | AdwAlertDialog | drawn |
+| action list | modal bottom sheet | action sheet | NSMenu | AdwDialog of rows (a bottom sheet when narrow) | drawn |
+| menu | PopupMenu at the press | UIMenu (iOS 17.4+; an action sheet before) | NSMenu | GtkPopoverMenu | drawn |
+| sheet | BottomSheetDialog (half, drags to full) | page sheet with detents and grabber | window sheet | AdwDialog | drawn |
+| toast | Snackbar | drawn | drawn | AdwToast | drawn |
+| segmented | MaterialButtonToggleGroup | UISegmentedControl | drawn | AdwToggleGroup | drawn |
+| chip | Material filter Chip | toggle button (UIButton.Configuration) | drawn | GtkToggleButton | drawn |
+| slider | Material Slider | UISlider | drawn | GtkScale | range input (web), drawn (GPUI) |
+
+The Android app's mode and accent reach these through the `Nuclo.Light_…` and `Nuclo.Dark_…` themes of
+`hosts/android/app/src/main/res/values/accents.xml`.
+
 ## Layout
 
 | Path | Content |
 | --- | --- |
-| `src/ui.ns` | The UI API: builders, the style object (`Style`, with `pressed`, `hover`, `md`, `lg`), attributes and gesture events (pan, pinch, long press, double tap, pointer, scroll), `list`, `when`, `update`, the router (`route`, `navigate`, `go`, `back`, `reset`), `overlay`, `later`, `haptic`, `viewport`, `theme`, `platform`. The `extern` parts are each platform's renderer. |
+| `src/ui.ns` | The UI API: builders, the style object (`Style`, with `pressed`, `hover`, `md`, `lg`), attributes and gesture events (pan, pinch, long press, double tap, pointer, scroll), `list`, `when`, `update`, the router (`route`, `navigate`, `go`, `back`, `reset`), `overlay`, `later`, `prefetch`, `haptic`, `viewport`, `theme`, `platform`. The `extern` parts are each platform's renderer. |
 | `src/store.ns` | Storage on the device: `dbPut`, `dbAll`, `dbDelete`, `dbClear`, `dbInfo` (one SQLite table of rows; JSON fields). |
 | `src/theme.ns` | Design tokens: light and dark palettes, five accents, spacing, radii, type. `themed(...)` caches a style per theme version, so a dynamic class costs one comparison per update. |
 | `src/data.ns` | The network: people, posts, stories, chats, notifications, tags. Photos from Lorem Picsum and pravatar, at the size shown (2x). |
 | `src/state.ns` | Everything the user does, written through at once: likes, saves, follows, comments, posts, notes (CRUD), messages, settings, profile. |
+| `src/icons.ns` | Line icons (one SVG path each, 24-unit grid) as an `img` whose src is an inline SVG; `liveIcon` for a like or a save. |
 | `src/kit.ns` | The component kit and the overlay layer: toasts, action sheets, popover menus with submenus and check marks, bottom sheets with detents (drag the grabber), alerts. |
 | `src/feed.ns`, `people.ns`, `explore.ns`, `inbox.ns`, `settings.ns`, `notes.ns`, `lab.ns` | The screens. |
 | `src/app.ns` | The 50 routes, the five tabs, and `main`. |
@@ -66,9 +88,16 @@ the web: `#/lab/cards`). `NUCLO_SCREENSHOT=file.png` keeps a picture of the GTK 
 - **GTK**: the app's CSS above the user's theme (`~/.config/gtk-4.0/gtk.css`), a `gtk::Switch` for a checkbox, tab icons; the mode
   follows the app (libadwaita's colour scheme).
 - **Android**: a `Switch` for a checkbox; the app bar, tab bar, status and navigation bars follow the app's mode and accent
-  (`chromeTheme`); larger tab icons.
-- **iOS**: SF Symbols for the tabs (house, magnifyingglass, square.grid.2x2, heart, person.crop.circle).
+  (`chromeTheme`); line icons in the tab bar and app bar (`PathIcon`). Images: a memory cache (an eighth of the heap) over
+  the HTTP disk cache (64 MB), four download threads, newest request first, hardware bitmaps no wider than the screen; a
+  view that changes its src drops the old picture at once, and a download nobody waits for any more is skipped. A "full"
+  route covers the tabs and hides the system bars. A view added between its siblings is drawn in its place (it was drawn
+  over the later ones).
+- **iOS**: SF Symbols for the tabs (house, magnifyingglass, square.grid.2x2, heart, person.crop.circle) and for the icons
+  (`data-icon`); decoded images in an NSCache, one download per URL, a late download never replaces a newer src.
 - **GPUI**: tab glyphs.
+- **Rust core**: an inline SVG src is its own bytes (GTK renders it with librsvg, GPUI with its SVG renderer); a late
+  download never replaces a newer src.
 
 ## Changes to the compiler (nns-poc/vscode-extension, with tests)
 

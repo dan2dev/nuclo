@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 gtk = { package = "gtk4", version = "0.11", features = ["v4_12"] }
-adw = { package = "libadwaita", version = "0.9", features = ["v1_5"] }
+adw = { package = "libadwaita", version = "0.9", features = ["v1_7"] }
 ureq = "3.5"
 serde_json = "1"
 unicode-normalization = "0.1"

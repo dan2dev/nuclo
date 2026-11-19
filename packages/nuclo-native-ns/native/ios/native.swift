@@ -280,6 +280,59 @@ public func later(_ ms: Int32, _ f: @escaping () -> Void) {
   ui { _ = Nuclo.setTimeout({ f() }, Double(ms)) }
 }
 
+// ---- the platform's own components ---------------------------------------------------------------
+
+private func native(_ actions: [Action]) -> [Nuclo.NativeAction] { actions.map { a in Nuclo.NativeAction(a.label, a.kind, a.run) } }
+
+public func nativeAlert(_ title: String, _ message: String, _ actions: [Action]) -> Bool {
+  ui { Nuclo.NativeUi.alert(title, message, native(actions)) }
+}
+
+public func nativeActions(_ title: String, _ actions: [Action]) -> Bool {
+  ui { Nuclo.NativeUi.actions(title, native(actions)) }
+}
+
+public func nativeMenu(_ x: Double, _ y: Double, _ title: String, _ actions: [Action]) -> Bool {
+  ui { Nuclo.NativeUi.menu(x, y, title, native(actions)) }
+}
+
+public func nativeSheet(_ title: String, _ detent: String, _ content: @escaping () -> View) -> Bool {
+  ui { Nuclo.NativeUi.sheet(title, detent, (content() as? Nuclo.Node) ?? Nuclo.div()) }
+}
+
+public func nativeCloseSheet() -> Bool {
+  ui { Nuclo.NativeUi.closeSheet() }
+}
+
+#if canImport(UIKit)
+public func hasControl(_ kind: String) -> Bool { kind == "segmented" || kind == "chip" || kind == "slider" }
+
+public func segmentedControl(_ options: [String], _ at: @escaping () -> Int32, _ pick: @escaping (Int32) -> Void) -> View {
+  ui { Nuclo.NativeControls.segmented(options, at, pick) }
+}
+
+public func chipControl(_ label: String, _ on: @escaping () -> Bool, _ pick: @escaping () -> Void) -> View {
+  ui { Nuclo.NativeControls.chip(label, on, pick) }
+}
+
+public func sliderControl(_ value: @escaping () -> Double, _ color: String, _ change: @escaping (Double) -> Void) -> View {
+  ui { Nuclo.NativeControls.slider(value, color, change) }
+}
+#else
+/// macOS: kit.ns draws these.
+public func hasControl(_ kind: String) -> Bool { false }
+public func segmentedControl(_ options: [String], _ at: @escaping () -> Int32, _ pick: @escaping (Int32) -> Void) -> View { ui { Nuclo.div() } }
+public func chipControl(_ label: String, _ on: @escaping () -> Bool, _ pick: @escaping () -> Void) -> View { ui { Nuclo.div() } }
+public func sliderControl(_ value: @escaping () -> Double, _ color: String, _ change: @escaping (Double) -> Void) -> View { ui { Nuclo.div() } }
+#endif
+
+/// Neither UIKit nor AppKit has a toast: kit.ns draws it.
+public func nativeToast(_ text: String) -> Bool { false }
+
+public func prefetch(_ url: String) {
+  ui { Nuclo.prefetchImage(url) }
+}
+
 public func haptic(_ kind: String) {
   #if canImport(UIKit)
   ui {

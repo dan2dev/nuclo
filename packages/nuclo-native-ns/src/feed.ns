@@ -2,19 +2,20 @@
 // composer. Double tap a photo to like it, long press it for its menu, pinch it in the viewer.
 
 import {
-  css, div, p, span, small, button, img, input, textarea, list, when, update, go, back, later, haptic, View,
-  Pan, Pinch, Point, Scroll,
+  css, div, p, span, small, button, img, input, textarea, list, when, update, go, back, later, haptic, prefetch, View,
+  Pan, Pinch, Point, Scroll, Action,
 } from "./ui"
 import { t, space, radius, font, themed } from "./theme"
+import { liveIcon } from "./icons"
 import { Post, User, Story, Comment, users, stories, user, story, commentsOf, photoUrl, photoUrlWH, compact, ago } from "./data"
 import {
   feed, findAnyPost, isLiked, isSaved, toggleLike, like, toggleSave, likeCount, commentsAdded, addComment,
   addPost, profile, isFollowing, toggleFollow, deletePost,
 } from "./state"
 import {
-  page, fixedPage, column, row, rowGap, grow, spacer, padded, gapSm, iconBtn, smallBtn, smallGhostBtn,
+  page, fixedPage, column, row, rowGap, grow, spacer, padded, gapSm, iconBtn, iconButton, smallBtn, smallGhostBtn,
   primaryBtn, headline, body, sub, footnote, caption, strongText, divider, avatar, ringed, verifiedBadge,
-  badge, empty, toast, actionSheet, menuAt, alert, act, destructive, submenu, Action,
+  badge, empty, toast, actionSheet, menuAt, alert, act, destructive, submenu, notePress, pressedAt,
 } from "./kit"
 
 // ---- seen stories, the heart burst ------------------------------------------------------------
@@ -44,10 +45,7 @@ const photo = css({ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }
 const heartOn = css({ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, alignItems: "center", justifyContent: "center", fontSize: 110, color: "#ffffff", opacity: 0.95, scale: 1, transition: 300, easing: "spring", pointerEvents: "none" })
 const heartOff = css({ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, alignItems: "center", justifyContent: "center", fontSize: 110, color: "#ffffff", opacity: 0, scale: 0.4, transition: 220, pointerEvents: "none" })
 const actionsRow = css({ flexDirection: "row", alignItems: "center", px: space.xs, pt: space.xs })
-const likeOn = themed(() => css({ width: 44, height: 44, padding: 0, fontSize: 26, color: t().danger, scale: 1.0, transition: 260, easing: "spring", pressed: { scale: 0.8 } }))
-const likeOff = themed(() => css({ width: 44, height: 44, padding: 0, fontSize: 26, color: t().text, transition: 260, pressed: { scale: 0.8 } }))
-const postIcon = themed(() => css({ width: 44, height: 44, padding: 0, fontSize: 22, color: t().text, pressed: { opacity: 0.5, scale: 0.88 }, transition: 120 }))
-const saveOn = themed(() => css({ width: 44, height: 44, padding: 0, fontSize: 24, color: t().warning, pressed: { scale: 0.85 }, transition: 200, easing: "spring" }))
+const actionBox = css({ width: 44, height: 44, alignItems: "center", justifyContent: "center", pressed: { opacity: 0.5, scale: 0.86 }, transition: 160, easing: "spring" })
 const textBlock = css({ px: space.md + space.xs, gap: space.xs })
 const likesText = themed(() => css({ fontSize: font.sub, fontWeight: "semibold", color: t().text, pressed: { opacity: 0.5 } }))
 const captionText = themed(() => css({ fontSize: font.sub, color: t().text, lineHeight: 20 }))
@@ -98,7 +96,7 @@ export fn postMenu(post: Post, at: Point) {
     actions.push(act(isFollowing(post.author) ? "Unfollow" : "Follow", "＋", () => { toast(toggleFollow(post.author) ? "Following" : "Unfollowed") }))
     actions.push(destructive("Report", "⚠", () => reportSheet(post)))
   }
-  menuAt(at, user(post.author).handle, actions)
+  menuAt(at, mine ? profile().handle : user(post.author).handle, actions)
 }
 
 fn shareMenu(post: Post, at: Point) {
@@ -155,7 +153,7 @@ export fn postCard(post: Post, inFeed: bool): View {
         div(nameRow, p(strongText, u.handle), when(() => u.verified, () => span(verifiedBadge, "✓"))),
         p(caption, post.place),
       ),
-      button(iconBtn, "⋯", { label: "More", onClick: () => postMenu(post, { x: 0.0, y: 0.0, pageX: 9999.0, pageY: 120.0 }) }),
+      button(iconBtn, "⋯", { label: "More", onPointerDown: (pt: Point) => notePress(pt), onClick: () => postMenu(post, pressedAt()) }),
     ),
     div(photoBox,
       {
@@ -167,11 +165,13 @@ export fn postCard(post: Post, inFeed: bool): View {
       span(() => burst == id ? heartOn : heartOff, "♥"),
     ),
     div(actionsRow,
-      button(() => isLiked(id) ? likeOn() : likeOff(), () => isLiked(id) ? "♥" : "♡", { label: "Like", onClick: () => { toggleLike(id); haptic("light"); update() } }),
-      button(postIcon, "💬", { label: "Comments", onClick: () => go(`/post/${id}/comments`) }),
-      button(postIcon, "➤", { label: "Share", onClick: () => shareSheet(post) }),
+      div(actionBox, { label: "Like", onClick: () => { toggleLike(id); haptic("light"); update() } },
+        liveIcon("heart", () => isLiked(id) ? t().danger : t().text, () => isLiked(id), 26)),
+      div(actionBox, { label: "Comments", onClick: () => go(`/post/${id}/comments`) }, liveIcon("comment", () => t().text, () => false, 24)),
+      div(actionBox, { label: "Share", onClick: () => shareSheet(post) }, liveIcon("send", () => t().text, () => false, 24)),
       div(spacer),
-      button(() => isSaved(id) ? saveOn() : postIcon(), () => isSaved(id) ? "★" : "☆", { label: "Save", onClick: () => { toggleSave(id); haptic("light"); update() } }),
+      div(actionBox, { label: "Save", onClick: () => { toggleSave(id); haptic("light"); update() } },
+        liveIcon("bookmark", () => t().text, () => isSaved(id), 24)),
     ),
     div(textBlock,
       p(likesText, () => `${compact(likeCount(post))} likes`, { onClick: () => go(`/post/${id}/likes`) }),
@@ -202,9 +202,9 @@ export fn feedScreen(): View {
     div(column,
       div(header,
         p(wordmark, "nuclo"), p(wordDot, "."), div(spacer),
-        button(iconBtn, "＋", { label: "New post", onClick: () => go("/compose") }),
-        button(iconBtn, "♡", { label: "Activity", onClick: () => go("/activity") }),
-        div(button(iconBtn, "✉", { label: "Messages", onClick: () => go("/messages") }), span(badgeAt, badge, "3")),
+        iconButton("plusSquare", "New post", () => go("/compose")),
+        iconButton("heart", "Activity", () => go("/activity")),
+        div(iconButton("send", "Messages", () => go("/messages")), span(badgeAt, badge, "3")),
       ),
       storiesStrip(),
       list(() => feed().filter((x) => true).length > shownCount ? first(feed(), shownCount) : feed(), (post, i) => postCard(post, true)),
@@ -443,7 +443,12 @@ let storyDrag = 0.0
 const storyScreenStyle = css({ flex: 1, backgroundColor: "#000000" })
 fn storyFrame() => css({ flex: 1, borderRadius: storyDrag > 0.0 ? 24 : 0, overflow: "hidden", translateY: storyDrag, scale: 1.0 - storyDrag / 2000.0, transition: storyDrag == 0.0 ? 300 : 0, easing: "spring" })
 const storyImage = css({ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 })
-const storyShade = css({ position: "absolute", top: 0, left: 0, right: 0, height: 140, backgroundColor: "rgba(0,0,0,0.25)" })
+// A scrim under the bars and the reply field: layered bands, a gradient every platform draws the same.
+fn shadeBand(h: float, bottom: bool) => bottom
+  ? css({ position: "absolute", bottom: 0, left: 0, right: 0, height: h, backgroundColor: "rgba(0,0,0,0.04)", pointerEvents: "none" })
+  : css({ position: "absolute", top: 0, left: 0, right: 0, height: h, backgroundColor: "rgba(0,0,0,0.04)", pointerEvents: "none" })
+const shadeTop = [shadeBand(200.0, false), shadeBand(170.0, false), shadeBand(140.0, false), shadeBand(115.0, false), shadeBand(90.0, false), shadeBand(65.0, false)]
+const shadeBottom = [shadeBand(160.0, true), shadeBand(130.0, true), shadeBand(100.0, true), shadeBand(70.0, true)]
 const storyTop = css({ position: "absolute", top: 0, left: 0, right: 0, padding: space.md, pt: 44, gap: space.md })
 const bars = css({ flexDirection: "row", gap: 4 })
 const barTrack = css({ flex: 1, height: 3, borderRadius: 2, backgroundColor: "rgba(255,255,255,0.35)", flexDirection: "row", overflow: "hidden" })
@@ -477,6 +482,7 @@ fn tick(chain: int) {
 fn startTicks() {
   storyTick += 1
   storyAt = 0
+  prefetchNext()
   const chain = storyTick
   later(100, () => tick(chain))
 }
@@ -508,6 +514,14 @@ fn prevPhoto() {
   if (storyPhoto > 0) { storyPhoto -= 1 }
   startTicks()
   update()
+}
+
+/** The rest of this story and the next person's first photo download while this one shows (the cache skips repeats). */
+fn prefetchNext() {
+  const s = story(currentStory) ?? return
+  for (const k of storyPhoto + 1..s.photos.length - 1) { prefetch(storyImageUrl(currentStory, k)) }
+  const n = nextStoryId(currentStory)
+  if (n != "") { prefetch(storyImageUrl(n, 0)) }
 }
 
 fn nextStoryId(id: string): string {
@@ -546,15 +560,14 @@ export fn storyScreen(id: string): View {
           update()
         },
       },
-      img(storyImage, { src: storyImageUrl(id, 0) }),
-      when(() => storyPhoto == 1, () => img(storyImage, { src: storyImageUrl(currentStory, 1) })),
-      when(() => storyPhoto == 2, () => img(storyImage, { src: storyImageUrl(currentStory, 2) })),
-      when(() => currentStory != id && storyPhoto == 0, () => img(storyImage, { src: storyImageUrl(currentStory, 0) })),
-      div(storyShade),
+      // One image, keyed by its URL: the old photo goes the moment the story moves on, loaded or not.
+      list(() => [storyImageUrl(currentStory, storyPhoto)], (u, i) => img(storyImage, { src: u })),
+      div(shadeTop[0]), div(shadeTop[1]), div(shadeTop[2]), div(shadeTop[3]), div(shadeTop[4]), div(shadeTop[5]),
+      div(shadeBottom[0]), div(shadeBottom[1]), div(shadeBottom[2]), div(shadeBottom[3]),
       div(storyTop,
         div(bars, storyBar(0), storyBar(1), storyBar(2)),
         div(storyUser,
-          avatar(user((story(currentStory) ?? stories[0]).user).avatar, 32),
+          list(() => [user((story(currentStory) ?? stories[0]).user).avatar], (a, i) => avatar(a, 32)),
           p(storyName2, () => user((story(currentStory) ?? stories[0]).user).handle),
           p(storyTime, () => `${3 + storyPhoto * 2}h`),
           div(spacer),
@@ -581,7 +594,7 @@ export fn storyScreen(id: string): View {
 
 fn storyImageUrl(id: string, i: int): string {
   const s = story(id) ?? stories[0]
-  return photoUrlWH(s.photos.get(i) ?? 30, 400, 720)
+  return photoUrlWH(s.photos.get(i) ?? 30, 720, 1280)
 }
 
 // ---- the composer (a modal sheet) -------------------------------------------------------------------

@@ -6,7 +6,7 @@
 use crate::nns_rt::{List, Str};
 use crate::nuclo::prelude as nu;
 use crate::store::Row;
-use crate::ui::{Attributes, Look, Mod, Pan, Pinch, Point, Scroll, Style as StyleObject, Tab, Viewport};
+use crate::ui::{Action, Attributes, Look, Mod, Pan, Pinch, Point, Scroll, Style as StyleObject, Tab, Viewport};
 use std::cell::RefCell;
 use std::rc::Rc;
 
@@ -440,6 +440,69 @@ pub fn overlay(view: Rc<dyn Fn() -> View>) {
   nu::render(Rc::new(move || node(view()).expect("an overlay must be a builder's node")));
 }
 
+// ---- the platform's own components (libadwaita on GTK; GPUI has none: kit.ns draws them) -----------
+
+fn items(actions: &List<Action>) -> (Vec<(String, String)>, Vec<Rc<dyn Fn()>>) {
+  let items = actions.iter().map(|a| (a.label.to_string(), a.kind.to_string())).collect();
+  let runs = actions.iter().map(|a| a.run_.clone()).collect();
+  (items, runs)
+}
+
+fn chosen(runs: Vec<Rc<dyn Fn()>>) -> Box<dyn Fn(usize)> {
+  Box::new(move |i| {
+    if let Some(run) = runs.get(i).cloned() {
+      // After the dialog or menu is gone: a submenu opens the next menu.
+      nu::set_timeout(Rc::new(move || { run(); nu::update(&[]); }), 0.0);
+    }
+  })
+}
+
+pub fn native_alert(title: Str, message: Str, actions: List<Action>) -> bool {
+  let (items, runs) = items(&actions);
+  nu::backend().native_alert(&title, &message, &items, chosen(runs))
+}
+
+pub fn native_actions(title: Str, actions: List<Action>) -> bool {
+  let (items, runs) = items(&actions);
+  nu::backend().native_actions(&title, &items, chosen(runs))
+}
+
+pub fn native_menu(x: f64, y: f64, title: Str, actions: List<Action>) -> bool {
+  let (items, runs) = items(&actions);
+  nu::backend().native_menu(x as f32, y as f32, &title, &items, chosen(runs))
+}
+
+pub fn native_sheet(title: Str, detent: Str, content: Rc<dyn Fn() -> View>) -> bool {
+  match node(content()) {
+    Some(n) => nu::native_sheet(n, &title, &detent),
+    None => false,
+  }
+}
+
+pub fn has_control(kind: Str) -> bool {
+  crate::controls::HAS && matches!(&*kind, "segmented" | "chip" | "slider")
+}
+
+pub fn segmented_control(options: List<Str>, at: Rc<dyn Fn() -> i32>, pick: Rc<dyn Fn(i32)>) -> View {
+  nu::Mod::from(crate::controls::segmented(options.iter().map(|o| o.to_string()).collect(), at, pick))
+}
+
+pub fn chip_control(label: Str, on: Rc<dyn Fn() -> bool>, pick: Rc<dyn Fn()>) -> View {
+  nu::Mod::from(crate::controls::chip(label.to_string(), on, pick))
+}
+
+pub fn slider_control(value: Rc<dyn Fn() -> f64>, _color: Str, change: Rc<dyn Fn(f64)>) -> View {
+  nu::Mod::from(crate::controls::slider(value, change))
+}
+
+pub fn native_close_sheet() -> bool {
+  nu::backend().native_close_sheet()
+}
+
+pub fn native_toast(text: Str) -> bool {
+  nu::backend().native_toast(&text)
+}
+
 // ---- platform ------------------------------------------------------------------------
 
 pub fn later_(ms: i32, f: Rc<dyn Fn()>) {
@@ -452,8 +515,12 @@ pub fn viewport() -> Viewport {
 }
 
 /// GTK follows the app's mode (libadwaita's colour scheme): the header bar and the tab bar too.
-pub fn theme(dark: bool, _accent: Str, _background: Str) {
-  crate::set_dark(dark);
+pub fn theme(dark: bool, accent: Str, _background: Str) {
+  crate::set_dark(dark, &accent);
+}
+
+pub fn prefetch(url: Str) {
+    crate::nuclo::task::download_cached(url.to_string(), |_| {});
 }
 
 /// Desktops have no haptic motor.

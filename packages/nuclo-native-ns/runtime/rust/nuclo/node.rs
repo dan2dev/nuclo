@@ -353,7 +353,7 @@ impl Node {
     // Bindings ---------------------------------------------------------------
 
     /// Runs `get` now and on each update; `set` only sees values that changed.
-    fn bind<T: PartialEq + Clone + 'static>(&self, get: Rc<dyn Fn() -> T>, set: impl Fn(&T) + 'static) {
+    pub(crate) fn bind<T: PartialEq + Clone + 'static>(&self, get: Rc<dyn Fn() -> T>, set: impl Fn(&T) + 'static) {
         let last: RefCell<Option<T>> = RefCell::new(None);
         let run = Rc::new(move || {
             let value = get();
@@ -1256,6 +1256,20 @@ pub(crate) fn add_root(node: &Node, overlay: bool, attached: bool) {
     node.apply_styles_deep();
 }
 
+/// nuclo-native-ns: shows `node` in the platform's sheet; false where the backend has none.
+pub fn native_sheet(node: Node, title: &str, detent: &str) -> bool {
+    add_root(&node, false, true);
+    let Some(view) = node.view else { return false };
+    let gone = node.clone();
+    if backend().native_sheet(view, title, detent, Box::new(move || remove_root(&gone))) {
+        backend().request_layout();
+        true
+    } else {
+        remove_root(&node);
+        false
+    }
+}
+
 pub(crate) fn remove_root(node: &Node) {
     RT.with(|rt| rt.roots.borrow_mut().retain(|root| root.node != *node));
     node.destroy();
@@ -1593,14 +1607,18 @@ impl A {
         Mod::apply(move |node| {
             let target = Rc::downgrade(&node.0);
             let view = node.view.unwrap();
+            let shown = Rc::new(RefCell::new(String::new()));
             node.bind(value.clone(), move |url: &String| {
+                *shown.borrow_mut() = url.clone();
                 if backend().set_image_url(view, url) {
                     return;
                 }
                 let target = target.clone();
+                let shown = shown.clone();
+                let wanted = url.clone();
                 task::download_cached(url.clone(), move |bytes| {
                     if let (Some(node), Some(bytes)) = (target.upgrade(), bytes) {
-                        if !node.destroyed.get() {
+                        if !node.destroyed.get() && *shown.borrow() == wanted {
                             backend().set_image(node.view.unwrap(), &bytes);
                         }
                     }

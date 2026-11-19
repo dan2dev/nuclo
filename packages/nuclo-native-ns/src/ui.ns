@@ -256,6 +256,38 @@ export extern fn overlay(view: () => View)
 
 /** Runs `f` once, after `ms` milliseconds, on the UI thread. */
 export extern fn later(ms: int, f: () => void)
+/**
+ * One choice of a menu, an action sheet, or an alert. `kind`: "default", "destructive", "cancel", "checked"
+ * (a check mark), or "submenu" (`run` opens the next menu).
+ */
+export type Action = { label: string, glyph: string, kind: string, run: () => void }
+
+// The platform's own components: Material 3 on Android, UIKit on iOS, AppKit on macOS, libadwaita on GTK.
+// Each gives false where the platform has none (the web, GPUI): kit.ns draws its own then.
+
+/** An alert dialog: a title, a message, and its buttons. */
+export extern fn nativeAlert(title: string, message: string, actions: Action[]): bool
+/** A list of actions from the bottom (Android's bottom sheet, iOS's action sheet). */
+export extern fn nativeActions(title: string, actions: Action[]): bool
+/** A menu at a point of the window. */
+export extern fn nativeMenu(x: float, y: float, title: string, actions: Action[]): bool
+/** A modal sheet of `content`: "medium" (half the screen, drags up) or "large". */
+export extern fn nativeSheet(title: string, detent: string, content: () => View): bool
+/** Closes the native sheet on top; false when there is none. */
+export extern fn nativeCloseSheet(): bool
+/** Whether the platform has its own control `kind`: "segmented", "chip", or "slider". Where not, kit.ns draws one. */
+export extern fn hasControl(kind: string): bool
+/** The platform's segmented control (Android's segmented buttons, UISegmentedControl, GTK's linked toggles). */
+export extern fn segmentedControl(options: string[], at: () => int, pick: (int) => void): View
+/** The platform's filter chip (a toggle button where there is none). */
+export extern fn chipControl(label: string, on: () => bool, pick: () => void): View
+/** The platform's slider, of 0…1, in `color` ("" for the accent). */
+export extern fn sliderControl(value: () => float, color: string, change: (float) => void): View
+/** A short message (Android's snackbar, GTK's toast). */
+export extern fn nativeToast(text: string): bool
+
+/** Downloads a picture into the platform's image cache before a view shows it (the next story, the next photo). */
+export extern fn prefetch(url: string)
 /** A short haptic tap: "light", "medium", or "success". Nothing where the device has no motor. */
 export extern fn haptic(kind: string)
 /**

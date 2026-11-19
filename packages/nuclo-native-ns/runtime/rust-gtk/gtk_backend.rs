@@ -245,6 +245,9 @@ struct Gtk {
     pages: RefCell<HashMap<ViewId, adw::NavigationPage>>,
     /// Modal screens, each with its tab, in the order they were presented.
     dialogs: RefCell<Vec<(usize, ViewId, adw::Dialog)>>,
+    /// nuclo-native-ns: the native sheets on screen, and the window's toasts.
+    sheets: RefCell<Vec<adw::Dialog>>,
+    toasts: adw::ToastOverlay,
     timers: RefCell<HashMap<u64, glib::SourceId>>,
     next_timer: Cell<u64>,
     /// requestAnimationFrame callbacks, and the tick that runs them while there are any.
@@ -462,6 +465,123 @@ struct Drag {
 }
 
 impl Backend for Gtk {
+    // nuclo-native-ns: libadwaita's own components.
+
+    fn native_alert(&self, title: &str, message: &str, items: &[(String, String)], done: Box<dyn Fn(usize)>) -> bool {
+        let dialog = adw::AlertDialog::new(Some(title), (!message.is_empty()).then_some(message));
+        for (i, (label, kind)) in items.iter().enumerate() {
+            let id = i.to_string();
+            dialog.add_response(&id, label);
+            match kind.as_str() {
+                "destructive" => dialog.set_response_appearance(&id, adw::ResponseAppearance::Destructive),
+                "cancel" => dialog.set_close_response(&id),
+                _ => {
+                    dialog.set_response_appearance(&id, adw::ResponseAppearance::Suggested);
+                    dialog.set_default_response(Some(&id));
+                }
+            }
+        }
+        dialog.connect_response(None, move |_, id| {
+            if let Ok(i) = id.parse::<usize>() {
+                done(i);
+            }
+        });
+        dialog.present(Some(&self.window));
+        true
+    }
+
+    fn native_actions(&self, title: &str, items: &[(String, String)], done: Box<dyn Fn(usize)>) -> bool {
+        // A dialog of rows: a bottom sheet on a narrow window, a floating dialog on a wide one.
+        let list = gtk::ListBox::new();
+        list.add_css_class("boxed-list");
+        list.set_selection_mode(gtk::SelectionMode::None);
+        let indexes: Vec<usize> = items.iter().enumerate().filter(|(_, (_, kind))| kind != "cancel").map(|(i, _)| i).collect();
+        for &i in &indexes {
+            let (label, kind) = &items[i];
+            let row = adw::ActionRow::builder().title(label).activatable(true).build();
+            if kind == "destructive" {
+                row.add_css_class("error");
+            }
+            list.append(&row);
+        }
+        let body = gtk::Box::new(gtk::Orientation::Vertical, 0);
+        body.set_margin_start(12);
+        body.set_margin_end(12);
+        body.set_margin_bottom(18);
+        body.append(&list);
+        let toolbar = adw::ToolbarView::new();
+        toolbar.add_top_bar(&adw::HeaderBar::new());
+        toolbar.set_content(Some(&body));
+        let dialog = adw::Dialog::builder().title(if title.is_empty() { " " } else { title }).child(&toolbar).content_width(360).build();
+        let d = dialog.clone();
+        list.connect_row_activated(move |_, row| {
+            d.close();
+            if let Some(&i) = indexes.get(row.index() as usize) {
+                done(i);
+            }
+        });
+        dialog.present(Some(&self.window));
+        true
+    }
+
+    fn native_menu(&self, x: f32, y: f32, title: &str, items: &[(String, String)], done: Box<dyn Fn(usize)>) -> bool {
+        let model = gio::Menu::new();
+        let section = gio::Menu::new();
+        let group = gio::SimpleActionGroup::new();
+        let done: Rc<dyn Fn(usize)> = Rc::from(done);
+        for (i, (label, kind)) in items.iter().enumerate() {
+            if kind == "cancel" {
+                continue;
+            }
+            let name = format!("i{i}");
+            let action = if kind == "checked" { gio::SimpleAction::new_stateful(&name, None, &true.to_variant()) } else { gio::SimpleAction::new(&name, None) };
+            let run = done.clone();
+            action.connect_activate(move |_, _| run(i));
+            group.add_action(&action);
+            section.append(Some(&if kind == "submenu" { format!("{label}…") } else { label.clone() }), Some(&format!("native.{name}")));
+        }
+        model.append_section((!title.is_empty()).then_some(title), &section);
+        let popover = gtk::PopoverMenu::from_model(Some(&model));
+        popover.insert_action_group("native", Some(&group));
+        popover.set_parent(&self.layers);
+        popover.set_has_arrow(false);
+        let width = self.layers.width() as f32;
+        popover.set_pointing_to(Some(&gdk::Rectangle::new(x.min(width - 2.0).max(0.0) as i32, y as i32, 1, 1)));
+        popover.connect_closed(|p| {
+            let p = p.clone();
+            // After the activated item ran: unparenting first would drop its action.
+            glib::idle_add_local_once(move || p.unparent());
+        });
+        popover.popup();
+        true
+    }
+
+    fn native_sheet(&self, root: ViewId, title: &str, detent: &str, closed: Box<dyn Fn()>) -> bool {
+        let screen = Screen { root, title, modal: true, header: true };
+        let height = if detent == "large" { (self.window.height() - 40).max(400) } else { (self.window.height() as f32 * 0.55) as i32 };
+        let dialog = adw::Dialog::builder().title(if title.is_empty() { " " } else { title }).child(&self.framed(&screen)).content_width(420).content_height(height).build();
+        dialog.connect_closed(move |d| {
+            if let Some(gtk) = gtk_backend() {
+                gtk.sheets.borrow_mut().retain(|s| s != d);
+            }
+            closed();
+        });
+        self.sheets.borrow_mut().push(dialog.clone());
+        dialog.present(Some(&self.window));
+        true
+    }
+
+    fn native_close_sheet(&self) -> bool {
+        let Some(dialog) = self.sheets.borrow_mut().pop() else { return false };
+        dialog.close();
+        true
+    }
+
+    fn native_toast(&self, text: &str) -> bool {
+        self.toasts.add_toast(adw::Toast::builder().title(text).timeout(2).build());
+        true
+    }
+
     fn create(&self, kind: Kind) -> ViewId {
         let widget: NucloView = glib::Object::new();
         let id = self.next_view.get();
@@ -1240,7 +1360,9 @@ pub fn run(entry: fn()) {
         gtk::style_context_add_provider_for_display(&gdk::Display::default().expect("no display"), &provider, gtk::STYLE_PROVIDER_PRIORITY_USER + 1);
 
         let layers = gtk::Overlay::new();
-        let window = adw::ApplicationWindow::builder().application(app).default_width(420).default_height(780).content(&layers).build();
+        let toasts = adw::ToastOverlay::new();
+        toasts.set_child(Some(&layers));
+        let window = adw::ApplicationWindow::builder().application(app).default_width(420).default_height(780).content(&toasts).build();
         let gtk = Rc::new(Gtk {
             window: window.clone(),
             layers,
@@ -1250,6 +1372,8 @@ pub fn run(entry: fn()) {
             navigation: RefCell::new(None),
             pages: RefCell::default(),
             dialogs: RefCell::default(),
+            sheets: RefCell::default(),
+            toasts,
             timers: RefCell::default(),
             next_timer: Cell::new(1),
             frames: RefCell::default(),

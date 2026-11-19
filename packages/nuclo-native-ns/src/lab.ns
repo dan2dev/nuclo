@@ -4,7 +4,7 @@
 
 import {
   css, div, p, span, button, img, input, textarea, toggle, list, when, update, go, back, later, haptic,
-  viewport, View, StyleResult, Pan, Pinch, Point, Scroll,
+  viewport, View, StyleResult, Pan, Pinch, Point, Scroll, Action,
 } from "./ui"
 import { t, space, radius, font, themed } from "./theme"
 import { users, posts, user, photoUrl, photoUrlWH } from "./data"
@@ -13,7 +13,7 @@ import {
   page, groupedPage, fixedPage, column, row, rowGap, rowBetween, grow, spacer, padded, gapSm, gapMd, card,
   title1, title2, title3, headline, body, sub, footnote, caption, strongText, accentText, primaryBtn,
   secondaryBtn, dangerBtn, smallBtn, smallGhostBtn, avatar, section, navCell, switchCell, segmented, chip,
-  toast, actionSheet, menuAt, sheet, alert, act, destructive, checked, submenu, Action, divider,
+  toast, actionSheet, menuAt, sheet, closeSheet, nativeSlider, alert, act, destructive, checked, submenu, divider,
 } from "./kit"
 
 fn abs(x: number): number => x < 0.0 ? 0.0 - x : x
@@ -29,27 +29,27 @@ export fn labScreen(): View {
   return div(groupedPage, div(column,
     p(intro, "Gestures, menus, and sheets, written in Nuclo Script and recognized by each platform's own touch system."),
     section("Gestures", [
-      navCell("✥", "#0a84ff", "Drag and fling", () => "", () => go("/lab/drag")),
-      navCell("⇆", "#34c759", "Swipe actions", () => "", () => go("/lab/swipe")),
-      navCell("⤢", "#ff9f0a", "Pinch and zoom", () => "", () => go("/lab/pinch")),
-      navCell("◉", "#ff2d55", "Long press", () => "", () => go("/lab/longpress")),
-      navCell("☰", "#5e5ce6", "Drag to reorder", () => "", () => go("/lab/reorder")),
-      navCell("◐", "#30b0c7", "Sliders and knobs", () => "", () => go("/lab/sliders")),
-      navCell("▭", "#af52de", "Carousel", () => "", () => go("/lab/carousel")),
-      navCell("↓", "#64d2ff", "Pull to refresh", () => "", () => go("/lab/pull")),
-      navCell("♥", "#ff375f", "Swipe cards", () => "", () => go("/lab/cards")),
-      navCell("✎", "#ffd60a", "Finger painting", () => "", () => go("/lab/draw")),
+      navCell("move", "#0a84ff", "Drag and fling", () => "", () => go("/lab/drag")),
+      navCell("swap", "#34c759", "Swipe actions", () => "", () => go("/lab/swipe")),
+      navCell("expand", "#ff9f0a", "Pinch and zoom", () => "", () => go("/lab/pinch")),
+      navCell("target", "#ff2d55", "Long press", () => "", () => go("/lab/longpress")),
+      navCell("menu", "#5e5ce6", "Drag to reorder", () => "", () => go("/lab/reorder")),
+      navCell("sliders", "#30b0c7", "Sliders and knobs", () => "", () => go("/lab/sliders")),
+      navCell("carousel", "#af52de", "Carousel", () => "", () => go("/lab/carousel")),
+      navCell("arrowDown", "#32ade6", "Pull to refresh", () => "", () => go("/lab/pull")),
+      navCell("heart", "#ff375f", "Swipe cards", () => "", () => go("/lab/cards")),
+      navCell("pencil", "#ffb800", "Finger painting", () => "", () => go("/lab/draw")),
     ]),
     section("Menus and sheets", [
-      navCell("⋯", "#8e8e93", "Menus", () => "", () => go("/lab/menus")),
-      navCell("▤", "#0a84ff", "Bottom sheets", () => "", () => go("/lab/sheets")),
-      navCell("▣", "#34c759", "Native sheet", () => "", () => go("/lab/native-sheet")),
-      navCell("✉", "#ff9f0a", "Toasts and alerts", () => "", () => go("/lab/toasts")),
+      navCell("more", "#8e8e93", "Menus", () => "", () => go("/lab/menus")),
+      navCell("sheet", "#0a84ff", "Bottom sheets", () => "", () => go("/lab/sheets")),
+      navCell("window", "#34c759", "Native sheet", () => "", () => go("/lab/native-sheet")),
+      navCell("mail", "#ff9f0a", "Toasts and alerts", () => "", () => go("/lab/toasts")),
     ]),
     section("Layouts", [
-      navCell("▔", "#5e5ce6", "Collapsing header", () => "", () => go("/lab/collapsing")),
-      navCell("☑", "#ff2d55", "Forms", () => "", () => go("/lab/forms")),
-      navCell("✦", "#30b0c7", "Welcome tour", () => "", () => go("/onboarding")),
+      navCell("header", "#5e5ce6", "Collapsing header", () => "", () => go("/lab/collapsing")),
+      navCell("checkbox", "#ff2d55", "Forms", () => "", () => go("/lab/forms")),
+      navCell("sparkle", "#30b0c7", "Welcome tour", () => "", () => go("/onboarding")),
     ]),
   ))
 }
@@ -389,6 +389,10 @@ fn thumb(v: number) => css({ position: "absolute", top: 4, left: 0, width: 28, h
 
 /** A slider: drag anywhere on the track. `get` and `set` hold 0…1. */
 fn slider(name: string, color: string, get: () => number, set: (number) => void): View {
+  const native = nativeSlider(get, color, set)
+  if (native != null) {
+    return div(sliderRow, div(rowBetween, p(strongText, name), p(caption, () => `${toInt(get() * 100.0)}%`)), native)
+  }
   let start = 0.0
   return div(sliderRow,
     div(rowBetween, p(strongText, name), p(caption, () => `${toInt(get() * 100.0)}%`)),
@@ -419,7 +423,7 @@ const stepNum = themed(() => css({ width: 48, textAlign: "center", fontSize: fon
 export fn slidersScreen(): View {
   trackW = clamp(viewport().width, 0.0, 680.0) - 32.0
   return div(page, div(column,
-    p(intro, "Sliders, a knob, and a stepper: each is a drag recognized on the view, mapped to a value."),
+    p(intro, "The platform's own sliders, and a knob and a stepper: each a drag recognized on the view, mapped to a value."),
     div(() => css({ height: 120, mx: space.lg, borderRadius: radius.lg, alignItems: "center", justifyContent: "center", backgroundColor: mixed() }), p(swatchText, () => mixed())),
     slider("Red", "#ff3b30", () => red, (v) => { red = v }),
     slider("Green", "#34c759", () => green, (v) => { green = v }),
@@ -807,7 +811,7 @@ fn filterContent(): View {
     p(headline, "Distance"),
     slider("Within", t().accent, () => priceMax, (v) => { priceMax = v }),
     switchCell("", "", "Only people I follow", () => showFlagged, (v) => { showFlagged = v }),
-    button(primaryBtn, "Apply", { onClick: () => toast("Filters applied") }),
+    button(primaryBtn, "Apply", { onClick: () => { closeSheet(); toast("Filters applied") } }),
   )
 }
 

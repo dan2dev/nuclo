@@ -25,7 +25,7 @@ mod mapset;
 mod node;
 mod router;
 mod style;
-mod task;
+pub(crate) mod task;
 mod typedarray;
 mod weak;
 
@@ -54,7 +54,7 @@ pub mod prelude {
     pub use super::gc::{gc_collect, gc_live, gc_pass_active, gc_reset_max_pause, gc_set_slice, gc_set_threshold, gc_start_pass, gc_stats, gc_step, gc_track, gc_write, GcNode, GcScan, GcStats};
     pub use super::backend::{backend, NativeView};
     pub use super::node::{
-        article, aside, button, checkbox, div, el, em, footer, force_update, form, h1, h2, h3, h4, header, img, input, into, label, li, list, main, native_view, nav, p, region, render, scope,
+        article, aside, button, checkbox, div, el, native_sheet, em, footer, force_update, form, h1, h2, h3, h4, header, img, input, into, label, li, list, main, native_view, nav, p, region, render, scope,
         section, select_event, small, span, strong, textarea, ul, update, when, InputTarget, KeyboardEvent, Mod, NativeComponent, NativeElement, NativeEvent, Node, PanEvent, Params, PinchEvent, PointerEvent,
         ScrollEvent, WhenBuilder, A,
     };

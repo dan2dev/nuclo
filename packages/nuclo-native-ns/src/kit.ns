@@ -4,9 +4,10 @@
 
 import {
   css, div, p, span, button, img, toggle, group, list, when, update, later, haptic, viewport, Mod, View,
-  StyleResult, Pan, Point, Look,
+  StyleResult, Pan, Point, Look, Action, nativeAlert, nativeActions, nativeMenu, nativeSheet, nativeToast, nativeCloseSheet, hasControl, segmentedControl, chipControl, sliderControl,
 } from "./ui"
 import { t, space, radius, font, themed } from "./theme"
+import { icon, isIcon, liveIcon } from "./icons"
 
 // ---- text -----------------------------------------------------------------------------
 
@@ -79,6 +80,20 @@ export const iconBtn = themed(() => css({
   width: 40, height: 40, padding: 0, borderRadius: 20, alignItems: "center", justifyContent: "center",
   color: t().text, fontSize: 22, pressed: { opacity: 0.5, scale: 0.9 }, transition: 120, hover: { backgroundColor: t().surface2 },
 }))
+const iconBox = themed(() => css({
+  width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center",
+  pressed: { opacity: 0.5, scale: 0.9 }, transition: 120, hover: { backgroundColor: t().surface2 },
+}))
+
+// Where the last press began: a menu opened by a button's click opens there.
+let pressPoint: Point = { x: 0.0, y: 0.0, pageX: 9999.0, pageY: 120.0 }
+export fn notePress(pt: Point) { pressPoint = pt }
+export fn pressedAt(): Point => pressPoint
+
+/** A round button with a line icon in the text colour. */
+export fn iconButton(name: string, label: string, run: () => void): View =>
+  div(iconBox, { onClick: () => run(), onPointerDown: (pt: Point) => notePress(pt), label: label }, liveIcon(name, () => t().text, () => false, 26))
+
 export const roundBtn = themed(() => css({
   width: 36, height: 36, padding: 0, borderRadius: 18, alignItems: "center", justifyContent: "center",
   backgroundColor: t().surface2, color: t().text, fontSize: 17, pressed: { opacity: 0.6, scale: 0.92 }, transition: 120,
@@ -124,6 +139,10 @@ const cellTitle = themed(() => css({ flex: 1, fontSize: font.body, color: t().te
 const cellDetail = themed(() => css({ fontSize: font.body, color: t().muted }))
 const chevron = themed(() => css({ fontSize: 20, color: t().muted, fontWeight: "light" }))
 fn iconTile(color: string) => css({ width: 30, height: 30, borderRadius: 8, backgroundColor: color, color: "#ffffff", fontSize: 16, textAlign: "center", lineHeight: 30 })
+fn iconTileBox(color: string) => css({ width: 30, height: 30, borderRadius: 8, backgroundColor: color, alignItems: "center", justifyContent: "center" })
+
+/** A cell's tile: a white line icon on the colour, or a character when `glyph` is not an icon's name. */
+fn tile(glyph: string, color: string): View => isIcon(glyph) ? div(iconTileBox(color), icon(glyph, "#ffffff", 18)) : span(iconTile(color), glyph)
 const sectionNote = themed(() => css({ fontSize: font.footnote, color: t().muted, px: space.lg + space.xs, pt: space.sm, lineHeight: 18 }))
 
 /** A titled group of cells, separated by hairlines. */
@@ -149,7 +168,7 @@ export fn navCell(glyph: string, color: string, title: string, detail: () => str
   return div(
     cellStyle,
     { onClick: () => run() },
-    when(() => glyph != "", () => span(iconTile(color), glyph)),
+    when(() => glyph != "", () => tile(glyph, color)),
     p(cellTitle, title),
     span(cellDetail, detail),
     span(chevron, "›"),
@@ -160,7 +179,7 @@ export fn navCell(glyph: string, color: string, title: string, detail: () => str
 export fn switchCell(glyph: string, color: string, title: string, on: () => bool, set: (bool) => void): View {
   return div(
     cellStyle,
-    when(() => glyph != "", () => span(iconTile(color), glyph)),
+    when(() => glyph != "", () => tile(glyph, color)),
     p(cellTitle, title),
     toggle({ checked: () => on(), onChange: (v) => { set(v); haptic("light"); update() }, label: title }),
   )
@@ -202,6 +221,7 @@ const chipOn = themed(() => css({
 }))
 
 export fn chip(label: string, on: () => bool, pick: () => void): View {
+  if (hasControl("chip")) { return chipControl(label, on, () => { pick(); haptic("light"); update() }) }
   return button(() => on() ? chipOn() : chipOff(), label, { onClick: () => { pick(); haptic("light"); update() } })
 }
 
@@ -217,11 +237,18 @@ const segOff = themed(() => css({
 
 /** The platform's segmented control: one of `options`, by index. */
 export fn segmented(options: string[], at: () => int, pick: (int) => void): View {
+  if (hasControl("segmented")) { return segmentedControl(options, at, (i) => { pick(i); haptic("light"); update() }) }
   let ms: Mod[] = [Class(segTrack())]
   for (const i of 0..options.length - 1) {
     ms.push(Part(button(() => at() == i ? segOn() : segOff(), options[i], { onClick: () => { pick(i); haptic("light"); update() } })))
   }
   return group(ms)
+}
+
+/** The platform's slider of 0…1 in `color` ("" for the accent), or null where it has none (the caller draws one). */
+export fn nativeSlider(get: () => float, color: string, set: (float) => void): View? {
+  if (!hasControl("slider")) { return null }
+  return sliderControl(get, color, (v) => { set(v); update() })
 }
 
 // ---- states -----------------------------------------------------------------------------------
@@ -245,11 +272,6 @@ export const verifiedBadge = themed(() => css({
 
 // ---- the overlay layer ---------------------------------------------------------------------------
 
-/**
- * One thing of a menu, an action sheet, or an alert. `kind`:
- *   "default", "destructive", "cancel", "checked" (a check mark), or "submenu" (opens `run`'s menu)
- */
-export type Action = { label: string, glyph: string, kind: string, run: () => void }
 
 export fn act(label: string, glyph: string, run: () => void): Action => ({ label: label, glyph: glyph, kind: "default", run: run })
 export fn destructive(label: string, glyph: string, run: () => void): Action => ({ label: label, glyph: glyph, kind: "destructive", run: run })
@@ -308,6 +330,7 @@ export fn hasLayer() => layers.filter((l) => l.kind != "toast").length > 0
 
 /** A short message at the bottom, for two seconds. */
 export fn toast(text: string) {
+  if (nativeToast(text)) { return }
   const key = push("toast", text, "", 0.0, 0.0)
   later(2200, () => close(key))
 }
@@ -315,6 +338,7 @@ export fn toast(text: string) {
 /** The platform's action sheet: a list of actions from the bottom, and Cancel. */
 export fn actionSheet(title: string, actions: Action[]) {
   haptic("light")
+  if (nativeActions(title, actions)) { return }
   const key = nextKey
   actionsOf.set(key, actions)
   push("actions", title, "", 0.0, 0.0)
@@ -323,6 +347,7 @@ export fn actionSheet(title: string, actions: Action[]) {
 /** A popover menu at a point of the window (a long press, a "more" button). A submenu opens over it. */
 export fn menuAt(at: Point, title: string, actions: Action[]) {
   haptic("medium")
+  if (nativeMenu(at.pageX, at.pageY, title, actions)) { return }
   const key = nextKey
   actionsOf.set(key, actions)
   push("menu", title, "", at.pageX, at.pageY)
@@ -330,6 +355,7 @@ export fn menuAt(at: Point, title: string, actions: Action[]) {
 
 /** A bottom sheet of `content`. `detent`: "medium" (half the window) or "large". */
 export fn sheet(title: string, detent: string, content: () => View) {
+  if (nativeSheet(title, detent, content)) { return }
   const key = nextKey
   contentOf.set(key, content)
   sheetY = 0.0
@@ -337,9 +363,23 @@ export fn sheet(title: string, detent: string, content: () => View) {
   push("sheet", title, detent, 0.0, 0.0)
 }
 
+/** Closes the sheet on top (an Apply, a Done). */
+export fn closeSheet() {
+  if (nativeCloseSheet()) { return }
+  let i = layers.length - 1
+  while (i >= 0) {
+    if (layers[i].kind == "sheet") {
+      close(layers[i].key)
+      return
+    }
+    i -= 1
+  }
+}
+
 /** An alert: a title, a message, and its buttons (side by side when two). */
 export fn alert(title: string, message: string, actions: Action[]) {
   haptic("medium")
+  if (nativeAlert(title, message, actions)) { return }
   const key = nextKey
   actionsOf.set(key, actions)
   push("alert", title, message, 0.0, 0.0)

@@ -907,6 +907,10 @@ struct ImageCache {
 const IMAGE_BUDGET: usize = 48 << 20;
 
 pub(crate) fn download_cached(url: String, done: impl FnOnce(Option<Rc<Vec<u8>>>) + 'static) {
+    // nuclo-native-ns: an inline SVG (an icon) is its own bytes.
+    if let Some(svg) = url.strip_prefix("data:image/svg+xml;utf8,") {
+        return done(Some(Rc::new(svg.as_bytes().to_vec())));
+    }
     if let Some(bytes) = IMAGES.with(|c| c.borrow().done.get(&url).cloned()) {
         return done(Some(bytes));
     }

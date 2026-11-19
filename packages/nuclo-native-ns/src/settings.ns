@@ -27,19 +27,19 @@ export fn settingsScreen(): View {
         span(css({ fontSize: 20, color: t().muted }), "›"),
       ),
       section("", [
-        navCell("👤", "#0a84ff", "Account", () => "", () => go("/settings/account")),
-        navCell("🔒", "#34c759", "Privacy", () => flag("private", false) ? "Private" : "Public", () => go("/settings/privacy")),
-        navCell("🔔", "#ff3b30", "Notifications", () => flag("push", true) ? "On" : "Off", () => go("/settings/notifications")),
+        navCell("person", "#0a84ff", "Account", () => "", () => go("/settings/account")),
+        navCell("lock", "#34c759", "Privacy", () => flag("private", false) ? "Private" : "Public", () => go("/settings/privacy")),
+        navCell("bell", "#ff3b30", "Notifications", () => flag("push", true) ? "On" : "Off", () => go("/settings/notifications")),
       ]),
       section("", [
-        navCell("◐", "#5e5ce6", "Appearance", () => isDark() ? "Dark" : "Light", () => go("/settings/appearance")),
-        navCell("▤", "#ff9f0a", "Storage", () => "", () => go("/settings/storage")),
-        navCell("✎", "#ffcc00", "Notes", () => "", () => go("/notes")),
-        navCell("★", "#ff2d55", "Saved", () => "", () => go("/saved")),
+        navCell("contrast", "#5e5ce6", "Appearance", () => isDark() ? "Dark" : "Light", () => go("/settings/appearance")),
+        navCell("box", "#ff9f0a", "Storage", () => "", () => go("/settings/storage")),
+        navCell("pencil", "#ffb800", "Notes", () => "", () => go("/notes")),
+        navCell("bookmark", "#ff2d55", "Saved", () => "", () => go("/saved")),
       ]),
       section("", [
-        navCell("✦", "#30b0c7", "Welcome tour", () => "", () => go("/onboarding")),
-        navCell("ⓘ", "#8e8e93", "About", () => "", () => go("/settings/about")),
+        navCell("sparkle", "#30b0c7", "Welcome tour", () => "", () => go("/onboarding")),
+        navCell("info", "#8e8e93", "About", () => "", () => go("/settings/about")),
       ]),
       section("", [
         actionCell("Log out", true, () => alert("Log out?", "You can log back in at any time. What's on this device stays.", [
@@ -86,7 +86,7 @@ fn audiencePick() => setting("audience", "Everyone")
 export fn privacyScreen(): View {
   return div(groupedPage, div(column,
     section("Account privacy", [
-      switchCell("🔒", "#34c759", "Private account", () => flag("private", false), (v) => { setFlag("private", v); toast(v ? "Your account is private" : "Your account is public") }),
+      switchCell("lock", "#34c759", "Private account", () => flag("private", false), (v) => { setFlag("private", v); toast(v ? "Your account is private" : "Your account is public") }),
     ]),
     noteText("When your account is private, only people you approve can see your photos."),
     section("Interactions", [
@@ -112,7 +112,7 @@ export fn privacyScreen(): View {
 export fn notificationsScreen(): View {
   return div(groupedPage, div(column,
     section("", [
-      switchCell("🔔", "#ff3b30", "Push notifications", () => flag("push", true), (v) => setFlag("push", v)),
+      switchCell("bell", "#ff3b30", "Push notifications", () => flag("push", true), (v) => setFlag("push", v)),
     ]),
     noteText("Turn off to pause every notification of this app."),
     when(() => flag("push", true), () => div(

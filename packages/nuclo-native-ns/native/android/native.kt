@@ -18,6 +18,7 @@ import dev.nuclo.runtime.MediaRule
 import dev.nuclo.runtime.NRoute
 import dev.nuclo.runtime.NRouter
 import dev.nuclo.runtime.NTab
+import dev.nuclo.runtime.prefetchImage
 import dev.nuclo.runtime.Node
 import dev.nuclo.runtime.NodeMod
 import dev.nuclo.runtime.ObjectFit
@@ -203,7 +204,7 @@ fun navigate(routes: NList<Route>, tabs: NList<Tab>) {
         r.pattern,
         { params -> r.view(params["id"] ?: "") as Node },
         { params -> r.title(params["id"] ?: "") },
-        if (r.kind == "modal") "modal" else "push",
+        if (r.kind == "modal" || r.kind == "full") r.kind else "push",
         r.kind == "push",
       )
     },
@@ -221,11 +222,53 @@ fun overlay(view: () -> View) {
   dev.nuclo.runtime.render { view() as Node }
 }
 
+// ---- the platform's own components: Material 3 -------------------------------------------------
+
+private fun native(actions: NList<Action>) = actions.map { dev.nuclo.runtime.NativeAction(it.label, it.kind) { it.run() } }
+
+fun nativeAlert(title: String, message: String, actions: NList<Action>): Boolean {
+  dev.nuclo.runtime.NativeUi.alert(title, message, native(actions))
+  return true
+}
+
+fun nativeActions(title: String, actions: NList<Action>): Boolean {
+  dev.nuclo.runtime.NativeUi.actions(title, native(actions))
+  return true
+}
+
+fun nativeMenu(x: Double, y: Double, title: String, actions: NList<Action>): Boolean {
+  dev.nuclo.runtime.NativeUi.menu(x, y, title, native(actions))
+  return true
+}
+
+fun nativeSheet(title: String, detent: String, content: () -> View): Boolean {
+  dev.nuclo.runtime.NativeUi.sheet(title, detent, content() as Node)
+  return true
+}
+
+fun hasControl(kind: String): Boolean = kind == "segmented" || kind == "chip" || kind == "slider"
+
+fun segmentedControl(options: NList<String>, at: () -> Int, pick: (Int) -> Unit): View =
+  dev.nuclo.runtime.NativeControls.segmented(options.toList(), at, pick)
+
+fun chipControl(label: String, on: () -> Boolean, pick: () -> Unit): View = dev.nuclo.runtime.NativeControls.chip(label, on, pick)
+
+fun sliderControl(value: () -> Double, color: String, change: (Double) -> Unit): View = dev.nuclo.runtime.NativeControls.slider(value, color, change)
+
+fun nativeCloseSheet(): Boolean = dev.nuclo.runtime.NativeUi.closeSheet()
+
+fun nativeToast(text: String): Boolean {
+  dev.nuclo.runtime.NativeUi.toast(text)
+  return true
+}
+
 // ---- platform ---------------------------------------------------------------------------------
 
 fun later(ms: Int, f: () -> Unit) {
   Runtime.main.postDelayed({ f() }, ms.toLong())
 }
+
+fun prefetch(url: String) = prefetchImage(url)
 
 fun haptic(kind: String) {
   val v = Runtime.activity.window.decorView

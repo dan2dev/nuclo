@@ -343,6 +343,35 @@ pub trait Backend {
     fn set_image_url(&self, _view: ViewId, _url: &str) -> bool {
         false
     }
+    // nuclo-native-ns: the platform's own components. Each gives false where the backend has none (GPUI
+    // draws every view itself): the app draws its own then. `items` are (label, kind) pairs, kind one of
+    // "default", "destructive", "cancel", "checked", "submenu"; `done` gets the index of the chosen one.
+
+    /// An alert dialog.
+    fn native_alert(&self, _title: &str, _message: &str, _items: &[(String, String)], _done: Box<dyn Fn(usize)>) -> bool {
+        false
+    }
+    /// A list of actions in a sheet.
+    fn native_actions(&self, _title: &str, _items: &[(String, String)], _done: Box<dyn Fn(usize)>) -> bool {
+        false
+    }
+    /// A menu at a point of the window.
+    fn native_menu(&self, _x: f32, _y: f32, _title: &str, _items: &[(String, String)], _done: Box<dyn Fn(usize)>) -> bool {
+        false
+    }
+    /// A sheet of the screen whose root is `root`; `closed` runs when it goes.
+    fn native_sheet(&self, _root: ViewId, _title: &str, _detent: &str, _closed: Box<dyn Fn()>) -> bool {
+        false
+    }
+    /// Closes the sheet on top.
+    fn native_close_sheet(&self) -> bool {
+        false
+    }
+    /// A short message.
+    fn native_toast(&self, _text: &str) -> bool {
+        false
+    }
+
     /// Calls the platform's own function `name` (the app's `declare function`, where it is not written in
     /// Rust: the web host's) with `args`, a JSON array, and returns what it returned as JSON.
     fn call_sync(&self, name: &str, _args: &str) -> Result<String, String> {

@@ -645,6 +645,8 @@ internal class Backdrop : GradientDrawable() {
 private val EASE = PathInterpolator(0.25f, 0.1f, 0.25f, 1f)
 private val EASE_IN = PathInterpolator(0.42f, 0f, 1f, 1f)
 private val EASE_OUT = PathInterpolator(0f, 0f, 0.58f, 1f)
+/** Material 3's emphasized easing: navigation transitions. */
+internal val EMPHASIZED = PathInterpolator(0.2f, 0f, 0f, 1f)
 private val EASE_IN_OUT = PathInterpolator(0.42f, 0f, 0.58f, 1f)
 private val LINEAR = LinearInterpolator()
 private val SPRING = OvershootInterpolator(1.6f)
@@ -1550,6 +1552,8 @@ class FlexLayout internal constructor(context: Context, internal val node: Node)
         val moved = items != next
         items = next
         order = null
+        // A view that arrived between others (a keyed list's new row, a when's view) was added last: draw it in its place.
+        isChildrenDrawingOrderEnabled = next.any { it.computed.zIndex != null } || !childrenInOrder()
         requestLayout()
         invalidate()
         // `:first-child`, `:odd`, `:empty`…: the places changed.
@@ -1566,9 +1570,19 @@ class FlexLayout internal constructor(context: Context, internal val node: Node)
     // zIndex: children are drawn (and touched) in `items` order, lowest zIndex first.
     private var order: IntArray? = null
 
+    private fun childrenInOrder(): Boolean {
+        var i = 0
+        for (item in items) {
+            val v = item.view ?: continue
+            if (v.parent !== this) continue
+            if (getChildAt(i++) !== v) return false
+        }
+        return true
+    }
+
     internal fun reorder() {
         order = null
-        isChildrenDrawingOrderEnabled = items.any { it.computed.zIndex != null }
+        isChildrenDrawingOrderEnabled = items.any { it.computed.zIndex != null } || !childrenInOrder()
         invalidate()
     }
 
@@ -1918,6 +1932,13 @@ object Runtime {
         internal set
     internal var density = 1f
     internal val main = Handler(Looper.getMainLooper())
+    internal fun maxMemory() = java.lang.Runtime.getRuntime().maxMemory()
+    /** Runs `block` on the main thread and waits for its value (from a background thread). */
+    internal fun <T> mainSync(block: () -> T): T {
+        val task = java.util.concurrent.FutureTask(block)
+        main.post(task)
+        return task.get()
+    }
     /** Counts update passes: a node built during one has already run its bindings. */
     internal var generation = 0
     /** forceUpdate(): every dynamic value is applied, changed or not. */
@@ -1933,6 +1954,9 @@ object Runtime {
     private var queuedAll = false
     private val queuedIds = HashSet<String>()
     internal var backHandler: (() -> Boolean)? = null
+    /** Whether the app takes the back gesture (a screen to pop); otherwise the system's back to home plays. */
+    internal var onBackEnabled: ((Boolean) -> Unit)? = null
+    internal fun setBackEnabled(enabled: Boolean) { onBackEnabled?.invoke(enabled) }
 
     /** The window's width in dp, which `@media` rules are matched against. */
     internal var viewportWidth = 0.0
@@ -2111,13 +2135,7 @@ object A {
 
     fun src(value: String) = src { value }
     fun src(value: () -> String) = NodeMod { node ->
-        node.bind(value) { url ->
-            val image = node.view as? ImageView ?: return@bind
-            thread {
-                val bitmap = runCatching { URL(url).openStream().use { android.graphics.BitmapFactory.decodeStream(it) } }.getOrNull()
-                Runtime.main.post { image.setImageBitmap(bitmap) }
-            }
-        }
+        node.bind(value) { url -> (node.view as? ImageView)?.let { Images.show(it, url) } }
     }
 
     fun href(value: String) = href { value }
@@ -2425,21 +2443,283 @@ fun chromeTheme(dark: Boolean, accent: String, background: String) {
 }
 
 /**
+ * nuclo-native-ns: the platform's own components, Material 3: an alert dialog, a bottom sheet of actions, a popup
+ * menu, a modal bottom sheet of the app's views, a snackbar. Each takes the app's mode and accent (the Nuclo.Light_…
+ * and Nuclo.Dark_… themes of the host's res/values/accents.xml).
+ */
+class NativeAction(val label: String, val kind: String, val run: () -> Unit)
+
+object NativeUi {
+    internal fun themed(): Context {
+        val a = Runtime.activity
+        val name = "Nuclo.${if (Chrome.dark) "Dark" else "Light"}_${Chrome.accent.removePrefix("#").lowercase()}"
+        val id = a.resources.getIdentifier(name.replace('.', '_'), "style", a.packageName)
+        val fallback = if (Chrome.dark) com.google.android.material.R.style.Theme_Material3_Dark_NoActionBar else com.google.android.material.R.style.Theme_Material3_Light_NoActionBar
+        return android.view.ContextThemeWrapper(a, if (id != 0) id else fallback)
+    }
+
+    private val danger get() = Color.parseColor(if (Chrome.dark) "#ff453a" else "#d93025")
+
+    private fun later(a: NativeAction) = Runtime.main.post { a.run(); Runtime.update(emptyList()) }
+
+    fun alert(title: String, message: String, actions: List<NativeAction>) {
+        val b = com.google.android.material.dialog.MaterialAlertDialogBuilder(themed()).setTitle(title)
+        if (message.isNotEmpty()) b.setMessage(message)
+        if (actions.size > 3) {
+            b.setItems(actions.map { it.label }.toTypedArray()) { _, i -> later(actions[i]) }
+        } else {
+            val cancel = actions.firstOrNull { it.kind == "cancel" }
+            val main = actions.lastOrNull { it.kind != "cancel" }
+            val other = actions.firstOrNull { it !== cancel && it !== main }
+            cancel?.let { a -> b.setNegativeButton(a.label) { _, _ -> later(a) } }
+            main?.let { a -> b.setPositiveButton(a.label) { _, _ -> later(a) } }
+            other?.let { a -> b.setNeutralButton(a.label) { _, _ -> later(a) } }
+            val dialog = b.show()
+            if (main?.kind == "destructive") dialog.getButton(android.content.DialogInterface.BUTTON_POSITIVE)?.setTextColor(danger)
+            if (other?.kind == "destructive") dialog.getButton(android.content.DialogInterface.BUTTON_NEUTRAL)?.setTextColor(danger)
+            return
+        }
+        b.show()
+    }
+
+    private fun sheetDialog(): com.google.android.material.bottomsheet.BottomSheetDialog =
+        com.google.android.material.bottomsheet.BottomSheetDialog(themed()).apply {
+            behavior.isFitToContents = true
+            dismissWithAnimation = true
+        }
+
+    private fun handle(ctx: Context) = com.google.android.material.bottomsheet.BottomSheetDragHandleView(ctx)
+
+    fun actions(title: String, actions: List<NativeAction>) {
+        val dialog = sheetDialog()
+        val ctx = dialog.context
+        val list = LinearLayout(ctx).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(0, 0, 0, px(16.0).roundToInt())
+            addView(handle(ctx))
+        }
+        if (title.isNotEmpty()) list.addView(TextView(ctx).apply {
+            text = title
+            setTextAppearance(com.google.android.material.R.style.TextAppearance_Material3_TitleSmall)
+            alpha = 0.7f
+            setPadding(px(24.0).roundToInt(), 0, px(24.0).roundToInt(), px(8.0).roundToInt())
+        })
+        for (a in actions) {
+            if (a.kind == "cancel") continue
+            list.addView(TextView(ctx).apply {
+                text = a.label
+                setTextAppearance(com.google.android.material.R.style.TextAppearance_Material3_BodyLarge)
+                if (a.kind == "destructive") setTextColor(danger)
+                gravity = Gravity.CENTER_VERTICAL
+                minHeight = px(56.0).roundToInt()
+                setPadding(px(24.0).roundToInt(), 0, px(24.0).roundToInt(), 0)
+                background = ctx.getDrawable(Runtime.rippleId)
+                setOnClickListener { dialog.dismiss(); later(a) }
+            }, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT))
+        }
+        list.setOnApplyWindowInsetsListener { v, insets ->
+            v.setPadding(0, 0, 0, px(16.0).roundToInt() + insets.getInsets(WindowInsets.Type.navigationBars()).bottom)
+            insets
+        }
+        dialog.setContentView(list)
+        dialog.show()
+    }
+
+    /** A popup menu at a point of the window, in dp (a point past the right edge: at the edge). */
+    fun menu(x: Double, y: Double, title: String, actions: List<NativeAction>) {
+        val content = Runtime.activity.findViewById<FrameLayout>(android.R.id.content)
+        val anchor = View(Runtime.activity)
+        val left = min(px(x), content.width - 1f).coerceAtLeast(0f)
+        content.addView(anchor, FrameLayout.LayoutParams(1, 1).apply {
+            leftMargin = left.roundToInt()
+            topMargin = px(y).roundToInt()
+        })
+        val popup = androidx.appcompat.widget.PopupMenu(themed(), anchor, if (left > content.width / 2) Gravity.END else Gravity.START)
+        actions.forEachIndexed { i, a ->
+            val label: CharSequence = when {
+                a.kind == "destructive" -> android.text.SpannableString(a.label).apply { setSpan(android.text.style.ForegroundColorSpan(danger), 0, length, 0) }
+                a.kind == "submenu" -> "${a.label}  ›"
+                else -> a.label
+            }
+            val item = popup.menu.add(0, i, i + 1, label)
+            if (a.kind == "checked") item.setCheckable(true).isChecked = true
+        }
+        if (title.isNotEmpty()) popup.menu.add(0, -1, 0, title).isEnabled = false
+        popup.setOnMenuItemClickListener { item -> actions.getOrNull(item.itemId)?.let(::later); true }
+        popup.setOnDismissListener { content.removeView(anchor) }
+        // Laid out first, so the menu finds its anchor.
+        anchor.post { popup.show() }
+    }
+
+    /** A modal bottom sheet of the app's view: "medium" opens at half the screen and drags up, "large" opens full. */
+    fun sheet(title: String, detent: String, node: Node) {
+        val dialog = sheetDialog()
+        val ctx = dialog.context
+        Runtime.addRoot(node)
+        val screen = Runtime.activity.resources.displayMetrics.heightPixels
+        val column = LinearLayout(ctx).apply {
+            orientation = LinearLayout.VERTICAL
+            setBackgroundColor(Color.parseColor(Chrome.background))
+            addView(handle(ctx))
+            if (title.isNotEmpty()) addView(TextView(ctx).apply {
+                text = title
+                setTextAppearance(com.google.android.material.R.style.TextAppearance_Material3_TitleLarge)
+                setTextColor(if (Chrome.dark) Color.WHITE else Color.BLACK)
+                setPadding(px(24.0).roundToInt(), 0, px(24.0).roundToInt(), px(8.0).roundToInt())
+            })
+            addView(screenView(Runtime.activity, node), LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f))
+        }
+        dialog.setContentView(column, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, (screen * 0.92).roundToInt()))
+        dialog.behavior.apply {
+            isFitToContents = false
+            expandedOffset = (screen * 0.08).roundToInt()
+            if (detent == "large") {
+                skipCollapsed = true
+                state = com.google.android.material.bottomsheet.BottomSheetBehavior.STATE_EXPANDED
+            } else {
+                peekHeight = (screen * 0.5).roundToInt()
+                state = com.google.android.material.bottomsheet.BottomSheetBehavior.STATE_COLLAPSED
+            }
+        }
+        // Edge to edge: the content stays clear of the navigation bar.
+        column.setOnApplyWindowInsetsListener { v, insets ->
+            v.setPadding(0, 0, 0, insets.getInsets(WindowInsets.Type.navigationBars() or WindowInsets.Type.ime()).bottom)
+            insets
+        }
+        sheets.add(dialog)
+        dialog.setOnDismissListener {
+            sheets.remove(dialog)
+            Runtime.removeRoot(node)
+        }
+        dialog.show()
+    }
+
+    private val sheets = mutableListOf<android.app.Dialog>()
+
+    /** Closes the sheet on top; false when there is none. */
+    fun closeSheet(): Boolean {
+        val top = sheets.lastOrNull() ?: return false
+        top.dismiss()
+        return true
+    }
+
+    fun toast(text: String) {
+        val content = Runtime.activity.findViewById<View>(android.R.id.content)
+        val bar = com.google.android.material.snackbar.Snackbar.make(themed(), content, text, com.google.android.material.snackbar.Snackbar.LENGTH_SHORT)
+        Chrome.router?.navBar()?.takeIf { it.isShown }?.let { bar.anchorView = it }
+        bar.show()
+    }
+}
+
+/**
+ * nuclo-native-ns: the platform's own controls as nodes, Material 3: a segmented button group, a filter chip, a
+ * slider. Their colours follow the app's mode and accent ([Chrome]) on each update.
+ */
+object NativeControls {
+    private fun states(on: Int, off: Int) = android.content.res.ColorStateList(arrayOf(intArrayOf(android.R.attr.state_checked), intArrayOf()), intArrayOf(on, off))
+    private val accent get() = Color.parseColor(Chrome.accent)
+    private val text get() = if (Chrome.dark) Color.WHITE else Color.parseColor("#1c1b1f")
+    private val line get() = Color.parseColor(if (Chrome.dark) "#48484a" else "#c7c7cc")
+    private fun soft(c: Int) = Color.argb(if (Chrome.dark) 90 else 46, Color.red(c), Color.green(c), Color.blue(c))
+    private fun chrome() = "${Chrome.dark}${Chrome.accent}"
+
+    fun segmented(options: List<String>, at: () -> Int, pick: (Int) -> Unit): Node {
+        val ctx = NativeUi.themed()
+        val group = com.google.android.material.button.MaterialButtonToggleGroup(ctx).apply {
+            isSingleSelection = true
+            isSelectionRequired = true
+        }
+        val buttons = options.mapIndexed { i, label ->
+            com.google.android.material.button.MaterialButton(ctx, null, com.google.android.material.R.attr.materialButtonOutlinedStyle).apply {
+                id = View.generateViewId()
+                text = label
+                isAllCaps = false
+                insetTop = 0
+                insetBottom = 0
+                minHeight = px(40.0).roundToInt()
+                group.addView(this, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+            }
+        }
+        var syncing = false
+        group.addOnButtonCheckedListener { _, id, checked ->
+            val i = buttons.indexOfFirst { it.id == id }
+            if (checked && !syncing && i >= 0 && i != at()) pick(i)
+        }
+        val node = Node(Node.Kind.Native, "native", group)
+        node.bind(at) { i ->
+            syncing = true
+            buttons.getOrNull(i)?.let { group.check(it.id) }
+            syncing = false
+        }
+        node.bind(::chrome) {
+            for (b in buttons) {
+                b.setTextColor(states(text, text))
+                b.backgroundTintList = states(soft(accent), Color.TRANSPARENT)
+                b.strokeColor = android.content.res.ColorStateList.valueOf(line)
+                b.iconTint = android.content.res.ColorStateList.valueOf(text)
+            }
+        }
+        return node
+    }
+
+    fun chip(label: String, on: () -> Boolean, pick: () -> Unit): Node {
+        val ctx = NativeUi.themed()
+        val chip = com.google.android.material.chip.Chip(ctx).apply {
+            setChipDrawable(com.google.android.material.chip.ChipDrawable.createFromAttributes(ctx, null, 0, com.google.android.material.R.style.Widget_Material3_Chip_Filter))
+            text = label
+            isCheckable = true
+            // The app decides: the chip shows what `on` says after `pick`.
+            setOnClickListener { pick() }
+        }
+        val node = Node(Node.Kind.Native, "native", chip)
+        node.bind(on) { chip.isChecked = it }
+        node.bind(::chrome) {
+            chip.chipBackgroundColor = states(soft(accent), Color.parseColor(Chrome.background))
+            chip.chipStrokeColor = states(Color.TRANSPARENT, line)
+            chip.setTextColor(text)
+            chip.checkedIconTint = android.content.res.ColorStateList.valueOf(text)
+        }
+        return node
+    }
+
+    /** A slider of 0…1 in `color` (the accent when empty). */
+    fun slider(value: () -> Double, color: String, change: (Double) -> Unit): Node {
+        val ctx = NativeUi.themed()
+        val slider = com.google.android.material.slider.Slider(ctx).apply {
+            valueFrom = 0f
+            valueTo = 1f
+            labelBehavior = com.google.android.material.slider.LabelFormatter.LABEL_GONE
+            addOnChangeListener { _, v, fromUser -> if (fromUser) change(v.toDouble()) }
+        }
+        val node = Node(Node.Kind.Native, "native", slider)
+        node.bind(value) { v -> if (!slider.isPressed) slider.value = v.toFloat().coerceIn(0f, 1f) }
+        node.bind(::chrome) {
+            val c = if (color.isEmpty()) accent else Color.parseColor(color)
+            slider.trackActiveTintList = android.content.res.ColorStateList.valueOf(c)
+            slider.trackInactiveTintList = android.content.res.ColorStateList.valueOf(soft(c))
+            slider.thumbTintList = android.content.res.ColorStateList.valueOf(c)
+        }
+        return node
+    }
+}
+
+/**
  * Navigation stacks per tab: an app bar (title, back), the top screen of the active stack, and a bottom bar.
  * A modal screen is a sheet over all of it. The router owns the stacks; system back pops (or leaves the
  * app at a tab's root).
  */
 class NRouter(private val routes: List<NRoute>, private val tabs: List<NTab> = emptyList(), private val initial: String = "/") {
-    private class Entry(val path: String, val node: Node, val view: View, val title: String, val modal: Boolean, val header: Boolean)
+    /** A full entry (a story, a photo) covers the bars and the tabs; it pops as a modal does. */
+    private class Entry(val path: String, val node: Node, val view: View, val title: String, val modal: Boolean, val header: Boolean, val full: Boolean = false)
 
     private val stacks = mutableListOf<MutableList<Entry>>()
     private var active = 0
     private lateinit var root: FrameLayout
     private lateinit var content: FrameLayout
-    private lateinit var bar: FrameLayout
-    private lateinit var titleView: TextView
-    private lateinit var backView: TextView
-    private val tabViews = mutableListOf<TextView>()
+    // nuclo-native-ns: Material 3's top app bar and navigation bar.
+    private lateinit var bar: com.google.android.material.appbar.MaterialToolbar
+    private var nav: com.google.android.material.bottomnavigation.BottomNavigationView? = null
+    private var selecting = false
 
     val outlet: NRouter get() = this
     val path: String get() = stacks.getOrNull(active)?.lastOrNull()?.path ?: initial
@@ -2457,53 +2737,27 @@ class NRouter(private val routes: List<NRoute>, private val tabs: List<NTab> = e
             stacks.add(stack)
         }
         val column = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL }
-        bar = FrameLayout(context).apply {
-            setBackgroundColor(Color.WHITE)
-            elevation = px(2.0)
+        bar = com.google.android.material.appbar.MaterialToolbar(context).apply {
+            navigationContentDescription = "Back"
+            setNavigationOnClickListener { back() }
+            setTitleTextAppearance(context, com.google.android.material.R.style.TextAppearance_Material3_TitleLarge)
         }
-        backView = TextView(context).apply {
-            text = "←"
-            contentDescription = "Back"
-            setTextSize(TypedValue.COMPLEX_UNIT_DIP, 24f)
-            setTextColor(Color.BLACK)
-            gravity = Gravity.CENTER
-            setOnClickListener { back() }
-        }
-        titleView = TextView(context).apply {
-            setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20f)
-            typeface = Typeface.DEFAULT_BOLD
-            setTextColor(Color.BLACK)
-            gravity = Gravity.CENTER_VERTICAL
-        }
-        bar.addView(backView, FrameLayout.LayoutParams(px(56.0).roundToInt(), FrameLayout.LayoutParams.MATCH_PARENT))
-        bar.addView(titleView, FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT))
-        bar.bringChildToFront(backView)
-        column.addView(bar, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, px(56.0).roundToInt()))
+        column.addView(bar, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT))
         content = FrameLayout(context)
         column.addView(content, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f))
         if (tabs.isNotEmpty()) {
-            val bottom = LinearLayout(context).apply {
-                orientation = LinearLayout.HORIZONTAL
-                setBackgroundColor(Color.parseColor("#f8fafc"))
-                elevation = px(8.0)
+            val bottom = com.google.android.material.bottomnavigation.BottomNavigationView(context).apply {
+                labelVisibilityMode = com.google.android.material.navigation.NavigationBarView.LABEL_VISIBILITY_LABELED
+                itemIconSize = px(24.0).roundToInt()
+                tabs.forEachIndexed { i, tab -> menu.add(0, i, i, tab.title).icon = PathIcon.tab(tab.icon, px(24.0).roundToInt()) }
+                selectedItemId = active
+                setOnItemSelectedListener { if (!selecting) select(it.itemId); true }
+                setOnItemReselectedListener { if (!selecting) select(it.itemId) }
+                // The system navigation bar's inset is the root's padding.
+                setOnApplyWindowInsetsListener { _, insets -> insets }
             }
-            bottomBar = bottom
-            tabs.forEachIndexed { i, tab ->
-                val item = TextView(context).apply {
-                    // nuclo-native-ns: the icon over the title, at the size of a platform tab bar.
-                    val glyph = glyph(tab.icon)
-                    text = android.text.SpannableString("$glyph\n${tab.title}").apply {
-                        setSpan(android.text.style.RelativeSizeSpan(2.0f), 0, glyph.length, 0)
-                    }
-                    gravity = Gravity.CENTER
-                    setLineSpacing(0f, 0.9f)
-                    setTextSize(TypedValue.COMPLEX_UNIT_DIP, 11f)
-                    setOnClickListener { select(i) }
-                }
-                tabViews.add(item)
-                bottom.addView(item, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1f))
-            }
-            column.addView(bottom, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, px(64.0).roundToInt()))
+            nav = bottom
+            column.addView(bottom, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT))
         }
         root = FrameLayout(context)
         root.addView(column, FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT))
@@ -2549,7 +2803,7 @@ class NRouter(private val routes: List<NRoute>, private val tabs: List<NTab> = e
         Runtime.update(emptyList())
     }
 
-    private fun select(i: Int) {
+    internal fun select(i: Int) {
         if (i == active) {
             reset(stacks[i][0].path)
             return
@@ -2571,6 +2825,14 @@ class NRouter(private val routes: List<NRoute>, private val tabs: List<NTab> = e
         val height = root.height.toFloat().takeIf { it > 0 } ?: Runtime.activity.resources.displayMetrics.heightPixels.toFloat()
         fun detach(v: View) = (v.parent as? ViewGroup)?.removeView(v)
         when {
+            direction == +1 && top.full -> {
+                detach(top.view)
+                root.addView(top.view)
+                top.view.alpha = 0f
+                top.view.scaleX = 0.94f
+                top.view.scaleY = 0.94f
+                top.view.animate().alpha(1f).scaleX(1f).scaleY(1f).setDuration(220).setInterpolator(EASE_OUT).start()
+            }
             direction == +1 && top.modal -> {
                 detach(top.view)
                 root.addView(top.view)
@@ -2578,22 +2840,39 @@ class NRouter(private val routes: List<NRoute>, private val tabs: List<NTab> = e
                 top.view.animate().translationY(0f).setDuration(280).setInterpolator(EASE_OUT).start()
             }
             direction == +1 -> {
+                // Material's shared axis X: the new screen slides in from the end as it fades in; the old one moves back.
+                val previous = stack.getOrNull(stack.size - 2)?.view
                 detach(top.view)
                 content.addView(top.view)
-                top.view.translationX = width
-                top.view.animate().translationX(0f).setDuration(220).withEndAction { keepOnly(top.view) }.start()
+                top.view.translationX = width * 0.3f
+                top.view.alpha = 0f
+                top.view.animate().translationX(0f).alpha(1f).setDuration(300).setInterpolator(EMPHASIZED).withEndAction { keepOnly(top.view) }.start()
+                previous?.animate()?.translationX(-width * 0.1f)?.alpha(0f)?.setDuration(300)?.setInterpolator(EMPHASIZED)?.start()
             }
             direction == -1 && popped != null -> {
+                // After a predictive back gesture the screen under is already in place, part way in.
+                val gestured = under.view.parent === content && !popped.modal && popped.view.scaleX < 1f
                 if (under.view.parent !== content) {
                     detach(under.view)
                     content.addView(under.view, 0)
                 }
-                under.view.translationX = 0f
-                val out = popped.view.animate().setDuration(200).withEndAction {
+                if (!popped.modal) {
+                    if (!gestured) {
+                        under.view.translationX = -width * 0.1f
+                        under.view.alpha = 0f
+                    }
+                    under.view.animate().translationX(0f).alpha(1f).setDuration(260).setInterpolator(EMPHASIZED).start()
+                } else {
+                    under.view.translationX = 0f
+                    under.view.alpha = 1f
+                }
+                val out = popped.view.animate().setDuration(if (popped.modal) 220 else 260).setInterpolator(EMPHASIZED).withEndAction {
                     detach(popped.view)
                     Runtime.removeRoot(popped.node)
+                    popped.view.scaleX = 1f
+                    popped.view.scaleY = 1f
                 }
-                if (popped.modal) out.translationY(height) else out.translationX(width)
+                if (popped.full) out.alpha(0f).scaleX(0.94f).scaleY(0.94f) else if (popped.modal) out.translationY(height) else out.translationX(width * 0.3f).alpha(0f)
                 out.start()
             }
             else -> {
@@ -2601,34 +2880,87 @@ class NRouter(private val routes: List<NRoute>, private val tabs: List<NTab> = e
                 for (i in root.childCount - 1 downTo 1) root.removeViewAt(i)
                 content.removeAllViews()
                 under.view.translationX = 0f
+                under.view.alpha = 1f
                 detach(under.view)
                 content.addView(under.view)
                 for (e in stack) if (e.modal) {
                     detach(e.view)
                     e.view.translationY = 0f
+                    e.view.alpha = 1f
+                    e.view.scaleX = 1f
+                    e.view.scaleY = 1f
                     root.addView(e.view)
                 }
             }
         }
-        titleView.text = under.title
+        bar.title = under.title
         bar.visibility = if (under.header) View.VISIBLE else View.GONE
         val backable = stack.indexOf(under) > 0
-        backView.visibility = if (backable) View.VISIBLE else View.GONE
-        titleView.setPaddingRelative(px(if (backable) 60.0 else 20.0).roundToInt(), 0, 0, 0)
+        bar.navigationIcon = if (backable) PathIcon.tab("back", px(24.0).roundToInt()) else null
+        nav?.let {
+            selecting = true
+            it.selectedItemId = active
+            selecting = false
+        }
         paintChrome()
+        immersive(top.full)
+        Runtime.setBackEnabled(canGoBack)
     }
 
-    private var bottomBar: View? = null
+    /** A full screen hides the status and navigation bars (a swipe from the edge shows them for a moment). */
+    private fun immersive(on: Boolean) {
+        val controller = Runtime.activity.window.insetsController ?: return
+        val bars = WindowInsets.Type.statusBars() or WindowInsets.Type.navigationBars()
+        if (on) {
+            controller.systemBarsBehavior = android.view.WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            controller.hide(bars)
+        } else controller.show(bars)
+    }
+
+    internal fun navBar(): View? = nav
 
     /** nuclo-native-ns: the bars in the colours of [Chrome] (the app's mode and accent). */
     internal fun paintChrome() {
         if (!::bar.isInitialized) return
         val text = if (Chrome.dark) Color.WHITE else Color.BLACK
         bar.setBackgroundColor(Color.parseColor(Chrome.background))
-        backView.setTextColor(Color.parseColor(Chrome.accent))
-        titleView.setTextColor(text)
-        bottomBar?.setBackgroundColor(Color.parseColor(if (Chrome.dark) "#121214" else "#f9f9fb"))
-        tabViews.forEachIndexed { i, v -> v.setTextColor(if (i == active) Color.parseColor(Chrome.accent) else Color.parseColor("#8e8e93")) }
+        bar.setTitleTextColor(text)
+        bar.setNavigationIconTint(text)
+        nav?.let { n ->
+            val accent = Color.parseColor(Chrome.accent)
+            val muted = Color.parseColor(if (Chrome.dark) "#9a9aa0" else "#5f5f66")
+            val states = arrayOf(intArrayOf(android.R.attr.state_checked), intArrayOf())
+            n.setBackgroundColor(Color.parseColor(if (Chrome.dark) "#161618" else "#f7f7fa"))
+            n.itemIconTintList = android.content.res.ColorStateList(states, intArrayOf(accent, muted))
+            n.itemTextColor = android.content.res.ColorStateList(states, intArrayOf(text, muted))
+            n.itemActiveIndicatorColor = android.content.res.ColorStateList.valueOf(Color.argb(if (Chrome.dark) 70 else 40, Color.red(accent), Color.green(accent), Color.blue(accent)))
+        }
+    }
+
+    /** The predictive back gesture (Android 14+): the top screen follows the finger; let go to pop, or it settles back. */
+    internal fun backProgress(progress: Float) {
+        val stack = stacks[active]
+        if (stack.size < 2) return
+        val top = stack.last()
+        val under = screenOf(stack)
+        if (!top.modal && under.view.parent !== content) {
+            (under.view.parent as? ViewGroup)?.removeView(under.view)
+            content.addView(under.view, 0)
+        }
+        if (!top.modal) {
+            under.view.alpha = progress
+            under.view.translationX = -root.width * 0.1f * (1f - progress)
+        }
+        val scale = 1f - 0.1f * progress
+        top.view.scaleX = scale
+        top.view.scaleY = scale
+        top.view.translationX = if (top.modal) 0f else root.width * 0.05f * progress
+    }
+
+    internal fun backCancelled() {
+        val stack = stacks[active]
+        val top = stack.last()
+        top.view.animate().scaleX(1f).scaleY(1f).translationX(0f).setDuration(200).setInterpolator(EMPHASIZED).withEndAction { if (!top.modal) keepOnly(top.view) }.start()
     }
 
     private fun keepOnly(view: View) {
@@ -2641,7 +2973,7 @@ class NRouter(private val routes: List<NRoute>, private val tabs: List<NTab> = e
             val node = route.view(params)
             Runtime.addRoot(node)
             val end = route.onEndReached?.let { { it(params) } }
-            return Entry(path, node, screenView(Runtime.activity, node, end), route.title?.invoke(params) ?: "", route.presentation == "modal", route.header)
+            return Entry(path, node, screenView(Runtime.activity, node, end), route.title?.invoke(params) ?: "", route.presentation == "modal" || route.presentation == "full", route.header, route.presentation == "full")
         }
         val node = p(A.text("No route matches $path"))
         Runtime.addRoot(node)
@@ -2656,22 +2988,197 @@ class NRouter(private val routes: List<NRoute>, private val tabs: List<NTab> = e
         }
         return best
     }
-
-    private fun glyph(icon: String) = when (icon) {
-        "home" -> "⌂"
-        "list" -> "☰"
-        "cloud" -> "☁"
-        "star" -> "★"
-        "person" -> "◉"
-        "grid" -> "▦"
-        "heart" -> "\u2661\uFE0E"
-        "settings" -> "⚙"
-        "search" -> "⌕"
-        else -> "●"
-    }
 }
 
 // ---------------------------------------------------------------------------
+/**
+ * nuclo-native-ns: a line icon on a 24-unit grid, from an SVG path (absolute M, L, H, V, C, Q, Z) — the tab bar's
+ * icons, and an `img` whose src is an inline SVG (`data:image/svg+xml;utf8,<svg … stroke=… fill=…><path d=…/></svg>`).
+ * Drawn at any size with the stroke scaled, so it is sharp on every screen. A tint sets the colour.
+ */
+class PathIcon(d: String, private val strokeWidth: Float = 1.8f, private var stroke: Int = Color.BLACK, private var fill: Int? = null, private val size: Int = -1) : android.graphics.drawable.Drawable() {
+    private val path = parsePath(d)
+    private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply { strokeCap = Paint.Cap.ROUND; strokeJoin = Paint.Join.ROUND }
+    private val scaled = Path()
+    private val matrix = android.graphics.Matrix()
+
+    override fun draw(canvas: Canvas) {
+        val b = bounds
+        val unit = min(b.width(), b.height()) / 24f
+        matrix.setScale(unit, unit)
+        matrix.postTranslate(b.left + (b.width() - unit * 24f) / 2f, b.top + (b.height() - unit * 24f) / 2f)
+        path.transform(matrix, scaled)
+        fill?.let {
+            paint.style = Paint.Style.FILL
+            paint.color = it
+            canvas.drawPath(scaled, paint)
+        }
+        paint.style = Paint.Style.STROKE
+        paint.strokeWidth = strokeWidth * unit
+        paint.color = stroke
+        canvas.drawPath(scaled, paint)
+    }
+
+    override fun setTintList(tint: android.content.res.ColorStateList?) {
+        val c = tint?.getColorForState(state, tint.defaultColor) ?: return
+        if (fill != null) fill = c
+        stroke = c
+        invalidateSelf()
+    }
+
+    override fun getIntrinsicWidth() = size
+    override fun getIntrinsicHeight() = size
+    override fun setAlpha(alpha: Int) { paint.alpha = alpha }
+    override fun setColorFilter(filter: android.graphics.ColorFilter?) { paint.colorFilter = filter }
+    @Deprecated("Deprecated in Java")
+    override fun getOpacity() = android.graphics.PixelFormat.TRANSLUCENT
+
+    companion object {
+        private val token = Regex("[MLHVCQZmlhvcqz]|-?[0-9]*\\.?[0-9]+")
+        private val cache = HashMap<String, Path>()
+
+        fun parsePath(d: String): Path = cache.getOrPut(d) {
+            val path = Path()
+            var cmd = 'M'
+            var x = 0f
+            var y = 0f
+            val parts = token.findAll(d).map { it.value }.toList()
+            var i = 0
+            fun num() = parts[i++].toFloat()
+            while (i < parts.size) {
+                val t = parts[i]
+                if (t[0].isLetter()) { cmd = t[0]; i++; if (cmd == 'Z' || cmd == 'z') { path.close(); continue } }
+                when (cmd) {
+                    'M' -> { x = num(); y = num(); path.moveTo(x, y); cmd = 'L' }
+                    'L' -> { x = num(); y = num(); path.lineTo(x, y) }
+                    'H' -> { x = num(); path.lineTo(x, y) }
+                    'V' -> { y = num(); path.lineTo(x, y) }
+                    'C' -> { val a = num(); val b = num(); val c = num(); val e = num(); x = num(); y = num(); path.cubicTo(a, b, c, e, x, y) }
+                    'Q' -> { val a = num(); val b = num(); x = num(); y = num(); path.quadTo(a, b, x, y) }
+                    else -> i++
+                }
+            }
+            path
+        }
+
+        private fun attr(svg: String, name: String) = Regex("$name='([^']*)'").find(svg)?.groupValues?.get(1)
+
+        /** The icon of an inline SVG src, or null. */
+        fun fromSvg(src: String): PathIcon? {
+            if (!src.startsWith("data:image/svg+xml")) return null
+            val d = attr(src, "d") ?: return null
+            val stroke = attr(src, "stroke")?.takeIf { it != "none" }?.let(Color::parseColor) ?: Color.TRANSPARENT
+            val fill = attr(src, "fill")?.takeIf { it != "none" }?.let(Color::parseColor)
+            return PathIcon(d, attr(src, "stroke-width")?.toFloatOrNull() ?: 1.8f, stroke, fill)
+        }
+
+        /** The tab bar's icons. */
+        fun tab(name: String, size: Int): PathIcon = PathIcon(TAB_ICONS[name] ?: TAB_ICONS.getValue("dot"), 1.8f, Color.BLACK, null, size)
+
+        private val TAB_ICONS = mapOf(
+            "home" to "M3.5 10.5 L12 3.5 L20.5 10.5 V20.5 H14.5 V14.5 H9.5 V20.5 H3.5 Z",
+            "search" to "M17 10.5 C17 14.09 14.09 17 10.5 17 C6.91 17 4 14.09 4 10.5 C4 6.91 6.91 4 10.5 4 C14.09 4 17 6.91 17 10.5 Z M15.4 15.4 L20.5 20.5",
+            "grid" to "M4 4 H10 V10 H4 Z M14 4 H20 V10 H14 Z M4 14 H10 V20 H4 Z M14 14 H20 V20 H14 Z",
+            "heart" to "M12 20.5 C12 20.5 3 15 3 8.8 C3 6.1 5.1 4 7.7 4 C9.5 4 11.1 5 12 6.5 C12.9 5 14.5 4 16.3 4 C18.9 4 21 6.1 21 8.8 C21 15 12 20.5 12 20.5 Z",
+            "person" to "M16 8 C16 10.21 14.21 12 12 12 C9.79 12 8 10.21 8 8 C8 5.79 9.79 4 12 4 C14.21 4 16 5.79 16 8 Z M4.5 20.5 C4.5 16.6 7.8 14.5 12 14.5 C16.2 14.5 19.5 16.6 19.5 20.5",
+            "settings" to "M4 7 H14 M18 7 H20 M4 17 H6 M10 17 H20 M16 5 V9 M8 15 V19",
+            "list" to "M4 7 H20 M4 12 H20 M4 17 H20",
+            "back" to "M20 12 H4.5 M10.5 5.5 L4 12 L10.5 18.5",
+            "dot" to "M12 9 C13.66 9 15 10.34 15 12 C15 13.66 13.66 15 12 15 C10.34 15 9 13.66 9 12 C9 10.34 10.34 9 12 9 Z",
+        )
+    }
+}
+
+// Images
+// ---------------------------------------------------------------------------
+
+/**
+ * Remote images: a memory cache (an eighth of the heap, oldest out) over the HTTP disk cache (64 MB), decoded on a
+ * pool of four threads, newest request first (the photo just shown waits for no photo scrolled past), to hardware
+ * bitmaps no wider than the screen. A view that changes its src drops its old picture at once; a download whose
+ * views all moved on is skipped.
+ */
+internal object Images {
+    private val memory = object : android.util.LruCache<String, android.graphics.Bitmap>((Runtime.maxMemory() / 8).toInt()) {
+        override fun sizeOf(key: String, value: android.graphics.Bitmap) = value.allocationByteCount
+    }
+    private val waiting = HashMap<String, MutableList<ImageView>>()
+    private val pool = java.util.concurrent.ThreadPoolExecutor(4, 4, 30, java.util.concurrent.TimeUnit.SECONDS,
+        object : java.util.concurrent.LinkedBlockingDeque<Runnable>() {
+            override fun offer(e: Runnable) = offerFirst(e)
+        }).apply { allowCoreThreadTimeOut(true) }
+    private var diskReady = false
+    private val tagUrl = 0x6e1c0001
+
+    fun show(view: ImageView, url: String) {
+        if (view.getTag(tagUrl) == url) return
+        view.setTag(tagUrl, url)
+        view.animate().cancel()
+        PathIcon.fromSvg(url)?.let {
+            view.alpha = 1f
+            view.scaleType = ImageView.ScaleType.FIT_CENTER
+            view.setImageDrawable(it)
+            return
+        }
+        val cached = memory.get(url)
+        if (cached != null) {
+            view.alpha = 1f
+            view.setImageBitmap(cached)
+            return
+        }
+        view.setImageDrawable(null)
+        if (url.isEmpty()) return
+        val views = waiting[url]
+        if (views != null) { views.add(view); return }
+        waiting[url] = mutableListOf(view)
+        load(url)
+    }
+
+    /** Loads a picture into the cache before a view asks for it (the next story, the next page). */
+    fun prefetch(url: String) {
+        if (url.isEmpty() || memory.get(url) != null || waiting.containsKey(url)) return
+        waiting[url] = mutableListOf()
+        load(url, prefetch = true)
+    }
+
+    private fun load(url: String, prefetch: Boolean = false) {
+        if (!diskReady) {
+            diskReady = true
+            runCatching { android.net.http.HttpResponseCache.install(java.io.File(Runtime.activity.cacheDir, "images"), 64L shl 20) }
+        }
+        val maxWidth = Runtime.activity.resources.displayMetrics.widthPixels
+        pool.execute {
+            // Every view that asked has moved on: nothing to download.
+            val wanted = prefetch || Runtime.mainSync { waiting[url]?.any { it.getTag(tagUrl) == url } == true }
+            val bitmap = if (!wanted) null else runCatching {
+                val bytes = (URL(url).openConnection() as HttpURLConnection).run {
+                    useCaches = true
+                    connectTimeout = 10_000
+                    readTimeout = 15_000
+                    inputStream.use { it.readBytes() }
+                }
+                android.graphics.ImageDecoder.decodeBitmap(android.graphics.ImageDecoder.createSource(java.nio.ByteBuffer.wrap(bytes))) { decoder, info, _ ->
+                    val w = info.size.width
+                    if (w > maxWidth) decoder.setTargetSize(maxWidth, info.size.height * maxWidth / w)
+                }
+            }.getOrNull()
+            Runtime.main.post {
+                if (bitmap != null) memory.put(url, bitmap)
+                for (view in waiting.remove(url).orEmpty()) {
+                    if (view.getTag(tagUrl) != url) continue
+                    if (bitmap == null) { view.setTag(tagUrl, null); continue }
+                    view.setImageBitmap(bitmap)
+                    view.alpha = 0f
+                    view.animate().alpha(1f).setDuration(160).start()
+                }
+            }
+        }
+    }
+}
+
+/** Loads a picture into the image cache before a view asks for it. */
+fun prefetchImage(url: String) = Images.prefetch(url)
+
 // Async (stdlib coroutines resumed on the main thread), timers, console
 // ---------------------------------------------------------------------------
 
@@ -2773,12 +3280,26 @@ open class NucloActivity(private val entry: () -> Unit) : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Runtime.start(this)
-        entry()
-        if (Build.VERSION.SDK_INT >= 33) {
+        // Predictive back (Android 14+): registered only while there is a screen to pop, so at a tab's root the
+        // system's own back-to-home animation plays.
+        if (Build.VERSION.SDK_INT >= 34) {
+            val callback = object : android.window.OnBackAnimationCallback {
+                override fun onBackProgressed(event: android.window.BackEvent) { Chrome.router?.backProgress(event.progress) }
+                override fun onBackCancelled() { Chrome.router?.backCancelled() }
+                override fun onBackInvoked() { if (Runtime.backHandler?.invoke() != true) finish() }
+            }
+            var registered = false
+            Runtime.onBackEnabled = { on ->
+                if (on && !registered) onBackInvokedDispatcher.registerOnBackInvokedCallback(OnBackInvokedDispatcher.PRIORITY_DEFAULT, callback)
+                if (!on && registered) onBackInvokedDispatcher.unregisterOnBackInvokedCallback(callback)
+                registered = on
+            }
+        } else if (Build.VERSION.SDK_INT >= 33) {
             onBackInvokedDispatcher.registerOnBackInvokedCallback(OnBackInvokedDispatcher.PRIORITY_DEFAULT) {
                 if (Runtime.backHandler?.invoke() != true) finish()
             }
         }
+        entry()
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {

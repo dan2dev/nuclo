@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- nuclo-native-ns: the app's five accents as Material 3 themes, light and dark (theme.ns). The runtime picks one
+     by name and shade (Nuclo.Light_0a7cff, Nuclo.Dark_3d9bff) for the dialogs, menus, and sheets it makes, and paints the bars itself. -->
+<resources>
+    <style name="Nuclo.Light_0a7cff" parent="Theme.Material3.Light.NoActionBar">
+        <item name="colorPrimary">#0a7cff</item>
+        <item name="colorOnPrimary">#ffffff</item>
+        <item name="colorPrimaryContainer">#e5f1ff</item>
+        <item name="colorSecondaryContainer">#e5f1ff</item>
+        <item name="colorAccent">#0a7cff</item>
+        <item name="colorSurface">#ffffff</item>
+        <item name="colorSurfaceContainerLow">#ffffff</item>
+        <item name="colorSurfaceContainerHigh">#ffffff</item>
+    </style>
+    <style name="Nuclo.Dark_3d9bff" parent="Theme.Material3.Dark.NoActionBar">
+        <item name="colorPrimary">#3d9bff</item>
+        <item name="colorOnPrimary">#000000</item>
+        <item name="colorPrimaryContainer">#0f2a4a</item>
+        <item name="colorSecondaryContainer">#0f2a4a</item>
+        <item name="colorAccent">#3d9bff</item>
+        <item name="colorSurface">#1c1c1e</item>
+        <item name="colorSurfaceContainerLow">#1c1c1e</item>
+        <item name="colorSurfaceContainerHigh">#1c1c1e</item>
+    </style>
+    <style name="Nuclo.Light_7b5cff" parent="Theme.Material3.Light.NoActionBar">
+        <item name="colorPrimary">#7b5cff</item>
+        <item name="colorOnPrimary">#ffffff</item>
+        <item name="colorPrimaryContainer">#efebff</item>
+        <item name="colorSecondaryContainer">#efebff</item>
+        <item name="colorAccent">#7b5cff</item>
+        <item name="colorSurface">#ffffff</item>
+        <item name="colorSurfaceContainerLow">#ffffff</item>
+        <item name="colorSurfaceContainerHigh">#ffffff</item>
+    </style>
+    <style name="Nuclo.Dark_9d86ff" parent="Theme.Material3.Dark.NoActionBar">
+        <item name="colorPrimary">#9d86ff</item>
+        <item name="colorOnPrimary">#000000</item>
+        <item name="colorPrimaryContainer">#271f4d</item>
+        <item name="colorSecondaryContainer">#271f4d</item>
+        <item name="colorAccent">#9d86ff</item>
+        <item name="colorSurface">#1c1c1e</item>
+        <item name="colorSurfaceContainerLow">#1c1c1e</item>
+        <item name="colorSurfaceContainerHigh">#1c1c1e</item>
+    </style>
+    <style name="Nuclo.Light_ff5a5f" parent="Theme.Material3.Light.NoActionBar">
+        <item name="colorPrimary">#ff5a5f</item>
+        <item name="colorOnPrimary">#ffffff</item>
+        <item name="colorPrimaryContainer">#ffebec</item>
+        <item name="colorSecondaryContainer">#ffebec</item>
+        <item name="colorAccent">#ff5a5f</item>
+        <item name="colorSurface">#ffffff</item>
+        <item name="colorSurfaceContainerLow">#ffffff</item>
+        <item name="colorSurfaceContainerHigh">#ffffff</item>
+    </style>
+    <style name="Nuclo.Dark_ff7b7f" parent="Theme.Material3.Dark.NoActionBar">
+        <item name="colorPrimary">#ff7b7f</item>
+        <item name="colorOnPrimary">#000000</item>
+        <item name="colorPrimaryContainer">#4a1c1e</item>
+        <item name="colorSecondaryContainer">#4a1c1e</item>
+        <item name="colorAccent">#ff7b7f</item>
+        <item name="colorSurface">#1c1c1e</item>
+        <item name="colorSurfaceContainerLow">#1c1c1e</item>
+        <item name="colorSurfaceContainerHigh">#1c1c1e</item>
+    </style>
+    <style name="Nuclo.Light_0fb37f" parent="Theme.Material3.Light.NoActionBar">
+        <item name="colorPrimary">#0fb37f</item>
+        <item name="colorOnPrimary">#ffffff</item>
+        <item name="colorPrimaryContainer">#e2f8f0</item>
+        <item name="colorSecondaryContainer">#e2f8f0</item>
+        <item name="colorAccent">#0fb37f</item>
+        <item name="colorSurface">#ffffff</item>
+        <item name="colorSurfaceContainerLow">#ffffff</item>
+        <item name="colorSurfaceContainerHigh">#ffffff</item>
+    </style>
+    <style name="Nuclo.Dark_2fd39e" parent="Theme.Material3.Dark.NoActionBar">
+        <item name="colorPrimary">#2fd39e</item>
+        <item name="colorOnPrimary">#000000</item>
+        <item name="colorPrimaryContainer">#0f3a2c</item>
+        <item name="colorSecondaryContainer">#0f3a2c</item>
+        <item name="colorAccent">#2fd39e</item>
+        <item name="colorSurface">#1c1c1e</item>
+        <item name="colorSurfaceContainerLow">#1c1c1e</item>
+        <item name="colorSurfaceContainerHigh">#1c1c1e</item>
+    </style>
+    <style name="Nuclo.Light_f59e0b" parent="Theme.Material3.Light.NoActionBar">
+        <item name="colorPrimary">#f59e0b</item>
+        <item name="colorOnPrimary">#ffffff</item>
+        <item name="colorPrimaryContainer">#fff4dc</item>
+        <item name="colorSecondaryContainer">#fff4dc</item>
+        <item name="colorAccent">#f59e0b</item>
+        <item name="colorSurface">#ffffff</item>
+        <item name="colorSurfaceContainerLow">#ffffff</item>
+        <item name="colorSurfaceContainerHigh">#ffffff</item>
+    </style>
+    <style name="Nuclo.Dark_fbbf24" parent="Theme.Material3.Dark.NoActionBar">
+        <item name="colorPrimary">#fbbf24</item>
+        <item name="colorOnPrimary">#000000</item>
+        <item name="colorPrimaryContainer">#463312</item>
+        <item name="colorSecondaryContainer">#463312</item>
+        <item name="colorAccent">#fbbf24</item>
+        <item name="colorSurface">#1c1c1e</item>
+        <item name="colorSurfaceContainerLow">#1c1c1e</item>
+        <item name="colorSurfaceContainerHigh">#1c1c1e</item>
+    </style>
+</resources>

@@ -39,3 +39,8 @@ android {
         targetCompatibility = JavaVersion.VERSION_25
     }
 }
+
+// nuclo-native-ns: Material 3 components (top app bar, navigation bar, dialogs, menus, bottom sheets, snackbars).
+dependencies {
+    implementation("com.google.android.material:material:1.14.0")
+}

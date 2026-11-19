@@ -2577,6 +2577,56 @@ final class RootController: UIViewController {
     return node
 }
 
+// Remote images: decoded pictures in memory (NSCache: the system empties it under pressure), one download per URL
+// at a time, the HTTP disk cache below. A view remembers the URL it wants: a late download never replaces a newer one.
+@MainActor let imageCache: NSCache<NSString, UIImage> = { let c = NSCache<NSString, UIImage>(); c.totalCostLimit = 64 << 20; return c }()
+@MainActor var imageWanted: [ObjectIdentifier: String] = [:]
+@MainActor var imageLoads: [String: Task<UIImage?, Never>] = [:]
+
+@MainActor func loadImage(_ url: String) async -> UIImage? {
+    if let cached = imageCache.object(forKey: url as NSString) { return cached }
+    if let running = imageLoads[url] { return await running.value }
+    let task = Task<UIImage?, Never> {
+        guard let u = URL(string: url), let (data, _) = try? await URLSession.shared.data(from: u) else { return nil }
+        return await Task.detached { UIImage(data: data) }.value
+    }
+    imageLoads[url] = task
+    let picture = await task.value
+    imageLoads[url] = nil
+    if let picture { imageCache.setObject(picture, forKey: url as NSString, cost: data(of: picture)) }
+    return picture
+}
+
+private let symbolNames = [
+    "home": "house", "search": "magnifyingglass", "grid": "square.grid.2x2", "heart": "heart", "heartFill": "heart.fill",
+    "person": "person", "comment": "bubble.right", "send": "paperplane", "bookmark": "bookmark", "bookmarkFill": "bookmark.fill",
+    "plus": "plus", "plusSquare": "plus.square", "menu": "line.3.horizontal", "mail": "envelope", "sliders": "slider.horizontal.3",
+    "close": "xmark", "lock": "lock", "bell": "bell", "pencil": "pencil", "star": "star", "info": "info.circle",
+    "sparkle": "sparkle", "contrast": "circle.lefthalf.filled", "box": "shippingbox", "move": "arrow.up.and.down.and.arrow.left.and.right",
+    "swap": "arrow.left.arrow.right", "expand": "arrow.up.left.and.arrow.down.right", "target": "smallcircle.filled.circle",
+    "carousel": "rectangle.stack", "arrowDown": "arrow.down", "checkbox": "checkmark.square", "sheet": "rectangle.bottomhalf.filled",
+    "window": "macwindow", "header": "rectangle.topthird.inset.filled", "more": "ellipsis",
+]
+
+@MainActor func symbolImage(_ svg: String) -> UIImage? {
+    func attr(_ name: String) -> String? {
+        guard let start = svg.range(of: "\(name)='") else { return nil }
+        return svg[start.upperBound...].split(separator: "'", maxSplits: 1).first.map(String.init)
+    }
+    guard let name = attr("data-icon").flatMap({ symbolNames[$0] }) else { return nil }
+    #if canImport(UIKit)
+    let color = parseColor(attr("stroke")) ?? .label
+    return UIImage(systemName: name)?.withTintColor(color, renderingMode: .alwaysOriginal)
+    #else
+    return NSImage(systemSymbolName: name, accessibilityDescription: nil)
+    #endif
+}
+
+@MainActor private func data(of picture: UIImage) -> Int { Int(picture.size.width * picture.size.height * 4) }
+
+/** Loads a picture into the cache before a view asks for it. */
+@MainActor public func prefetchImage(_ url: String) { Task { _ = await loadImage(url) } }
+
 @MainActor public func div(_ mods: NodeMod?...) -> Node { build(.box, "div", mods) }
 @MainActor public func section(_ mods: NodeMod?...) -> Node { build(.box, "section", mods) }
 @MainActor public func header(_ mods: NodeMod?...) -> Node { build(.box, "header", mods) }
@@ -2668,14 +2718,21 @@ public struct Attr: NodeMod {
         Attr { node in
             node.bind(value) { url in
                 guard let image = node.view as? UIImageView else { return }
+                // nuclo-native-ns: an icon (an inline SVG) is the SF Symbol its `data-icon` names, in its stroke colour.
+                if url.hasPrefix("data:image/svg+xml") { image.image = symbolImage(url); return }
                 // A relative path is one of the app's own files (an example's assets/, copied into the bundle).
                 if !url.contains("://") {
                     image.image = Bundle.main.path(forResource: url, ofType: nil).flatMap { UIImage(contentsOfFile: $0) }
                     return
                 }
-                guard let u = URL(string: url) else { return }
+                imageWanted[ObjectIdentifier(image)] = url
+                if let cached = imageCache.object(forKey: url as NSString) { image.image = cached; return }
+                image.image = nil
                 Task { @MainActor in
-                    if let (data, _) = try? await URLSession.shared.data(from: u) { image.image = UIImage(data: data) }
+                    guard let picture = await loadImage(url), imageWanted[ObjectIdentifier(image)] == url else { return }
+                    image.image = picture
+                    image.alpha = 0
+                    UIView.animate(withDuration: 0.16) { image.alpha = 1 }
                 }
             }
         }
@@ -2795,6 +2852,234 @@ public struct Attr: NodeMod {
 }
 
 @MainActor public func scope(_ ids: String...) -> NodeMod { Attr { $0.scopes.formUnion(ids) } }
+
+// nuclo-native-ns: the platform's own components. iOS: UIAlertController (alerts, action sheets), a UIMenu,
+// page sheets with detents. macOS: NSAlert, NSMenu, a window sheet. Toasts have no native form on either.
+
+public struct NativeAction {
+    public let label: String
+    public let kind: String
+    public let run: () -> Void
+    public init(_ label: String, _ kind: String, _ run: @escaping () -> Void) {
+        self.label = label
+        self.kind = kind
+        self.run = run
+    }
+}
+
+@MainActor public enum NativeUi {
+    private static func later(_ a: NativeAction) {
+        DispatchQueue.main.async {
+            a.run()
+            Runtime.shared.update([])
+        }
+    }
+
+    #if canImport(UIKit)
+    /// The controller on top: what presents the next alert or sheet.
+    private static func top() -> UIViewController {
+        var c: UIViewController = Runtime.shared.root
+        while let next = c.presentedViewController, !next.isBeingDismissed { c = next }
+        return c
+    }
+
+    private static func style(_ kind: String) -> UIAlertAction.Style {
+        kind == "destructive" ? .destructive : kind == "cancel" ? .cancel : .default
+    }
+
+    public static func alert(_ title: String, _ message: String, _ actions: [NativeAction]) -> Bool {
+        let c = UIAlertController(title: title, message: message.isEmpty ? nil : message, preferredStyle: .alert)
+        for a in actions { c.addAction(UIAlertAction(title: a.label, style: style(a.kind)) { _ in later(a) }) }
+        top().present(c, animated: true)
+        return true
+    }
+
+    public static func actions(_ title: String, _ actions: [NativeAction]) -> Bool {
+        let c = UIAlertController(title: title.isEmpty ? nil : title, message: nil, preferredStyle: .actionSheet)
+        for a in actions { c.addAction(UIAlertAction(title: a.label, style: style(a.kind)) { _ in later(a) }) }
+        if !actions.contains(where: { $0.kind == "cancel" }) { c.addAction(UIAlertAction(title: "Cancel", style: .cancel)) }
+        // iPad: an action sheet is a popover from the middle of the window.
+        let host = top()
+        c.popoverPresentationController?.sourceView = host.view
+        c.popoverPresentationController?.sourceRect = CGRect(x: host.view.bounds.midX, y: host.view.bounds.maxY - 80, width: 1, height: 1)
+        host.present(c, animated: true)
+        return true
+    }
+
+    private static var menuButton: UIButton?
+
+    /// A UIMenu at a point of the window (iOS 17.4+, which can open a button's menu from code); an action sheet before.
+    public static func menu(_ x: Double, _ y: Double, _ title: String, _ actions: [NativeAction]) -> Bool {
+        guard #available(iOS 17.4, *) else { return Self.actions(title, actions) }
+        let host = Runtime.shared.root.view!
+        menuButton?.removeFromSuperview()
+        let button = UIButton(frame: CGRect(x: min(x, Double(host.bounds.width) - 2), y: y, width: 1, height: 1))
+        button.menu = UIMenu(title: title, children: actions.map { a in
+            let item = UIAction(title: a.kind == "submenu" ? "\(a.label)…" : a.label, attributes: a.kind == "destructive" ? .destructive : []) { _ in later(a) }
+            if a.kind == "checked" { item.state = .on }
+            return item
+        })
+        button.showsMenuAsPrimaryAction = true
+        host.addSubview(button)
+        menuButton = button
+        button.performPrimaryAction()
+        return true
+    }
+
+    private static var sheets: [(UIViewController, SheetGone)] = []
+
+    /// A page sheet of the app's view, with the platform's detents and grabber.
+    public static func sheet(_ title: String, _ detent: String, _ node: Node) -> Bool {
+        Runtime.shared.addRoot(node)
+        let screen = ScreenController(node, title: title)
+        let nav = UINavigationController(rootViewController: screen)
+        nav.navigationBar.prefersLargeTitles = false
+        let done = UIAction { _ in _ = closeSheet() }
+        screen.navigationItem.rightBarButtonItem = UIBarButtonItem(systemItem: .close, primaryAction: done)
+        if let sheet = nav.sheetPresentationController {
+            sheet.detents = detent == "large" ? [.large()] : [.medium(), .large()]
+            sheet.prefersGrabberVisible = true
+            sheet.prefersScrollingExpandsWhenScrolledToEdge = true
+        }
+        let gone = SheetGone { sheets.removeAll { $0.0 === nav }; Runtime.shared.removeRoot(node) }
+        nav.presentationController?.delegate = gone
+        sheets.append((nav, gone))
+        top().present(nav, animated: true)
+        return true
+    }
+
+    public static func closeSheet() -> Bool {
+        guard let (nav, gone) = sheets.popLast() else { return false }
+        nav.dismiss(animated: true) { gone.done() }
+        return true
+    }
+    #else
+    public static func alert(_ title: String, _ message: String, _ actions: [NativeAction]) -> Bool {
+        let a = NSAlert()
+        a.messageText = title
+        a.informativeText = message
+        // NSAlert's buttons run right to left: the main action first, Cancel last.
+        let ordered = actions.filter { $0.kind != "cancel" }.reversed() + actions.filter { $0.kind == "cancel" }
+        for action in ordered {
+            let b = a.addButton(withTitle: action.label)
+            b.hasDestructiveAction = action.kind == "destructive"
+        }
+        let answer = a.runModal().rawValue - NSApplication.ModalResponse.alertFirstButtonReturn.rawValue
+        if answer >= 0 && answer < ordered.count { later(ordered[answer]) }
+        return true
+    }
+
+    public static func actions(_ title: String, _ actions: [NativeAction]) -> Bool {
+        let point = NSEvent.mouseLocation
+        let window = NSApp.keyWindow
+        let local = window.map { $0.convertPoint(fromScreen: point) } ?? .zero
+        return menu(Double(local.x), Double((window?.contentView?.bounds.height ?? 0) - local.y), title, actions)
+    }
+
+    private final class Target: NSObject {
+        let action: NativeAction
+        init(_ action: NativeAction) { self.action = action }
+        @objc func fire() { NativeUi.later(action) }
+    }
+
+    /// An NSMenu at a point of the window (in points from its top left).
+    public static func menu(_ x: Double, _ y: Double, _ title: String, _ actions: [NativeAction]) -> Bool {
+        guard let view = NSApp.keyWindow?.contentView else { return false }
+        let menu = NSMenu(title: title)
+        var targets: [Target] = []
+        if !title.isEmpty { menu.addItem(NSMenuItem.sectionHeader(title: title)) }
+        for a in actions where a.kind != "cancel" {
+            let target = Target(a)
+            targets.append(target)
+            let item = NSMenuItem(title: a.kind == "submenu" ? "\(a.label)…" : a.label, action: #selector(Target.fire), keyEquivalent: "")
+            item.target = target
+            if a.kind == "checked" { item.state = .on }
+            menu.addItem(item)
+        }
+        menu.popUp(positioning: nil, at: NSPoint(x: min(x, Double(view.bounds.width) - 4), y: Double(view.bounds.height) - y), in: view)
+        _ = targets
+        return true
+    }
+
+    private static var sheets: [(NSWindow, Node)] = []
+
+    /// A window sheet of the app's view.
+    public static func sheet(_ title: String, _ detent: String, _ node: Node) -> Bool {
+        guard let window = NSApp.keyWindow else { return false }
+        Runtime.shared.addRoot(node)
+        let height = detent == "large" ? window.frame.height - 60 : window.frame.height * 0.55
+        let panel = NSWindow(contentRect: NSRect(x: 0, y: 0, width: window.frame.width - 40, height: height), styleMask: [.titled], backing: .buffered, defer: false)
+        panel.title = title
+        let content = node.scrolls ? FixedScreenView(node) as UIView : ScreenView(node)
+        panel.contentView = content
+        sheets.append((panel, node))
+        window.beginSheet(panel)
+        return true
+    }
+
+    public static func closeSheet() -> Bool {
+        guard let (panel, node) = sheets.popLast() else { return false }
+        panel.sheetParent?.endSheet(panel)
+        Runtime.shared.removeRoot(node)
+        return true
+    }
+    #endif
+}
+
+#if canImport(UIKit)
+/// nuclo-native-ns: UIKit's own controls as nodes: a UISegmentedControl, a toggle button for a chip (UIKit has no
+/// chip), a UISlider. macOS draws its own (the controls of AppKit are not views of the UIKit shim).
+@MainActor public enum NativeControls {
+    public static func segmented(_ options: [String], _ at: @escaping () -> Int32, _ pick: @escaping (Int32) -> Void) -> Node {
+        let control = UISegmentedControl(items: options)
+        control.addAction(UIAction { [unowned control] _ in
+            let i = Int32(control.selectedSegmentIndex)
+            if i != at() { pick(i) }
+        }, for: .valueChanged)
+        let node = Node(.native, tag: "native", native: control)
+        node.bind(at) { control.selectedSegmentIndex = Int($0) }
+        return node
+    }
+
+    public static func chip(_ label: String, _ on: @escaping () -> Bool, _ pick: @escaping () -> Void) -> Node {
+        let button = UIButton(type: .system)
+        button.addAction(UIAction { _ in pick() }, for: .primaryActionTriggered)
+        let node = Node(.native, tag: "native", native: button)
+        node.bind(on) { on in
+            var c: UIButton.Configuration = on ? .tinted() : .gray()
+            c.title = label
+            c.image = on ? UIImage(systemName: "checkmark") : nil
+            c.imagePadding = 4
+            c.preferredSymbolConfigurationForImage = UIImage.SymbolConfiguration(scale: .small)
+            c.cornerStyle = .capsule
+            button.configuration = c
+        }
+        return node
+    }
+
+    public static func slider(_ value: @escaping () -> Double, _ color: String, _ change: @escaping (Double) -> Void) -> Node {
+        let slider = UISlider()
+        slider.minimumValue = 0
+        slider.maximumValue = 1
+        if let tint = parseColor(color.isEmpty ? nil : color) { slider.minimumTrackTintColor = tint }
+        slider.addAction(UIAction { [unowned slider] _ in change(Double(slider.value)) }, for: .valueChanged)
+        let node = Node(.native, tag: "native", native: slider)
+        node.bind(value) { v in if !slider.isTracking { slider.value = Float(v) } }
+        return node
+    }
+}
+
+/// Knows when a sheet goes (swiped down, or closed): its view tree is destroyed then.
+final class SheetGone: NSObject, UIAdaptivePresentationControllerDelegate {
+    private var gone: (() -> Void)?
+    init(_ gone: @escaping () -> Void) { self.gone = gone }
+    func done() {
+        gone?()
+        gone = nil
+    }
+    func presentationControllerDidDismiss(_ presentationController: UIPresentationController) { done() }
+}
+#endif
 
 @MainActor public func render(_ view: @escaping @MainActor () -> Node) { Runtime.shared.render(view()) }
 
