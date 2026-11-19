@@ -60,7 +60,7 @@ private fun look(l: Look) = NStyle(
 )
 
 /** nuclo-core's style object as the runtime's style. A string the runtime has no value for is left unset. */
-fun css(s: Style): StyleResult = dev.nuclo.runtime.css(NStyle(
+internal fun css(s: Style): StyleResult = dev.nuclo.runtime.css(NStyle(
   flexDirection = direction(s.flexDirection),
   alignItems = align(s.alignItems),
   alignSelf = align(s.alignSelf),
@@ -157,7 +157,7 @@ private fun attributes(a: Attributes): List<NodeMod> = listOfNotNull(
   a.onDestroy?.let { f -> A.onDestroy { f() } },
 )
 
-fun el(tag: String, mods: NList<Mod>): View {
+internal fun el(tag: String, mods: NList<Mod>): View {
   val m = mods.flatMap {
     when (it) {
       is Mod.Part -> listOf(it.v0)
@@ -180,25 +180,25 @@ fun el(tag: String, mods: NList<Mod>): View {
 
 // The runtime matches rows by `equals`: a record is a data class, so a changed item gets a new row.
 // A row is a builder's node; a view that is not one (an attribute) gives no row.
-fun <T> list(items: () -> NList<T>, render: (T, Int) -> View): View =
+internal fun <T> list(items: () -> NList<T>, render: (T, Int) -> View): View =
   dev.nuclo.runtime.list(items) { item, i -> render(item, i) as? Node }
 
 /** A `when` branch is made each time it opens. */
-fun when_(cond: () -> Boolean, show: () -> View): View = dev.nuclo.runtime.`when`(cond) { listOf(show()) }
+internal fun when_(cond: () -> Boolean, show: () -> View): View = dev.nuclo.runtime.`when`(cond) { listOf(show()) }
 
-fun update() {
+internal fun update() {
   dev.nuclo.runtime.update()
 }
 
 // ---- navigation ------------------------------------------------------------------------------
 
-class Route(val pattern: String, val title: (String) -> String, val view: (String) -> View, val kind: String)
+internal class Route(val pattern: String, val title: (String) -> String, val view: (String) -> View, val kind: String)
 
-fun route(pattern: String, title: (String) -> String, view: (String) -> View, kind: String) = Route(pattern, title, view, kind)
+internal fun route(pattern: String, title: (String) -> String, view: (String) -> View, kind: String) = Route(pattern, title, view, kind)
 
 private var router: NRouter? = null
 
-fun navigate(routes: NList<Route>, tabs: NList<Tab>) {
+internal fun navigate(routes: NList<Route>, tabs: NList<Tab>) {
   val r = NRouter(
     routes.map { r ->
       NRoute(
@@ -215,11 +215,11 @@ fun navigate(routes: NList<Route>, tabs: NList<Tab>) {
   dev.nuclo.runtime.render(r)
 }
 
-fun go(path: String) { router?.go(path) }
-fun back() { router?.back() }
-fun reset(path: String) { router?.reset(path) }
+internal fun go(path: String) { router?.go(path) }
+internal fun back() { router?.back() }
+internal fun reset(path: String) { router?.reset(path) }
 
-fun overlay(view: () -> View) {
+internal fun overlay(view: () -> View) {
   dev.nuclo.runtime.render { view() as Node }
 }
 
@@ -227,76 +227,76 @@ fun overlay(view: () -> View) {
 
 private fun native(actions: NList<Action>) = actions.map { dev.nuclo.runtime.NativeAction(it.label, it.kind) { it.run() } }
 
-fun nativeAlert(title: String, message: String, actions: NList<Action>): Boolean {
+internal fun nativeAlert(title: String, message: String, actions: NList<Action>): Boolean {
   dev.nuclo.runtime.NativeUi.alert(title, message, native(actions))
   return true
 }
 
-fun nativeActions(title: String, actions: NList<Action>): Boolean {
+internal fun nativeActions(title: String, actions: NList<Action>): Boolean {
   dev.nuclo.runtime.NativeUi.actions(title, native(actions))
   return true
 }
 
-fun nativeMenu(x: Double, y: Double, title: String, actions: NList<Action>): Boolean {
+internal fun nativeMenu(x: Double, y: Double, title: String, actions: NList<Action>): Boolean {
   dev.nuclo.runtime.NativeUi.menu(x, y, title, native(actions))
   return true
 }
 
-fun nativeSheet(title: String, detent: String, content: () -> View): Boolean {
+internal fun nativeSheet(title: String, detent: String, content: () -> View): Boolean {
   dev.nuclo.runtime.NativeUi.sheet(title, detent, content() as Node)
   return true
 }
 
-fun hasControl(kind: String): Boolean = kind in setOf("segmented", "chip", "slider", "button", "spinner", "search", "refresh")
+internal fun hasControl(kind: String): Boolean = kind in setOf("segmented", "chip", "slider", "button", "spinner", "search", "refresh")
 
-fun refreshControl(content: View, refreshing: () -> Boolean, refresh: () -> Unit): View =
+internal fun refreshControl(content: View, refreshing: () -> Boolean, refresh: () -> Unit): View =
   dev.nuclo.runtime.NativeControls.refresh(content as Node, refreshing, refresh)
 
-fun buttonControl(label: () -> String, kind: () -> String, run: () -> Unit): View = dev.nuclo.runtime.NativeControls.button(label, kind, run)
+internal fun buttonControl(label: () -> String, kind: () -> String, run: () -> Unit): View = dev.nuclo.runtime.NativeControls.button(label, kind, run)
 
-fun spinnerControl(): View = dev.nuclo.runtime.NativeControls.spinner()
+internal fun spinnerControl(): View = dev.nuclo.runtime.NativeControls.spinner()
 
-fun searchControl(placeholder: String, value: () -> String, input: (String) -> Unit, submit: (String) -> Unit): View =
+internal fun searchControl(placeholder: String, value: () -> String, input: (String) -> Unit, submit: (String) -> Unit): View =
   dev.nuclo.runtime.NativeControls.search(placeholder, value, input, submit)
 
 /** Android has no stepper: kit.ns draws one. */
-fun stepperControl(value: () -> Int, min: Int, max: Int, change: (Int) -> Unit): View = dev.nuclo.runtime.div()
+internal fun stepperControl(value: () -> Int, min: Int, max: Int, change: (Int) -> Unit): View = dev.nuclo.runtime.div()
 
-fun barButton(label: String, run: () -> Unit): Boolean {
+internal fun barButton(label: String, run: () -> Unit): Boolean {
   dev.nuclo.runtime.Chrome.barActions.add(dev.nuclo.runtime.NativeAction(label, "default", run))
   return true
 }
 
-fun shareText(text: String): Boolean {
+internal fun shareText(text: String): Boolean {
   dev.nuclo.runtime.NativeUi.share(text)
   return true
 }
 
-fun copyText(text: String) = dev.nuclo.runtime.NativeUi.copy(text)
+internal fun copyText(text: String) = dev.nuclo.runtime.NativeUi.copy(text)
 
-fun segmentedControl(options: NList<String>, at: () -> Int, pick: (Int) -> Unit): View =
+internal fun segmentedControl(options: NList<String>, at: () -> Int, pick: (Int) -> Unit): View =
   dev.nuclo.runtime.NativeControls.segmented(options.toList(), at, pick)
 
-fun chipControl(label: String, on: () -> Boolean, pick: () -> Unit): View = dev.nuclo.runtime.NativeControls.chip(label, on, pick)
+internal fun chipControl(label: String, on: () -> Boolean, pick: () -> Unit): View = dev.nuclo.runtime.NativeControls.chip(label, on, pick)
 
-fun sliderControl(value: () -> Double, color: String, change: (Double) -> Unit): View = dev.nuclo.runtime.NativeControls.slider(value, color, change)
+internal fun sliderControl(value: () -> Double, color: String, change: (Double) -> Unit): View = dev.nuclo.runtime.NativeControls.slider(value, color, change)
 
-fun nativeCloseSheet(): Boolean = dev.nuclo.runtime.NativeUi.closeSheet()
+internal fun nativeCloseSheet(): Boolean = dev.nuclo.runtime.NativeUi.closeSheet()
 
-fun nativeToast(text: String): Boolean {
+internal fun nativeToast(text: String): Boolean {
   dev.nuclo.runtime.NativeUi.toast(text)
   return true
 }
 
 // ---- platform ---------------------------------------------------------------------------------
 
-fun later(ms: Int, f: () -> Unit) {
+internal fun later(ms: Int, f: () -> Unit) {
   Runtime.main.postDelayed({ f() }, ms.toLong())
 }
 
-fun prefetch(url: String) = prefetchImage(url)
+internal fun prefetch(url: String) = prefetchImage(url)
 
-fun haptic(kind: String) {
+internal fun haptic(kind: String) {
   val v = Runtime.activity.window.decorView
   v.performHapticFeedback(
     when (kind) {
@@ -307,9 +307,9 @@ fun haptic(kind: String) {
   )
 }
 
-fun platform() = "android"
+internal fun platform() = "android"
 
-fun viewport(): Viewport {
+internal fun viewport(): Viewport {
   val m = Runtime.activity.resources.displayMetrics
   val root = Runtime.activity.window.decorView
   val w = if (root.width > 0) root.width else m.widthPixels
@@ -317,7 +317,7 @@ fun viewport(): Viewport {
   return Viewport(w / m.density.toDouble(), h / m.density.toDouble())
 }
 
-fun theme(dark: Boolean, accent: String, background: String) = dev.nuclo.runtime.chromeTheme(dark, accent, background)
+internal fun theme(dark: Boolean, accent: String, background: String) = dev.nuclo.runtime.chromeTheme(dark, accent, background)
 
 // ---- storage: SQLite (android.database.sqlite, part of the platform) ---------------------------
 
@@ -327,7 +327,7 @@ private val db: SQLiteDatabase by lazy {
   }
 }
 
-fun dbPut(table: String, id: String, fields: NList<String>) {
+internal fun dbPut(table: String, id: String, fields: NList<String>) {
   val json = JSONArray(fields.toList()).toString()
   db.execSQL(
     "INSERT INTO rows (tbl, id, fields) VALUES (?, ?, ?) ON CONFLICT (tbl, id) DO UPDATE SET fields = excluded.fields",
@@ -335,7 +335,7 @@ fun dbPut(table: String, id: String, fields: NList<String>) {
   )
 }
 
-fun dbAll(table: String): NList<Row> {
+internal fun dbAll(table: String): NList<Row> {
   val out = NList<Row>()
   db.rawQuery("SELECT id, fields FROM rows WHERE tbl = ? ORDER BY rowid DESC", arrayOf(table)).use { c ->
     while (c.moveToNext()) {
@@ -348,15 +348,15 @@ fun dbAll(table: String): NList<Row> {
   return out
 }
 
-fun dbDelete(table: String, id: String) {
+internal fun dbDelete(table: String, id: String) {
   db.delete("rows", "tbl = ? AND id = ?", arrayOf(table, id))
 }
 
-fun dbClear(table: String) {
+internal fun dbClear(table: String) {
   db.delete("rows", "tbl = ?", arrayOf(table))
 }
 
-fun dbInfo(): String {
+internal fun dbInfo(): String {
   val version = db.rawQuery("SELECT sqlite_version()", null).use { c -> if (c.moveToFirst()) c.getString(0) else "?" }
   return "SQLite $version · ${db.path}"
 }

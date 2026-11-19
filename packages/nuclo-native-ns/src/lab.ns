@@ -61,24 +61,38 @@ let cardY = 0.0
 let cardDragging = false
 let corner = 0
 let flings = 0
+/** How the card goes to its corner: with the fling's speed (decelerating), or on a spring from a slow release. */
+let flingMs = 520
+let flung = false
 
-fn cornerX(c: int) => c % 2 == 0 ? -1.0 : 1.0
-fn cornerY(c: int) => c < 2 ? -1.0 : 1.0
+const CARD_SIZE = 120.0
+// The arena: a box of known size (a share of the window), so the corners are inside what shows on every platform.
+fn arenaW() => clamp(viewport().width - 32.0, 200.0, 520.0)
+fn arenaH() => clamp(viewport().height - 340.0, 260.0, 640.0)
+fn maxX() => arenaW() / 2.0 - CARD_SIZE / 2.0 - 12.0
+fn maxY() => arenaH() / 2.0 - CARD_SIZE / 2.0 - 12.0
+fn cornerX(c: int) => c % 2 == 0 ? 0.0 - maxX() : maxX()
+fn cornerY(c: int) => c < 2 ? 0.0 - maxY() : maxY()
+
+fn arena() => css({ width: arenaW(), height: arenaH(), alignSelf: "center", alignItems: "center", justifyContent: "center", borderRadius: 28, borderWidth: 1, borderColor: t().line, backgroundColor: t().surface })
+/** The four places it can land, faintly. */
+fn slot(c: int) => css({
+  position: "absolute", width: CARD_SIZE, height: CARD_SIZE, borderRadius: 30, borderWidth: 2, borderColor: t().line,
+  left: arenaW() / 2.0 + cornerX(c) - CARD_SIZE / 2.0, top: arenaH() / 2.0 + cornerY(c) - CARD_SIZE / 2.0,
+  opacity: c == corner ? 0.0 : 1.0,
+})
 
 fn dragCard(): StyleResult {
-  const v = viewport()
-  const ax = cornerX(corner) * (v.width / 2.0 - 90.0)
-  const ay = cornerY(corner) * (v.height / 2.0 - 220.0)
   return css({
-    width: 140, height: 140, borderRadius: 32, backgroundColor: t().accent, alignItems: "center", justifyContent: "center",
-    translateX: (v.width > 0.0 ? ax : 0.0) + cardX, translateY: (v.height > 0.0 ? ay : 0.0) + cardY,
-    scale: cardDragging ? 1.08 : 1.0, rotate: cardX / 20.0,
-    shadowColor: "rgba(0,0,0,0.25)", shadowRadius: cardDragging ? 34 : 16, shadowOffsetY: cardDragging ? 18 : 8,
-    transition: cardDragging ? 0 : 520, easing: "spring",
+    width: CARD_SIZE, height: CARD_SIZE, borderRadius: 30, backgroundColor: t().accent, alignItems: "center", justifyContent: "center",
+    translateX: cornerX(corner) + cardX, translateY: cornerY(corner) + cardY,
+    scale: cardDragging ? 1.06 : 1.0, rotate: cardDragging ? clamp(cardX / 24.0, -10.0, 10.0) : 0.0,
+    shadowColor: "rgba(0,0,0,0.25)", shadowRadius: cardDragging ? 30 : 14, shadowOffsetY: cardDragging ? 16 : 6, zIndex: 5,
+    transition: cardDragging ? 0 : toFloat(flingMs), easing: flung ? "ease-out" : "spring",
   })
 }
-const cardLabel = css({ color: "#ffffff", fontSize: 40 })
-const centered = css({ flex: 1, alignItems: "center", justifyContent: "center" })
+const cardLabel = css({ color: "#ffffff", fontSize: 36 })
+const centered = css({ flex: 1, justifyContent: "center", pb: space.xl })
 
 fn fling(e: Pan) {
   if (e.state == "start") { cardDragging = true; haptic("light") }
@@ -86,24 +100,36 @@ fn fling(e: Pan) {
   cardY = e.dy
   if (e.state == "end" || e.state == "cancel") {
     cardDragging = false
-    // Where the card would come to rest with its speed: then the corner nearest that point.
-    const v = viewport()
-    const x = cornerX(corner) * (v.width / 2.0 - 90.0) + e.dx + e.vx * 0.2
-    const y = cornerY(corner) * (v.height / 2.0 - 220.0) + e.dy + e.vy * 0.2
-    corner = (x < 0.0 ? 0 : 1) + (y < 0.0 ? 0 : 2)
+    // Where it would come to rest with its speed (a short decay), then the corner nearest that point.
+    const x = cornerX(corner) + e.dx
+    const y = cornerY(corner) + e.dy
+    const px = x + e.vx * 0.18
+    const py = y + e.vy * 0.18
+    corner = (px < 0.0 ? 0 : 1) + (py < 0.0 ? 0 : 2)
+    // A fast throw keeps its speed: it decelerates the rest of the way in about the time that speed takes.
+    const speed = sqrt(e.vx * e.vx + e.vy * e.vy)
+    const dx = cornerX(corner) - x
+    const dy = cornerY(corner) - y
+    const dist = sqrt(dx * dx + dy * dy)
+    flung = speed > 500.0
+    flingMs = flung ? toInt(clamp(dist / speed * 1000.0 * 2.0, 180.0, 480.0)) : 520
     cardX = 0.0
     cardY = 0.0
     flings += 1
-    haptic("medium")
+    const landing = flings
+    later(flingMs, () => { if (flings == landing && !cardDragging) { haptic("light") } })
   }
   update()
 }
 
 export fn dragScreen(): View {
   return div(stage,
-    p(intro, "Drag the card and let go: it flies to the nearest corner with your speed, on a spring."),
+    p(intro, "Drag the card and let go: a throw keeps its speed to the corner it heads for; a slow release settles on a spring."),
     p(readout, () => `corner ${corner + 1} · ${flings} flings · ${cardDragging ? "dragging" : "resting"}`),
-    div(centered, div(() => dragCard(), { onPan: (e: Pan) => fling(e) }, span(cardLabel, "✥"))),
+    div(centered, div(() => arena(),
+      div(() => slot(0)), div(() => slot(1)), div(() => slot(2)), div(() => slot(3)),
+      div(() => dragCard(), { onPan: (e: Pan) => fling(e) }, span(cardLabel, "✥")),
+    )),
   )
 }
 
@@ -263,10 +289,11 @@ const tileStyle = themed(() => css({
 }))
 const fill = css({ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 })
 const holdTrack = themed(() => css({ height: 56, mx: space.lg, borderRadius: radius.md, backgroundColor: t().dangerSoft, overflow: "hidden", justifyContent: "center", pressed: { scale: 0.98 }, transition: 160 }))
-// The fill runs as one transition (smooth at any frame rate): to full while held, back fast when let go.
+// The fill runs as one transform transition (smooth, no layout): in while held, back out fast when let go.
 fn holdFill() => css({
-  position: "absolute", top: 0, left: 0, bottom: 0, widthPct: holdingDown ? 100.0 : 0.0, backgroundColor: t().danger, opacity: 0.35,
-  transition: holdingDown ? toFloat(HOLD_MS) : 220.0, easing: holdingDown ? "linear" : "ease-out",
+  position: "absolute", top: 0, left: 0, bottom: 0, widthPct: 100, backgroundColor: t().danger, opacity: 0.35,
+  translateX: holdingDown ? 0.0 : 0.0 - viewport().width,
+  transition: holdingDown ? toFloat(HOLD_MS - 100) : 220.0, easing: holdingDown ? "linear" : "ease-out",
 })
 const holdLabel = themed(() => css({ textAlign: "center", fontSize: font.headline, fontWeight: "semibold", color: t().danger }))
 

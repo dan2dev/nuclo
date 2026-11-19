@@ -15,8 +15,8 @@ import UIKit
 import AppKit
 #endif
 
-public typealias View = any Nuclo.NodeMod
-public typealias StyleResult = Nuclo.StyleClass
+typealias View = any Nuclo.NodeMod
+typealias StyleResult = Nuclo.StyleClass
 
 @inline(__always) private func ui<T>(_ body: @MainActor () -> T) -> T { MainActor.assumeIsolated(body) }
 
@@ -48,7 +48,7 @@ private func look(_ l: Look) -> Nuclo.Style {
 }
 
 /// nuclo-core's style object as the runtime's style. A string the runtime has no value for is left unset.
-public func css(_ s: Style) -> StyleResult {
+func css(_ s: Style) -> StyleResult {
   ui {
     var media: [Nuclo.MediaRule] = []
     if let m = s.md { media.append(Nuclo.MediaRule(720, nil, look(m))) }
@@ -157,7 +157,7 @@ private func point(_ e: Nuclo.PointerEvent) -> Point { Point(x: e.x, y: e.y, pag
   return m
 }
 
-public func el(_ tag: String, _ mods: [Mod]) -> View {
+func el(_ tag: String, _ mods: [Mod]) -> View {
   ui {
     var m: [(any Nuclo.NodeMod)?] = []
     for mod in mods {
@@ -206,7 +206,7 @@ private final class Box<T> {
   init(_ value: T) { self.value = value }
 }
 
-public func list<T: Equatable>(_ items: @escaping () -> [T], _ render: @escaping (T, Int32) -> View) -> View {
+func list<T: Equatable>(_ items: @escaping () -> [T], _ render: @escaping (T, Int32) -> View) -> View {
   ui {
     var last: [Box<T>?] = []
     return Nuclo.list({ () -> Nuclo.JsArray<Box<T>> in
@@ -223,30 +223,30 @@ public func list<T: Equatable>(_ items: @escaping () -> [T], _ render: @escaping
 }
 
 /// A `when` branch is made each time it opens.
-public func when(_ cond: @escaping () -> Bool, _ show: @escaping () -> View) -> View {
+func when(_ cond: @escaping () -> Bool, _ show: @escaping () -> View) -> View {
   ui { Nuclo.when({ cond() }, { [show()] }) }
 }
 
-public func update() {
+func update() {
   ui { Nuclo.update() }
 }
 
 // ---- navigation --------------------------------------------------------------------------------
 
-public struct Route {
+struct Route {
   let pattern: String
   let title: (String) -> String
   let view: (String) -> View
   let kind: String
 }
 
-public func route(_ pattern: String, _ title: @escaping (String) -> String, _ view: @escaping (String) -> View, _ kind: String) -> Route {
+func route(_ pattern: String, _ title: @escaping (String) -> String, _ view: @escaping (String) -> View, _ kind: String) -> Route {
   Route(pattern: pattern, title: title, view: view, kind: kind)
 }
 
 nonisolated(unsafe) private var router: Nuclo.NRouter?
 
-public func navigate(_ routes: [Route], _ tabs: [Tab]) {
+func navigate(_ routes: [Route], _ tabs: [Tab]) {
   ui {
     let start = ProcessInfo.processInfo.environment["NUCLO_PATH"] ?? "/"
     let r = Nuclo.NRouter(
@@ -267,17 +267,17 @@ public func navigate(_ routes: [Route], _ tabs: [Tab]) {
   }
 }
 
-public func go(_ path: String) { ui { router?.go(path) } }
-public func back() { ui { router?.back() } }
-public func reset(_ path: String) { ui { router?.reset(path) } }
+func go(_ path: String) { ui { router?.go(path) } }
+func back() { ui { router?.back() } }
+func reset(_ path: String) { ui { router?.reset(path) } }
 
-public func overlay(_ view: @escaping () -> View) {
+func overlay(_ view: @escaping () -> View) {
   ui { Nuclo.render { (view() as? Nuclo.Node) ?? Nuclo.div() } }
 }
 
 // ---- platform -----------------------------------------------------------------------------------
 
-public func later(_ ms: Int32, _ f: @escaping () -> Void) {
+func later(_ ms: Int32, _ f: @escaping () -> Void) {
   ui { _ = Nuclo.setTimeout({ f() }, Double(ms)) }
 }
 
@@ -285,27 +285,27 @@ public func later(_ ms: Int32, _ f: @escaping () -> Void) {
 
 private func native(_ actions: [Action]) -> [Nuclo.NativeAction] { actions.map { a in Nuclo.NativeAction(a.label, a.kind, a.run) } }
 
-public func nativeAlert(_ title: String, _ message: String, _ actions: [Action]) -> Bool {
+func nativeAlert(_ title: String, _ message: String, _ actions: [Action]) -> Bool {
   ui { Nuclo.NativeUi.alert(title, message, native(actions)) }
 }
 
-public func nativeActions(_ title: String, _ actions: [Action]) -> Bool {
+func nativeActions(_ title: String, _ actions: [Action]) -> Bool {
   ui { Nuclo.NativeUi.actions(title, native(actions)) }
 }
 
-public func nativeMenu(_ x: Double, _ y: Double, _ title: String, _ actions: [Action]) -> Bool {
+func nativeMenu(_ x: Double, _ y: Double, _ title: String, _ actions: [Action]) -> Bool {
   ui { Nuclo.NativeUi.menu(x, y, title, native(actions)) }
 }
 
-public func nativeSheet(_ title: String, _ detent: String, _ content: @escaping () -> View) -> Bool {
+func nativeSheet(_ title: String, _ detent: String, _ content: @escaping () -> View) -> Bool {
   ui { Nuclo.NativeUi.sheet(title, detent, (content() as? Nuclo.Node) ?? Nuclo.div()) }
 }
 
-public func nativeCloseSheet() -> Bool {
+func nativeCloseSheet() -> Bool {
   ui { Nuclo.NativeUi.closeSheet() }
 }
 
-public func barButton(_ label: String, _ run: @escaping () -> Void) -> Bool {
+func barButton(_ label: String, _ run: @escaping () -> Void) -> Bool {
   #if canImport(UIKit)
   ui { Nuclo.NativeUi.barActions.append(Nuclo.NativeAction(label, "default", run)) }
   return true
@@ -314,59 +314,59 @@ public func barButton(_ label: String, _ run: @escaping () -> Void) -> Bool {
   #endif
 }
 
-public func shareText(_ text: String) -> Bool { ui { Nuclo.NativeUi.share(text) } }
-public func copyText(_ text: String) { ui { Nuclo.NativeUi.copy(text) } }
+func shareText(_ text: String) -> Bool { ui { Nuclo.NativeUi.share(text) } }
+func copyText(_ text: String) { ui { Nuclo.NativeUi.copy(text) } }
 
 #if canImport(UIKit)
-public func hasControl(_ kind: String) -> Bool { ["segmented", "chip", "slider", "button", "spinner", "search", "stepper", "refresh"].contains(kind) }
+func hasControl(_ kind: String) -> Bool { ["segmented", "chip", "slider", "button", "spinner", "search", "stepper", "refresh"].contains(kind) }
 
-public func refreshControl(_ content: View, _ refreshing: @escaping () -> Bool, _ refresh: @escaping () -> Void) -> View {
+func refreshControl(_ content: View, _ refreshing: @escaping () -> Bool, _ refresh: @escaping () -> Void) -> View {
   ui { Nuclo.NativeControls.refresh((content as? Nuclo.Node) ?? Nuclo.div(), refreshing, refresh) }
 }
 
-public func buttonControl(_ label: @escaping () -> String, _ kind: @escaping () -> String, _ run: @escaping () -> Void) -> View {
+func buttonControl(_ label: @escaping () -> String, _ kind: @escaping () -> String, _ run: @escaping () -> Void) -> View {
   ui { Nuclo.NativeControls.button(label, kind, run) }
 }
-public func spinnerControl() -> View { ui { Nuclo.NativeControls.spinner() } }
-public func searchControl(_ placeholder: String, _ value: @escaping () -> String, _ input: @escaping (String) -> Void, _ submit: @escaping (String) -> Void) -> View {
+func spinnerControl() -> View { ui { Nuclo.NativeControls.spinner() } }
+func searchControl(_ placeholder: String, _ value: @escaping () -> String, _ input: @escaping (String) -> Void, _ submit: @escaping (String) -> Void) -> View {
   ui { Nuclo.NativeControls.search(placeholder, value, input, submit) }
 }
-public func stepperControl(_ value: @escaping () -> Int32, _ min: Int32, _ max: Int32, _ change: @escaping (Int32) -> Void) -> View {
+func stepperControl(_ value: @escaping () -> Int32, _ min: Int32, _ max: Int32, _ change: @escaping (Int32) -> Void) -> View {
   ui { Nuclo.NativeControls.stepper(value, min, max, change) }
 }
 
-public func segmentedControl(_ options: [String], _ at: @escaping () -> Int32, _ pick: @escaping (Int32) -> Void) -> View {
+func segmentedControl(_ options: [String], _ at: @escaping () -> Int32, _ pick: @escaping (Int32) -> Void) -> View {
   ui { Nuclo.NativeControls.segmented(options, at, pick) }
 }
 
-public func chipControl(_ label: String, _ on: @escaping () -> Bool, _ pick: @escaping () -> Void) -> View {
+func chipControl(_ label: String, _ on: @escaping () -> Bool, _ pick: @escaping () -> Void) -> View {
   ui { Nuclo.NativeControls.chip(label, on, pick) }
 }
 
-public func sliderControl(_ value: @escaping () -> Double, _ color: String, _ change: @escaping (Double) -> Void) -> View {
+func sliderControl(_ value: @escaping () -> Double, _ color: String, _ change: @escaping (Double) -> Void) -> View {
   ui { Nuclo.NativeControls.slider(value, color, change) }
 }
 #else
 /// macOS: kit.ns draws these.
-public func hasControl(_ kind: String) -> Bool { false }
-public func segmentedControl(_ options: [String], _ at: @escaping () -> Int32, _ pick: @escaping (Int32) -> Void) -> View { ui { Nuclo.div() } }
-public func chipControl(_ label: String, _ on: @escaping () -> Bool, _ pick: @escaping () -> Void) -> View { ui { Nuclo.div() } }
-public func sliderControl(_ value: @escaping () -> Double, _ color: String, _ change: @escaping (Double) -> Void) -> View { ui { Nuclo.div() } }
-public func buttonControl(_ label: @escaping () -> String, _ kind: @escaping () -> String, _ run: @escaping () -> Void) -> View { ui { Nuclo.div() } }
-public func spinnerControl() -> View { ui { Nuclo.div() } }
-public func refreshControl(_ content: View, _ refreshing: @escaping () -> Bool, _ refresh: @escaping () -> Void) -> View { ui { Nuclo.div() } }
-public func searchControl(_ placeholder: String, _ value: @escaping () -> String, _ input: @escaping (String) -> Void, _ submit: @escaping (String) -> Void) -> View { ui { Nuclo.div() } }
-public func stepperControl(_ value: @escaping () -> Int32, _ min: Int32, _ max: Int32, _ change: @escaping (Int32) -> Void) -> View { ui { Nuclo.div() } }
+func hasControl(_ kind: String) -> Bool { false }
+func segmentedControl(_ options: [String], _ at: @escaping () -> Int32, _ pick: @escaping (Int32) -> Void) -> View { ui { Nuclo.div() } }
+func chipControl(_ label: String, _ on: @escaping () -> Bool, _ pick: @escaping () -> Void) -> View { ui { Nuclo.div() } }
+func sliderControl(_ value: @escaping () -> Double, _ color: String, _ change: @escaping (Double) -> Void) -> View { ui { Nuclo.div() } }
+func buttonControl(_ label: @escaping () -> String, _ kind: @escaping () -> String, _ run: @escaping () -> Void) -> View { ui { Nuclo.div() } }
+func spinnerControl() -> View { ui { Nuclo.div() } }
+func refreshControl(_ content: View, _ refreshing: @escaping () -> Bool, _ refresh: @escaping () -> Void) -> View { ui { Nuclo.div() } }
+func searchControl(_ placeholder: String, _ value: @escaping () -> String, _ input: @escaping (String) -> Void, _ submit: @escaping (String) -> Void) -> View { ui { Nuclo.div() } }
+func stepperControl(_ value: @escaping () -> Int32, _ min: Int32, _ max: Int32, _ change: @escaping (Int32) -> Void) -> View { ui { Nuclo.div() } }
 #endif
 
 /// Neither UIKit nor AppKit has a toast: kit.ns draws it.
-public func nativeToast(_ text: String) -> Bool { false }
+func nativeToast(_ text: String) -> Bool { false }
 
-public func prefetch(_ url: String) {
+func prefetch(_ url: String) {
   ui { Nuclo.prefetchImage(url) }
 }
 
-public func haptic(_ kind: String) {
+func haptic(_ kind: String) {
   #if canImport(UIKit)
   ui {
     switch kind {
@@ -380,9 +380,9 @@ public func haptic(_ kind: String) {
   #endif
 }
 
-public func platform() -> String { PLATFORM }
+func platform() -> String { PLATFORM }
 
-public func viewport() -> Viewport {
+func viewport() -> Viewport {
   ui {
     #if canImport(UIKit)
     let window = UIApplication.shared.connectedScenes.compactMap { ($0 as? UIWindowScene)?.keyWindow }.first
@@ -398,7 +398,7 @@ public func viewport() -> Viewport {
 
 /// The mode of the platform's own chrome: the navigation and tab bars follow the window's interface style,
 /// and the accent tints the back button and the selected tab.
-public func theme(_ dark: Bool, _ accent: String, _ background: String) {
+func theme(_ dark: Bool, _ accent: String, _ background: String) {
   ui {
     #if canImport(UIKit)
     for scene in UIApplication.shared.connectedScenes {
@@ -462,26 +462,26 @@ private final class Database: @unchecked Sendable {
   }
 }
 
-public func dbPut(_ table: String, _ id: String, _ fields: [String]) {
+func dbPut(_ table: String, _ id: String, _ fields: [String]) {
   let json = String(data: (try? JSONSerialization.data(withJSONObject: fields)) ?? Data("[]".utf8), encoding: .utf8) ?? "[]"
   Database.shared.exec("INSERT INTO rows (tbl, id, fields) VALUES (?, ?, ?) ON CONFLICT (tbl, id) DO UPDATE SET fields = excluded.fields", [table, id, json])
 }
 
-public func dbAll(_ table: String) -> [Row] {
+func dbAll(_ table: String) -> [Row] {
   Database.shared.query("SELECT id, fields FROM rows WHERE tbl = ? ORDER BY rowid DESC", [table]).map { r in
     let fields = (try? JSONSerialization.jsonObject(with: Data(r[1].utf8))) as? [String] ?? []
     return Row(id: r[0], fields: fields)
   }
 }
 
-public func dbDelete(_ table: String, _ id: String) {
+func dbDelete(_ table: String, _ id: String) {
   Database.shared.exec("DELETE FROM rows WHERE tbl = ? AND id = ?", [table, id])
 }
 
-public func dbClear(_ table: String) {
+func dbClear(_ table: String) {
   Database.shared.exec("DELETE FROM rows WHERE tbl = ?", [table])
 }
 
-public func dbInfo() -> String {
+func dbInfo() -> String {
   "SQLite \(String(cString: sqlite3_libversion())) · \(Database.shared.path)"
 }
