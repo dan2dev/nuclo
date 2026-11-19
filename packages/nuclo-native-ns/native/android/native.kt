@@ -247,7 +247,10 @@ fun nativeSheet(title: String, detent: String, content: () -> View): Boolean {
   return true
 }
 
-fun hasControl(kind: String): Boolean = kind in setOf("segmented", "chip", "slider", "button", "spinner", "search")
+fun hasControl(kind: String): Boolean = kind in setOf("segmented", "chip", "slider", "button", "spinner", "search", "refresh")
+
+fun refreshControl(content: View, refreshing: () -> Boolean, refresh: () -> Unit): View =
+  dev.nuclo.runtime.NativeControls.refresh(content as Node, refreshing, refresh)
 
 fun buttonControl(label: () -> String, kind: () -> String, run: () -> Unit): View = dev.nuclo.runtime.NativeControls.button(label, kind, run)
 

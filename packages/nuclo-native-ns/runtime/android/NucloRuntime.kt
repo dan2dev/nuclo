@@ -1415,9 +1415,18 @@ internal class Touch(private val node: Node, private val view: View) : View.OnTo
     private var panning = false
     private var pinching = false
     private var pinchScale = 1f
+    private var longPressed = false
 
     private val taps = GestureDetector(view.context, object : GestureDetector.SimpleOnGestureListener() {
         override fun onLongPress(e: MotionEvent) {
+            if (pointers["longPress"] == null) return
+            // A long press is not a click: the view's press ends here, and letting go does nothing more.
+            longPressed = true
+            node.setPressed(false)
+            val cancel = MotionEvent.obtain(e)
+            cancel.action = MotionEvent.ACTION_CANCEL
+            view.onTouchEvent(cancel)
+            cancel.recycle()
             pointers["longPress"]?.invoke(pointer(e))
         }
 
@@ -1478,6 +1487,7 @@ internal class Touch(private val node: Node, private val view: View) : View.OnTo
                 startX = e.rawX
                 startY = e.rawY
                 panning = false
+                longPressed = false
                 declined = false
                 // A pan on one axis does not hold the touch yet: it decides once the drag has a direction.
                 if ((onPan != null && axis == "both") || onPinch != null) v.parent?.requestDisallowInterceptTouchEvent(true)
@@ -1517,7 +1527,7 @@ internal class Touch(private val node: Node, private val view: View) : View.OnTo
                 panning = false
                 tracker?.recycle()
                 tracker = null
-                if (wasPanning) return true
+                if (wasPanning || longPressed) return true
             }
         }
         // While it drags, the view's own touch handling (press, click) stays out.
@@ -2793,6 +2803,29 @@ object NativeControls {
                 setColor(Color.parseColor(if (Chrome.dark) "#2c2c2e" else "#efeff4"))
             }
         }
+        return node
+    }
+
+    /**
+     * The platform's pull to refresh: `content` in a scroller inside a SwipeRefreshLayout, whose indicator
+     * comes down with the pull and turns while `refreshing()`.
+     */
+    fun refresh(content: Node, refreshing: () -> Boolean, refresh: () -> Unit): Node {
+        val ctx = NativeUi.themed()
+        Runtime.addRoot(content)
+        val swipe = androidx.swiperefreshlayout.widget.SwipeRefreshLayout(ctx).apply {
+            addView(ScreenView(ctx, content), ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
+            setOnRefreshListener { refresh() }
+        }
+        val node = Node(Node.Kind.Native, "native", swipe)
+        // It fills what its parent gives it, as a scroller does.
+        node.add(listOf(css(Style(flex = 1.0))))
+        node.bind(refreshing) { swipe.isRefreshing = it }
+        node.bind(::chrome) {
+            swipe.setColorSchemeColors(accent)
+            swipe.setProgressBackgroundColorSchemeColor(Color.parseColor(if (Chrome.dark) "#2c2c2e" else "#ffffff"))
+        }
+        node.destroyCallbacks.add { Runtime.removeRoot(content) }
         return node
     }
 

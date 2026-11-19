@@ -318,7 +318,11 @@ public func shareText(_ text: String) -> Bool { ui { Nuclo.NativeUi.share(text) 
 public func copyText(_ text: String) { ui { Nuclo.NativeUi.copy(text) } }
 
 #if canImport(UIKit)
-public func hasControl(_ kind: String) -> Bool { ["segmented", "chip", "slider", "button", "spinner", "search", "stepper"].contains(kind) }
+public func hasControl(_ kind: String) -> Bool { ["segmented", "chip", "slider", "button", "spinner", "search", "stepper", "refresh"].contains(kind) }
+
+public func refreshControl(_ content: View, _ refreshing: @escaping () -> Bool, _ refresh: @escaping () -> Void) -> View {
+  ui { Nuclo.NativeControls.refresh((content as? Nuclo.Node) ?? Nuclo.div(), refreshing, refresh) }
+}
 
 public func buttonControl(_ label: @escaping () -> String, _ kind: @escaping () -> String, _ run: @escaping () -> Void) -> View {
   ui { Nuclo.NativeControls.button(label, kind, run) }
@@ -350,6 +354,7 @@ public func chipControl(_ label: String, _ on: @escaping () -> Bool, _ pick: @es
 public func sliderControl(_ value: @escaping () -> Double, _ color: String, _ change: @escaping (Double) -> Void) -> View { ui { Nuclo.div() } }
 public func buttonControl(_ label: @escaping () -> String, _ kind: @escaping () -> String, _ run: @escaping () -> Void) -> View { ui { Nuclo.div() } }
 public func spinnerControl() -> View { ui { Nuclo.div() } }
+public func refreshControl(_ content: View, _ refreshing: @escaping () -> Bool, _ refresh: @escaping () -> Void) -> View { ui { Nuclo.div() } }
 public func searchControl(_ placeholder: String, _ value: @escaping () -> String, _ input: @escaping (String) -> Void, _ submit: @escaping (String) -> Void) -> View { ui { Nuclo.div() } }
 public func stepperControl(_ value: @escaping () -> Int32, _ min: Int32, _ max: Int32, _ change: @escaping (Int32) -> Void) -> View { ui { Nuclo.div() } }
 #endif

@@ -13,7 +13,7 @@ import {
   page, groupedPage, fixedPage, column, row, rowGap, rowBetween, grow, spacer, padded, gapSm, gapMd, card, title1,
   title2, title3, headline, body, sub, footnote, caption, strongText, accentText, avatar, section, navCell,
   switchCell, segmented, chip, toast, actionSheet, menuAt, sheet, closeSheet, nativeSlider, alert, act, destructive,
-  checked, submenu, divider, btn, primaryButton, secondaryButton, dangerButton, smallButton, stepperField
+  checked, submenu, divider, btn, primaryButton, secondaryButton, dangerButton, smallButton, stepperField, refreshable
 } from "./kit"
 
 fn abs(x: number): number => x < 0.0 ? 0.0 - x : x
@@ -249,23 +249,28 @@ export fn pinchScreen(): View {
 
 // ---- long press --------------------------------------------------------------------------------------
 
-let holding = -1
-let holdAt = 0
 let holdChain = 0
+let holdingDown = false
 let confirmed = 0
+const HOLD_MS = 1200
 
 const tiles = css({ flexDirection: "row", flexWrap: "wrap", gap: space.md, padding: space.lg })
-fn tile(i: int) => css({
+// The press look is the runtime's own `pressed` state: it ends when the touch ends, however it ends
+// (a scroll that takes the touch, a long press that opens the menu).
+const tileStyle = themed(() => css({
   widthPct: 30, aspectRatio: 1, borderRadius: radius.lg, overflow: "hidden", backgroundColor: t().skeleton,
-  scale: holding == i ? 0.92 : 1.0, transition: 240, easing: "spring", md: { width: 140 },
-})
+  pressed: { scale: 0.93, opacity: 0.9 }, transition: 220, easing: "spring", md: { width: 140 },
+}))
 const fill = css({ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 })
-const holdTrack = themed(() => css({ height: 56, mx: space.lg, borderRadius: radius.md, backgroundColor: t().dangerSoft, overflow: "hidden", justifyContent: "center" }))
-fn holdFill() => css({ position: "absolute", top: 0, left: 0, bottom: 0, widthPct: toFloat(holdAt), backgroundColor: t().danger, opacity: 0.35 })
+const holdTrack = themed(() => css({ height: 56, mx: space.lg, borderRadius: radius.md, backgroundColor: t().dangerSoft, overflow: "hidden", justifyContent: "center", pressed: { scale: 0.98 }, transition: 160 }))
+// The fill runs as one transition (smooth at any frame rate): to full while held, back fast when let go.
+fn holdFill() => css({
+  position: "absolute", top: 0, left: 0, bottom: 0, widthPct: holdingDown ? 100.0 : 0.0, backgroundColor: t().danger, opacity: 0.35,
+  transition: holdingDown ? toFloat(HOLD_MS) : 220.0, easing: holdingDown ? "linear" : "ease-out",
+})
 const holdLabel = themed(() => css({ textAlign: "center", fontSize: font.headline, fontWeight: "semibold", color: t().danger }))
 
 fn tileMenu(i: int, pt: Point) {
-  holding = -1
   menuAt(pt, `Photo ${i + 1}`, [
     act("Share", "➤", () => toast("Shared")),
     act("Add to favorites", "♡", () => toast("Added to favorites")),
@@ -273,43 +278,51 @@ fn tileMenu(i: int, pt: Point) {
     submenu("Move to album", "▦", () => menuAt(pt, "Albums", [act("Travel", "✈", () => toast("Moved to Travel")), act("Family", "⌂", () => toast("Moved to Family")), act("New album…", "+", () => toast("Album created"))])),
     destructive("Delete", "✕", () => toast("Deleted")),
   ])
-  update()
 }
 
-fn holdTick(chain: int) {
-  if (chain != holdChain) { return }
-  holdAt += 5
-  if (holdAt >= 100) {
-    holdAt = 0
+fn holdStart() {
+  holdChain += 1
+  holdingDown = true
+  haptic("light")
+  const chain = holdChain
+  later(HOLD_MS, () => {
+    if (chain != holdChain || !holdingDown) { return }
+    holdingDown = false
+    holdChain += 1
     confirmed += 1
     haptic("success")
     toast("Confirmed by holding")
-    holdChain += 1
-  } else {
-    later(50, () => holdTick(chain))
-  }
+    update()
+  })
+  update()
+}
+
+fn holdEnd() {
+  if (!holdingDown) { return }
+  holdChain += 1
+  holdingDown = false
   update()
 }
 
 export fn longPressScreen(): View {
   return div(page, div(column,
     p(intro, "Long press a photo for its context menu. Hold the button below until it fills to confirm."),
-    div(tiles, list(() => [0, 1, 2, 3, 4, 5, 6, 7, 8], (i, k) => div(() => tile(i),
+    div(tiles, list(() => [0, 1, 2, 3, 4, 5, 6, 7, 8], (i, k) => div(tileStyle,
       {
-        onPointerDown: (pt: Point) => { holding = i; update() },
-        onPointerUp: (pt: Point) => { holding = -1; update() },
         onLongPress: (pt: Point) => tileMenu(i, pt),
-        onClick: () => { holding = -1; go(`/photo/${(i * 5) % 40 + 1}`) },
+        onClick: () => go(`/photo/${(i * 5) % 40 + 1}`),
       },
       img(fill, { src: photoUrl(20 + i * 3, 120) }),
     ))),
     div(holdTrack,
       {
-        onPointerDown: (pt: Point) => { holdChain += 1; holdAt = 0; const c = holdChain; later(50, () => holdTick(c)); haptic("light") },
-        onPointerUp: (pt: Point) => { holdChain += 1; holdAt = 0; update() },
+        onPointerDown: (pt: Point) => holdStart(),
+        onPointerUp: (pt: Point) => holdEnd(),
+        // Moving off (or a scroll taking the touch) lets go too.
+        onPan: (e: Pan) => holdEnd(),
       },
       div(() => holdFill()),
-      p(holdLabel, () => confirmed == 0 ? "Hold to confirm" : `Hold to confirm · done ${confirmed}×`),
+      p(holdLabel, () => holdingDown ? "Keep holding…" : confirmed == 0 ? "Hold to confirm" : `Hold to confirm · done ${confirmed}×`),
     ),
   ))
 }
@@ -575,9 +588,18 @@ let refreshing = false
 let spin = 0
 let fresh = 0
 let pulled = false
+let pullArmed = false
+const REFRESH_AT = 72.0
 
-fn pullHead() => css({ height: refreshing ? 64.0 : clamp(pull, 0.0, 120.0), alignItems: "center", justifyContent: "center", overflow: "hidden", transition: pulled ? 0 : 320, easing: "spring" })
-fn spinner() => css({ fontSize: 26, color: t().accent, rotate: refreshing ? toFloat(spin) * 45.0 : pull * 3.0, opacity: refreshing ? 1.0 : clamp(pull / 70.0, 0.0, 1.0), transition: refreshing ? 120 : 0 })
+// The drawn one (where the platform has none): the list moves with a transform (no layout per frame), with
+// more resistance the further it goes; the indicator waits behind it.
+fn pullContent() => css({ translateY: refreshing ? REFRESH_AT : pull, transition: pulled ? 0 : 380, easing: "spring", backgroundColor: t().bg })
+const pullIndicator = css({ position: "absolute", top: 0, left: 0, right: 0, height: REFRESH_AT, alignItems: "center", justifyContent: "center", gap: 2 })
+fn pullGlyph() => css({
+  fontSize: 24, color: t().accent, rotate: refreshing ? toFloat(spin) * 30.0 : pull * 4.0,
+  opacity: refreshing ? 1.0 : clamp(pull / REFRESH_AT, 0.0, 1.0), scale: pullArmed || refreshing ? 1.0 : 0.8,
+  transition: refreshing ? 50 : 120, easing: "linear",
+})
 const feedRow = css({ flexDirection: "row", alignItems: "center", gap: space.md, px: space.lg, py: space.md })
 const newBadge = themed(() => css({ px: space.sm, py: 2, borderRadius: radius.pill, backgroundColor: t().accentSoft, color: t().accent, fontSize: font.caption, fontWeight: "bold" }))
 
@@ -585,37 +607,52 @@ fn spinTick() {
   if (!refreshing) { return }
   spin += 1
   update()
-  later(120, () => spinTick())
+  later(50, () => spinTick())
 }
 
 fn refresh() {
   refreshing = true
-  haptic("medium")
   spinTick()
   later(1500, () => { refreshing = false; fresh += 2; pull = 0.0; haptic("success"); toast("2 new posts"); update() })
 }
 
-export fn pullScreen(): View {
-  return div(fixedPage,
-    p(intro, "Drag the list down and let go past the line to refresh."),
-    div(css({ flex: 1, overflow: "hidden" }),
-      {
-        onPan: (e: Pan) => {
-          if (refreshing) { return }
-          pulled = e.state == "start" || e.state == "move"
-          pull = e.dy > 0.0 ? e.dy / 1.6 : 0.0
-          if (!pulled) {
-            if (pull > 70.0) { refresh() } else { pull = 0.0 }
-          }
-          update()
-        },
+fn pullList(): View =>
+  div(list(() => feedItems(), (n, i) => div(feedRow, avatar(user(`${n % 17 + 1}`).avatar, 40), div(grow, p(strongText, user(`${n % 17 + 1}`).name), p(footnote, "Shared a new photo")), when(() => n > 40, () => span(newBadge, "NEW")))))
+
+fn drawnPull(): View {
+  return div(css({ flex: 1, overflow: "hidden" }),
+    {
+      panAxis: "y",
+      onPan: (e: Pan) => {
+        if (refreshing) { return }
+        pulled = e.state == "start" || e.state == "move"
+        // Rubber band: the list follows less and less, toward 160.
+        const d = e.dy > 0.0 ? e.dy : 0.0
+        pull = d / (1.0 + d / 160.0)
+        const armed = pull > REFRESH_AT
+        if (armed != pullArmed && pulled) { haptic("light") }
+        pullArmed = armed
+        if (!pulled) {
+          if (armed) { haptic("medium"); refresh() }
+          pull = 0.0
+          pullArmed = false
+        }
+        update()
       },
-      div(() => pullHead(), span(() => spinner(), "↻"), p(caption, () => refreshing ? "Refreshing…" : pull > 70.0 ? "Release to refresh" : "Pull to refresh")),
-      list(() => feedItems(), (n, i) => div(feedRow, avatar(user(`${n % 17 + 1}`).avatar, 40), div(grow, p(strongText, user(`${n % 17 + 1}`).name), p(footnote, "Shared a new photo")), when(() => i < fresh, () => span(newBadge, "NEW")))),
-    ),
+    },
+    div(pullIndicator, span(() => pullGlyph(), "↻"), p(caption, () => refreshing ? "Refreshing…" : pullArmed ? "Release to refresh" : "Pull to refresh")),
+    div(() => pullContent(), pullList()),
   )
 }
 
+export fn pullScreen(): View {
+  return div(fixedPage,
+    p(intro, "Pull the list down at its top to refresh: the platform's own control where it has one."),
+    refreshable(() => pullList(), () => refreshing, () => refresh(), () => drawnPull()),
+  )
+}
+
+/** The posts, newest first: those above 40 came with a refresh (a row is kept by its item, so it is marked by it). */
 fn feedItems(): int[] {
   let out: int[] = []
   for (const i of 0..9 + fresh) { out.push(fresh + 40 - i) }
@@ -630,38 +667,65 @@ let topDy = 0.0
 let topDragging = false
 let liked = 0
 let noped = 0
+/** The card flying off, and where to: the next card comes up under it at once. */
+let flying = -1
+let flyX = 0.0
+let flyY = 0.0
 
 const deckBox = css({ flex: 1, alignItems: "center", justifyContent: "center", padding: space.lg })
 /** The cards' place: a box of their size, so the cards (absolute, from its corner) are centered on every platform. */
 const deckStack = css({ width: 300, height: 420 })
-fn swipeCard(depth: int) => css({
-  position: "absolute", top: 0, left: 0, width: 300, height: 420, borderRadius: radius.xl, overflow: "hidden", backgroundColor: t().surface,
-  translateX: depth == 0 ? topDx : 0.0, translateY: depth == 0 ? topDy : toFloat(depth) * 10.0,
-  rotate: depth == 0 ? topDx / 18.0 : 0.0, scale: depth == 0 ? 1.0 : 1.0 - toFloat(depth) * 0.04,
-  zIndex: toFloat(10 - depth), shadowColor: "rgba(0,0,0,0.2)", shadowRadius: 20, shadowOffsetY: 8,
-  transition: depth == 0 && topDragging ? 0 : 360, easing: "spring",
-})
+fn swipeCard(n: int): StyleResult {
+  if (n == flying) {
+    return css({
+      position: "absolute", top: 0, left: 0, width: 300, height: 420, borderRadius: radius.xl, overflow: "hidden", backgroundColor: t().surface,
+      translateX: flyX, translateY: flyY, rotate: flyX / 18.0, zIndex: 20, shadowColor: "rgba(0,0,0,0.2)", shadowRadius: 20, shadowOffsetY: 8,
+      transition: 340, easing: "ease-out",
+    })
+  }
+  const depth = depthOf(n)
+  return css({
+    position: "absolute", top: 0, left: 0, width: 300, height: 420, borderRadius: radius.xl, overflow: "hidden", backgroundColor: t().surface,
+    translateX: depth == 0 ? topDx : 0.0, translateY: depth == 0 ? topDy : toFloat(depth) * 10.0,
+    rotate: depth == 0 ? topDx / 18.0 : 0.0, scale: depth == 0 ? 1.0 : 1.0 - toFloat(depth) * 0.04,
+    zIndex: toFloat(10 - depth), shadowColor: "rgba(0,0,0,0.2)", shadowRadius: 20, shadowOffsetY: 8,
+    transition: depth == 0 && topDragging ? 0 : 360, easing: "spring",
+  })
+}
+
+/** How far the card is pulled: its stamps show it. */
+fn pulledX(n: int) => n == flying ? flyX : topDx
 const cardInfo = css({ position: "absolute", left: 0, right: 0, bottom: 0, padding: space.lg, gap: 2, backgroundColor: "rgba(0,0,0,0.38)" })
 const cardName = css({ color: "#ffffff", fontSize: font.title2, fontWeight: "bold" })
 const cardSub = css({ color: "rgba(255,255,255,0.85)", fontSize: font.sub })
-fn stamp(likeIt: bool) => css({
+fn stamp(likeIt: bool, x: number) => css({
   position: "absolute", top: 28, left: likeIt ? 20 : 170, px: space.md, py: space.xs, borderRadius: 8, borderWidth: 3,
   borderColor: likeIt ? "#34c759" : "#ff3b30", color: likeIt ? "#34c759" : "#ff3b30", fontSize: 26, fontWeight: "bold",
-  rotate: likeIt ? -12.0 : 12.0, opacity: likeIt ? clamp(topDx / 100.0, 0.0, 1.0) : clamp(0.0 - topDx / 100.0, 0.0, 1.0),
+  rotate: likeIt ? -12.0 : 12.0, opacity: likeIt ? clamp(x / 100.0, 0.0, 1.0) : clamp(0.0 - x / 100.0, 0.0, 1.0),
 })
 const deckButtons = css({ flexDirection: "row", gap: space.xl, justifyContent: "center", pb: space.xl })
 const bigRound = themed(() => css({ width: 64, height: 64, borderRadius: 32, padding: 0, backgroundColor: t().surface, fontSize: 28, shadowColor: "rgba(0,0,0,0.15)", shadowRadius: 12, shadowOffsetY: 4, pressed: { scale: 0.9 }, transition: 160, easing: "spring" }))
 
 fn dismissTop(right: bool) {
-  topDx = right ? 600.0 : -600.0
+  if (deck.length == 0 || flying >= 0) { return }
+  // It flies on from where it was let go, and the next card is the top one now.
+  flying = deck[0]
+  flyX = topDx
+  flyY = topDy
+  topDx = 0.0
+  topDy = 0.0
+  topDragging = false
   if (right) { liked += 1 } else { noped += 1 }
   haptic(right ? "success" : "light")
   update()
-  // Gone once it is off the screen (the fly-out takes its whole transition).
+  later(16, () => {
+    flyX = right ? 700.0 : -700.0
+    flyY = flyY * 2.0
+    update()
+  })
   later(360, () => {
     if (deck.length > 0) { deck.removeAt(0) }
-    topDx = 0.0
-    topDy = 0.0
+    flying = -1
     update()
   })
 }
@@ -669,9 +733,9 @@ fn dismissTop(right: bool) {
 /** A card of the deck. Its depth is read on each update: a row stays when the cards above it go. */
 fn deckCard(n: int): View {
   const u = user(`${n + 3}`)
-  return div(() => swipeCard(depthOf(n)),
+  return div(() => swipeCard(n),
     { onPan: (e: Pan) => {
-      if (depthOf(n) != 0) { return }
+      if (n == flying || depthOf(n) != 0) { return }
       topDragging = e.state == "start" || e.state == "move"
       topDx = e.dx
       topDy = e.dy
@@ -685,8 +749,8 @@ fn deckCard(n: int): View {
     } },
     img(fill, { src: photoUrlWH(50 + n * 3, 300, 420) }),
     div(cardInfo, p(cardName, u.name), p(cardSub, `${u.city} · ${u.bio}`)),
-    when(() => depthOf(n) == 0, () => span(() => stamp(true), "LIKE")),
-    when(() => depthOf(n) == 0, () => span(() => stamp(false), "NOPE")),
+    when(() => depthOf(n) == 0 || n == flying, () => span(() => stamp(true, pulledX(n)), "LIKE")),
+    when(() => depthOf(n) == 0 || n == flying, () => span(() => stamp(false, pulledX(n)), "NOPE")),
   )
 }
 
@@ -707,15 +771,17 @@ export fn cardsScreen(): View {
   )
 }
 
+/** A card's place in the deck, the one flying off not counted. */
 fn depthOf(n: int): int {
-  for (const i of 0..deck.length - 1) { if (deck[i] == n) { return i } }
+  for (const i of 0..deck.length - 1) { if (deck[i] == n) { return flying >= 0 && i > 0 ? i - 1 : i } }
   return 0
 }
 
 /** The top three cards, the top one last. */
 fn reversedTop(): int[] {
   let out: int[] = []
-  let i = deck.length < 3 ? deck.length - 1 : 2
+  const shown = flying >= 0 ? 4 : 3
+  let i = deck.length < shown ? deck.length - 1 : shown - 1
   while (i >= 0) {
     out.push(deck[i])
     i -= 1

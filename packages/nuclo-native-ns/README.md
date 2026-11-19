@@ -43,6 +43,7 @@ has none. On GTK the controls take the app's accent through libadwaita's accent 
 | button | MaterialButton (filled, tonal) | UIButton.Configuration | drawn | GtkButton (suggested, destructive, pill) | drawn |
 | spinner | CircularProgressIndicator | UIActivityIndicatorView | drawn | AdwSpinner | drawn |
 | search field | SearchView | UISearchTextField | drawn | GtkSearchEntry | search input |
+| pull to refresh | SwipeRefreshLayout | UIRefreshControl | drawn | drawn | drawn |
 | stepper | drawn (Material has none) | UIStepper | drawn | GtkSpinButton | drawn |
 | share, copy | share sheet, ClipboardManager | UIActivityViewController, UIPasteboard | NSSharingServicePicker, NSPasteboard | the clipboard (no share sheet) | Web Share, Clipboard API |
 

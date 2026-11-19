@@ -474,7 +474,7 @@ pub mod host {
     }
 
     pub fn pan(view: ViewId, pan: PanEvent) {
-        node::deliver(view, |node| node.on_pan.borrow().clone(), pan)
+        node::pan(view, pan)
     }
 
     pub fn pinch(view: ViewId, pinch: PinchEvent) {

@@ -43,4 +43,5 @@ android {
 // nuclo-native-ns: Material 3 components (top app bar, navigation bar, dialogs, menus, bottom sheets, snackbars).
 dependencies {
     implementation("com.google.android.material:material:1.14.0")
+    implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.2.0")
 }

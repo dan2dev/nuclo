@@ -4,7 +4,7 @@
 
 import {
   css, div, p, span, button, img, input, toggle, group, list, when, update, later, haptic, viewport, Mod, View,
-  StyleResult, Pan, Point, Look, Action, nativeAlert, nativeActions, nativeMenu, nativeSheet, nativeToast, nativeCloseSheet, hasControl, buttonControl, spinnerControl, searchControl, stepperControl, shareText, copyText, segmentedControl, chipControl, sliderControl,
+  StyleResult, Pan, Point, Look, Action, nativeAlert, nativeActions, nativeMenu, nativeSheet, nativeToast, nativeCloseSheet, hasControl, buttonControl, spinnerControl, searchControl, stepperControl, refreshControl, shareText, copyText, segmentedControl, chipControl, sliderControl,
 } from "./ui"
 import { t, space, radius, font, themed } from "./theme"
 import { icon, isIcon, liveIcon } from "./icons"
@@ -137,6 +137,12 @@ export fn searchField(style: () => StyleResult, placeholder: string, value: () =
 /** A stepper of whole numbers: the platform's own, or two buttons around the number. */
 export fn stepperField(value: () => int, min: int, max: int, change: (int) => void, drawn: () => View): View {
   if (hasControl("stepper")) { return div(centered, stepperControl(value, min, max, (v) => { change(v); haptic("light"); update() })) }
+  return drawn()
+}
+
+/** A list that refreshes on a pull: the platform's own, or `drawn()` where it has none. */
+export fn refreshable(content: () => View, refreshing: () => bool, refresh: () => void, drawn: () => View): View {
+  if (hasControl("refresh")) { return refreshControl(content(), refreshing, () => { refresh(); update() }) }
   return drawn()
 }
 

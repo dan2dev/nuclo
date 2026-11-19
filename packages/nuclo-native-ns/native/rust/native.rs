@@ -291,6 +291,9 @@ fn attributes(a: &Attributes) -> Vec<nu::Mod> {
   if let Some(f) = a.on_key_down.clone() {
     m.push(nu::A::on_key_down(Rc::new(move |e: nu::KeyboardEvent| f(Str::from(e.key)))));
   }
+  if let Some(axis) = a.pan_axis.clone() {
+    m.push(nu::A::pan_axis(&axis));
+  }
   if let Some(f) = a.on_pan.clone() {
     m.push(nu::A::on_pan(Rc::new(move |e: nu::PanEvent| {
       f(Pan {
@@ -497,6 +500,11 @@ pub fn copy_text(text: Str) {
 
 pub fn button_control(label: Rc<dyn Fn() -> Str>, kind: Rc<dyn Fn() -> Str>, run: Rc<dyn Fn()>) -> View {
   nu::Mod::from(crate::controls::button(Rc::new(move || label().to_string()), Rc::new(move || kind().to_string()), run))
+}
+
+/// No pull to refresh on a desktop: kit.ns draws one.
+pub fn refresh_control(content: View, _refreshing: Rc<dyn Fn() -> bool>, _refresh: Rc<dyn Fn()>) -> View {
+  content
 }
 
 pub fn spinner_control() -> View {

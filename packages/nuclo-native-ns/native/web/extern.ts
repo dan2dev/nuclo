@@ -632,6 +632,7 @@ export const shareText = (text: string) => {
 export const copyText = (text: string) => { navigator.clipboard?.writeText(text).catch(() => {}); };
 export const buttonControl = (_l: () => string, _k: () => string, _r: () => void): View => div();
 export const spinnerControl = (): View => div();
+export const refreshControl = (content: View, _r: () => boolean, _f: () => void): View => content;
 export const stepperControl = (_v: () => number, _min: number, _max: number, _c: (v: number) => void): View => div();
 export const searchControl = (placeholder: string, value: () => string, typed: (v: string) => void, submit: (v: string) => void): View =>
   input({

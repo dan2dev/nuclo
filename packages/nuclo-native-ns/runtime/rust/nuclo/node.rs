@@ -131,6 +131,9 @@ pub struct NodeData {
     listeners: RefCell<HashMap<Event, Handler>>,
     pointers: RefCell<HashMap<PointerPhase, Rc<dyn Fn(PointerEvent)>>>,
     pub(crate) on_pan: RefCell<Option<Rc<dyn Fn(PanEvent)>>>,
+    /// nuclo-native-ns: "x", "y" or "both"; and this drag's phase: 0 none, 1 waiting for a direction, 2 the view's, 3 not.
+    pub(crate) pan_axis: RefCell<String>,
+    pub(crate) pan_phase: Cell<u8>,
     pub(crate) on_pinch: RefCell<Option<Rc<dyn Fn(PinchEvent)>>>,
     pub(crate) on_key: RefCell<Option<Rc<dyn Fn(KeyboardEvent)>>>,
     pub(crate) on_scroll: RefCell<Option<Rc<dyn Fn(ScrollEvent)>>>,
@@ -222,6 +225,8 @@ impl Node {
             listeners: RefCell::default(),
             pointers: RefCell::default(),
             on_pan: RefCell::default(),
+            pan_axis: RefCell::new("both".into()),
+            pan_phase: Cell::new(0),
             on_pinch: RefCell::default(),
             on_key: RefCell::default(),
             on_scroll: RefCell::default(),
@@ -1445,6 +1450,42 @@ pub(crate) fn pointer(view: ViewId, phase: PointerPhase, pointer: PointerEvent) 
 }
 
 /// Runs the handler a node has for a kind of input.
+/// A pan, through the view's axis: a one-axis view takes the drag once it moves along its axis, or never.
+pub(crate) fn pan(view: ViewId, event: PanEvent) {
+    let Some(node) = node_of(view) else { return };
+    let axis = node.pan_axis.borrow().clone();
+    let phase = node.pan_phase.get();
+    let done = event.state == "end" || event.state == "cancel";
+    let deliver_now = match (axis.as_str(), phase, event.state.as_str()) {
+        ("both", _, _) => true,
+        (_, _, "start") => { node.pan_phase.set(1); false }
+        (_, 1, _) if !done => {
+            let (ax, ay) = (event.translation_x.abs(), event.translation_y.abs());
+            if ax.max(ay) < 4.0 {
+                false
+            } else if (axis == "x") == (ax > ay) {
+                node.pan_phase.set(2);
+                let mut start = event.clone();
+                start.state = "start".into();
+                deliver(view, |n| n.on_pan.borrow().clone(), start);
+                true
+            } else {
+                node.pan_phase.set(3);
+                false
+            }
+        }
+        (_, 2, _) => true,
+        _ => false,
+    };
+    if done {
+        node.pan_phase.set(0);
+    }
+    if deliver_now {
+        if done && axis != "both" && phase != 2 { return }
+        deliver(view, |n| n.on_pan.borrow().clone(), event);
+    }
+}
+
 pub(crate) fn deliver<E>(view: ViewId, handler: impl Fn(&Node) -> Option<Rc<dyn Fn(E)>>, event: E) {
     let Some(node) = node_of(view) else { return };
     if let Some(handler) = handler(&node) {
@@ -1753,6 +1794,11 @@ impl A {
             *node.on_pan.borrow_mut() = Some(handler.clone());
             node.want(Input::Pan);
         })
+    }
+    /// "x" or "y": the pan starts only along that axis (a drag along the other is not the view's).
+    pub fn pan_axis(axis: &str) -> Mod {
+        let axis = axis.to_string();
+        Mod::apply(move |node| *node.pan_axis.borrow_mut() = axis.clone())
     }
     pub fn on_pinch(handler: Rc<dyn Fn(PinchEvent)>) -> Mod {
         Mod::apply(move |node| {

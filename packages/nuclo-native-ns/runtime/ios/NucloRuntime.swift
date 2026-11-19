@@ -3119,6 +3119,22 @@ public struct NativeAction {
         return node
     }
 
+    /// The platform's pull to refresh: `content` in a scroller with a UIRefreshControl.
+    public static func refresh(_ content: Node, _ refreshing: @escaping () -> Bool, _ refresh: @escaping () -> Void) -> Node {
+        Runtime.shared.addRoot(content)
+        let scroller = ScreenView(content)
+        let control = UIRefreshControl()
+        control.addAction(UIAction { _ in refresh() }, for: .valueChanged)
+        scroller.refreshControl = control
+        let node = Node(.native, tag: "native", native: scroller)
+        node.add([css(Style(flex: 1))])
+        node.bind(refreshing) { on in
+            if !on && control.isRefreshing { control.endRefreshing() }
+        }
+        node.destroyCallbacks.append { _ in Runtime.shared.removeRoot(content) }
+        return node
+    }
+
     public static func spinner() -> Node {
         let view = UIActivityIndicatorView(style: .medium)
         view.startAnimating()

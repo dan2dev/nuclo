@@ -310,6 +310,11 @@ export extern fn spinnerControl(): View
 export extern fn searchControl(placeholder: string, value: () => string, input: (string) => void, submit: (string) => void): View
 /** The platform's stepper of whole numbers from `min` to `max`. */
 export extern fn stepperControl(value: () => int, min: int, max: int, change: (int) => void): View
+/**
+ * The platform's pull to refresh around `content`, scrolling it: a pull at the top runs `refresh`, and the
+ * indicator turns while `refreshing()` (Android's swipe refresh, iOS's refresh control).
+ */
+export extern fn refreshControl(content: View, refreshing: () => bool, refresh: () => void): View
 /** A short message (Android's snackbar, GTK's toast). */
 export extern fn nativeToast(text: string): bool
 
