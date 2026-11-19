@@ -1,7 +1,7 @@
 // Notes: create, edit, color, pin, and delete, kept in the device's database (SQLite natively). A
 // two-column board on wide windows; long press a note for its menu, swipe it left to delete it.
 
-import { css, div, p, span, button, input, textarea, list, when, update, go, back, later, haptic, View, Pan, Point, Action } from "./ui"
+import { css, div, p, span, button, input, textarea, list, when, update, go, back, later, haptic, View, Pan, Point, Action, barButton } from "./ui"
 import { t, space, radius, font, themed } from "./theme"
 import { Note, allNotes, note, createNote, updateNote, recolorNote, togglePin, deleteNote, noteColors } from "./state"
 import { page, column, headline, footnote, caption, empty, toast, menuAt, alert, act, destructive, submenu } from "./kit"
@@ -135,29 +135,27 @@ export fn noteScreen(id: string): View {
 }
 
 /** A new note, in a sheet: saved when Save is pressed. */
+fn saveNew() {
+  if (title.trim() == "" && bodyText.trim() == "") { toast("Write something first"); return }
+  createNote(title.trim(), bodyText, color)
+  haptic("success")
+  back()
+  later(300, () => toast("Note saved"))
+  update()
+}
+
 export fn newNoteScreen(): View {
   title = ""
   bodyText = ""
   color = 0
+  const inBar = barButton("Save", () => saveNew())
   return div(
     () => editorBg(),
     div(editor,
       input(titleField, { placeholder: "Title", value: () => title, onInput: (v) => { title = v } }),
       colorDots((i) => {}),
       textarea(bodyField, { placeholder: "Start writing…", value: () => bodyText, onInput: (v) => { bodyText = v } }),
-      div(actions,
-        button(lightBtn, "Cancel", { onClick: () => back() }),
-        button(darkBtn, "Save", {
-          onClick: () => {
-            if (title.trim() == "" && bodyText.trim() == "") { toast("Write something first"); return }
-            createNote(title.trim(), bodyText, color)
-            haptic("success")
-            back()
-            later(300, () => toast("Note saved"))
-            update()
-          },
-        }),
-      ),
+      when(() => !inBar, () => div(actions, button(lightBtn, "Cancel", { onClick: () => back() }), button(darkBtn, "Save", { onClick: () => saveNew() }))),
     ),
   )
 }

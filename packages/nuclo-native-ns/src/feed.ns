@@ -3,7 +3,7 @@
 
 import {
   css, div, p, span, small, button, img, input, textarea, list, when, update, go, back, later, haptic, prefetch, View,
-  Pan, Pinch, Point, Scroll, Action,
+  Pan, Pinch, Point, Scroll, Action, barButton
 } from "./ui"
 import { t, space, radius, font, themed } from "./theme"
 import { liveIcon } from "./icons"
@@ -13,9 +13,9 @@ import {
   addPost, profile, isFollowing, toggleFollow, deletePost,
 } from "./state"
 import {
-  page, fixedPage, column, row, rowGap, grow, spacer, padded, gapSm, iconBtn, iconButton, smallBtn, smallGhostBtn,
-  primaryBtn, headline, body, sub, footnote, caption, strongText, divider, avatar, ringed, verifiedBadge,
-  badge, empty, toast, actionSheet, menuAt, alert, act, destructive, submenu, notePress, pressedAt,
+  page, fixedPage, column, row, rowGap, grow, spacer, padded, gapSm, iconBtn, iconButton, headline, body, sub,
+  footnote, caption, strongText, divider, avatar, ringed, verifiedBadge, badge, empty, toast, actionSheet, menuAt,
+  alert, act, destructive, submenu, notePress, pressedAt, primaryButton, smallButton, spinner, copyLink, shareLink
 } from "./kit"
 
 // ---- seen stories, the heart burst ------------------------------------------------------------
@@ -81,13 +81,16 @@ fn storiesStrip(): View {
   )
 }
 
+/** Who posted `post`: the user, for their own posts. */
+fn author(post: Post): User => post.author == "me" ? meAsUser() : user(post.author)
+
 /** The menu of a post: from its ⋯ button or a long press on its photo. */
 export fn postMenu(post: Post, at: Point) {
   const mine = post.author == "me"
   let actions: Action[] = [
     act(isSaved(post.id) ? "Remove from saved" : "Save", isSaved(post.id) ? "★" : "☆", () => { toast(toggleSave(post.id) ? "Saved" : "Removed from saved") }),
     submenu("Share to…", "➤", () => shareMenu(post, at)),
-    act("Copy link", "⧉", () => toast("Link copied")),
+    act("Copy link", "⧉", () => copyLink(`https://nuclo.dev/p/${post.id}`)),
     act("Go to profile", "◉", () => go(mine ? "/me" : `/user/${post.author}`)),
   ]
   if (mine) {
@@ -96,23 +99,24 @@ export fn postMenu(post: Post, at: Point) {
     actions.push(act(isFollowing(post.author) ? "Unfollow" : "Follow", "＋", () => { toast(toggleFollow(post.author) ? "Following" : "Unfollowed") }))
     actions.push(destructive("Report", "⚠", () => reportSheet(post)))
   }
-  menuAt(at, mine ? profile().handle : user(post.author).handle, actions)
+  menuAt(at, author(post).handle, actions)
 }
 
 fn shareMenu(post: Post, at: Point) {
   menuAt(at, "Share to", [
     act("Messages", "✉", () => go("/messages")),
     act("Story", "◎", () => toast("Added to your story")),
-    act("Copy link", "⧉", () => toast("Link copied")),
-    act("More…", "⋯", () => shareSheet(post)),
+    act("Copy link", "⧉", () => copyLink(`https://nuclo.dev/p/${post.id}`)),
+    act("More…", "⋯", () => shareLink(`https://nuclo.dev/p/${post.id}`)),
   ])
 }
 
 export fn shareSheet(post: Post) {
   actionSheet("Share this post", [
+    act("Share via…", "⋯", () => shareLink(`https://nuclo.dev/p/${post.id}`)),
     act("Send in a message", "✉", () => go("/messages")),
     act("Add to your story", "◎", () => toast("Added to your story")),
-    act("Copy link", "⧉", () => toast("Link copied")),
+    act("Copy link", "⧉", () => copyLink(`https://nuclo.dev/p/${post.id}`)),
     act(isSaved(post.id) ? "Remove from saved" : "Save", "☆", () => { toast(toggleSave(post.id) ? "Saved" : "Removed from saved") }),
   ])
 }
@@ -143,7 +147,7 @@ fn doubleTapLike(post: Post) {
 
 /** A post: author, photo, actions, likes, caption, and comments link. */
 export fn postCard(post: Post, inFeed: bool): View {
-  const u = post.author == "me" ? meAsUser() : user(post.author)
+  const u = author(post)
   const id = post.id
   return div(
     postBox,
@@ -208,7 +212,7 @@ export fn feedScreen(): View {
       ),
       storiesStrip(),
       list(() => feed().filter((x) => true).length > shownCount ? first(feed(), shownCount) : feed(), (post, i) => postCard(post, true)),
-      when(() => shownCount < feed().length, () => p(loadingRow, "Loading more…")),
+      when(() => shownCount < feed().length, () => spinner("Loading more…")),
       when(() => shownCount >= feed().length, () => p(loadingRow, "You're all caught up ✓")),
     ),
   )
@@ -242,9 +246,9 @@ export fn postScreen(id: string): View {
       div(padded,
         p(headline, "Comments"),
         list(() => first2(commentsOf(post)), (c, i) => commentRow(c)),
-        button(smallGhostBtn, "View all comments", { onClick: () => go(`/post/${id}/comments`) }),
+        smallButton(() => "View all comments", () => false, () => go(`/post/${id}/comments`)),
       ),
-      when(() => more.length > 0, () => div(gapSm, p(css({ px: space.lg, pt: space.md, fontSize: font.headline, fontWeight: "semibold", color: t().text }), `More from ${user(post.author).handle}`), photoGrid(more))),
+      when(() => more.length > 0, () => div(gapSm, p(css({ px: space.lg, pt: space.md, fontSize: font.headline, fontWeight: "semibold", color: t().text }), `More from ${author(post).handle}`), photoGrid(more))),
     ),
   )
 }
@@ -306,7 +310,7 @@ export fn commentsScreen(id: string): View {
     fixedPage,
     div(scrollArea,
       div(column,
-        div(commentBox, avatar((post.author == "me" ? meAsUser() : user(post.author)).avatar, 32), div(commentBody, p(captionText, post.caption), small(caption, ago(post.minutes)))),
+        div(commentBox, avatar(author(post).avatar, 32), div(commentBody, p(captionText, post.caption), small(caption, ago(post.minutes)))),
         div(divider),
         list(() => seed, (c, i) => commentRow(c)),
         list(() => commentsAdded(id), (c, i) => commentRow(c)),
@@ -338,9 +342,7 @@ export fn personCell(u: User): View {
       div(nameRow, p(strongText, u.handle), when(() => u.verified, () => span(verifiedBadge, "✓"))),
       p(footnote, u.name),
     ),
-    button(() => isFollowing(u.id) ? smallGhostBtn() : smallBtn(), () => isFollowing(u.id) ? "Following" : "Follow", {
-      onClick: () => { toggleFollow(u.id); haptic("light"); update() },
-    }),
+    smallButton(() => isFollowing(u.id) ? "Following" : "Follow", () => !(isFollowing(u.id)), () => { toggleFollow(u.id); haptic("light"); update() }),
   )
 }
 
@@ -424,7 +426,7 @@ export fn photoScreen(id: string): View {
     ),
     div(viewerTop,
       button(viewerBtn, "✕", { label: "Close", onClick: () => back() }),
-      p(viewerText, user(post.author).handle),
+      p(viewerText, author(post).handle),
       button(viewerBtn, () => isLiked(id) ? "♥" : "♡", { onClick: () => { toggleLike(id); haptic("light"); update() } }),
     ),
     p(viewerHint, "Pinch or double tap to zoom · drag down to close"),
@@ -630,6 +632,7 @@ fn share() {
 }
 
 export fn composeScreen(): View {
+  const inBar = barButton("Share", () => share())
   return div(
     page,
     div(composeBody,
@@ -639,7 +642,7 @@ export fn composeScreen(): View {
         textarea(composeField, { placeholder: "Write a caption…", value: () => caption2, onInput: (v) => { caption2 = v; update() } }),
         p(counterStyle, () => `${caption2.length}/220`),
         input(lineField, { placeholder: "Add a place", value: () => place, onInput: (v) => { place = v } }),
-        button(primaryBtn, "Share", { onClick: () => share() }),
+        when(() => !inBar, () => primaryButton("Share", () => share())),
       ),
     ),
   )

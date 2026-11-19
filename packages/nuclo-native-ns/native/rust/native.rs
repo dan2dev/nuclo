@@ -480,7 +480,40 @@ pub fn native_sheet(title: Str, detent: Str, content: Rc<dyn Fn() -> View>) -> b
 }
 
 pub fn has_control(kind: Str) -> bool {
-  crate::controls::HAS && matches!(&*kind, "segmented" | "chip" | "slider")
+  crate::controls::HAS && matches!(&*kind, "segmented" | "chip" | "slider" | "button" | "spinner" | "search" | "stepper")
+}
+
+pub fn bar_button(label: Str, run: Rc<dyn Fn()>) -> bool {
+  nu::bar_button(&label, run)
+}
+
+pub fn share_text(text: Str) -> bool {
+  nu::backend().native_share(&text)
+}
+
+pub fn copy_text(text: Str) {
+  nu::backend().copy_text(&text);
+}
+
+pub fn button_control(label: Rc<dyn Fn() -> Str>, kind: Rc<dyn Fn() -> Str>, run: Rc<dyn Fn()>) -> View {
+  nu::Mod::from(crate::controls::button(Rc::new(move || label().to_string()), Rc::new(move || kind().to_string()), run))
+}
+
+pub fn spinner_control() -> View {
+  nu::Mod::from(crate::controls::spinner())
+}
+
+pub fn search_control(placeholder: Str, value: Rc<dyn Fn() -> Str>, input: Rc<dyn Fn(Str)>, submit: Rc<dyn Fn(Str)>) -> View {
+  nu::Mod::from(crate::controls::search(
+    placeholder.to_string(),
+    Rc::new(move || value().to_string()),
+    Rc::new(move |v: String| input(Str::from(v.as_str()))),
+    Rc::new(move |v: String| submit(Str::from(v.as_str()))),
+  ))
+}
+
+pub fn stepper_control(value: Rc<dyn Fn() -> i32>, min: i32, max: i32, change: Rc<dyn Fn(i32)>) -> View {
+  nu::Mod::from(crate::controls::stepper(value, min, max, change))
 }
 
 pub fn segmented_control(options: List<Str>, at: Rc<dyn Fn() -> i32>, pick: Rc<dyn Fn(i32)>) -> View {

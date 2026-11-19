@@ -2868,6 +2868,9 @@ public struct NativeAction {
 }
 
 @MainActor public enum NativeUi {
+    /// The bar buttons of the screen being built (`barButton`), taken by the router.
+    public static var barActions: [NativeAction] = []
+
     private static func later(_ a: NativeAction) {
         DispatchQueue.main.async {
             a.run()
@@ -2948,6 +2951,18 @@ public struct NativeAction {
         return true
     }
 
+    /// The share sheet (a popover from the middle of the window on iPad).
+    public static func share(_ text: String) -> Bool {
+        let c = UIActivityViewController(activityItems: [URL(string: text) ?? text], applicationActivities: nil)
+        let host = top()
+        c.popoverPresentationController?.sourceView = host.view
+        c.popoverPresentationController?.sourceRect = CGRect(x: host.view.bounds.midX, y: host.view.bounds.midY, width: 1, height: 1)
+        host.present(c, animated: true)
+        return true
+    }
+
+    public static func copy(_ text: String) { UIPasteboard.general.string = text }
+
     public static func closeSheet() -> Bool {
         guard let (nav, gone) = sheets.popLast() else { return false }
         nav.dismiss(animated: true) { gone.done() }
@@ -3017,6 +3032,20 @@ public struct NativeAction {
         return true
     }
 
+    /// AppKit's sharing service picker, at the mouse.
+    public static func share(_ text: String) -> Bool {
+        guard let view = NSApp.keyWindow?.contentView else { return false }
+        let picker = NSSharingServicePicker(items: [URL(string: text) ?? text])
+        let point = view.convert(NSApp.keyWindow?.mouseLocationOutsideOfEventStream ?? .zero, from: nil)
+        picker.show(relativeTo: NSRect(origin: point, size: CGSize(width: 1, height: 1)), of: view, preferredEdge: .minY)
+        return true
+    }
+
+    public static func copy(_ text: String) {
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(text, forType: .string)
+    }
+
     public static func closeSheet() -> Bool {
         guard let (panel, node) = sheets.popLast() else { return false }
         panel.sheetParent?.endSheet(panel)
@@ -3054,6 +3083,56 @@ public struct NativeAction {
             c.cornerStyle = .capsule
             button.configuration = c
         }
+        return node
+    }
+
+    /// A UIButton: "filled", "tonal" (tinted), "danger", "small" (filled), "smallTonal" (gray).
+    public static func button(_ label: @escaping () -> String, _ kind: @escaping () -> String, _ run: @escaping () -> Void) -> Node {
+        let button = UIButton(type: .system)
+        button.addAction(UIAction { _ in run() }, for: .primaryActionTriggered)
+        let node = Node(.native, tag: "native", native: button)
+        node.bind({ "\(kind())\u{1}\(label())" }) { _ in
+            let k = kind()
+            var c: UIButton.Configuration
+            switch k {
+            case "filled", "small": c = .filled()
+            case "danger": c = .tinted(); c.baseForegroundColor = .systemRed; c.baseBackgroundColor = .systemRed
+            case "smallTonal": c = .gray()
+            default: c = .tinted()
+            }
+            c.title = label()
+            c.cornerStyle = k.hasPrefix("small") ? .capsule : .large
+            c.buttonSize = k.hasPrefix("small") ? .small : .large
+            button.configuration = c
+        }
+        return node
+    }
+
+    public static func spinner() -> Node {
+        let view = UIActivityIndicatorView(style: .medium)
+        view.startAnimating()
+        return Node(.native, tag: "native", native: view)
+    }
+
+    /// A UISearchTextField: the search field of iOS, with its magnifying glass and clear button.
+    public static func search(_ placeholder: String, _ value: @escaping () -> String, _ input: @escaping (String) -> Void, _ submit: @escaping (String) -> Void) -> Node {
+        let field = UISearchTextField()
+        field.placeholder = placeholder
+        field.returnKeyType = .search
+        field.addAction(UIAction { [unowned field] _ in input(field.text ?? "") }, for: .editingChanged)
+        field.addAction(UIAction { [unowned field] _ in submit(field.text ?? ""); field.resignFirstResponder() }, for: .editingDidEndOnExit)
+        let node = Node(.native, tag: "native", native: field)
+        node.bind(value) { v in if field.text != v { field.text = v } }
+        return node
+    }
+
+    public static func stepper(_ value: @escaping () -> Int32, _ min: Int32, _ max: Int32, _ change: @escaping (Int32) -> Void) -> Node {
+        let stepper = UIStepper()
+        stepper.minimumValue = Double(min)
+        stepper.maximumValue = Double(max)
+        stepper.addAction(UIAction { [unowned stepper] _ in change(Int32(stepper.value)) }, for: .valueChanged)
+        let node = Node(.native, tag: "native", native: stepper)
+        node.bind(value) { stepper.value = Double($0) }
         return node
     }
 
@@ -3462,12 +3541,22 @@ public struct NTab {
         return navigations[0]
     }
 
+    /// nuclo-native-ns: a modal screen in its own navigation bar, as iOS presents one: Cancel on the left, the
+    /// screen's action (`barButton`) on the right, in bold.
     private func present(_ e: Entry, animated: Bool) {
         var top = container
         while let next = top.presentedViewController { top = next }
+        #if canImport(UIKit)
+        let nav = UINavigationController(rootViewController: e.controller)
+        e.controller.navigationItem.leftBarButtonItem = UIBarButtonItem(systemItem: .cancel, primaryAction: UIAction { [weak self] _ in self?.back() })
+        nav.modalPresentationStyle = .pageSheet
+        nav.presentationController?.delegate = self
+        top.present(nav, animated: animated)
+        #else
         e.controller.modalPresentationStyle = .pageSheet
         e.controller.presentationController?.delegate = self
         top.present(e.controller, animated: animated)
+        #endif
     }
 
     // The user went back natively (back button, edge swipe): drop the screens no longer shown.
@@ -3483,7 +3572,10 @@ public struct NTab {
 
     // The user swiped a sheet down.
     public func presentationControllerDidDismiss(_ presentationController: UIPresentationController) {
-        let dismissed = presentationController.presentedViewController
+        var dismissed = presentationController.presentedViewController
+        #if canImport(UIKit)
+        if let nav = dismissed as? UINavigationController, let root = nav.viewControllers.first { dismissed = root }
+        #endif
         for i in stacks.indices {
             for e in stacks[i] where e.controller === dismissed { Runtime.shared.removeRoot(e.node) }
             stacks[i].removeAll { $0.controller === dismissed }
@@ -3499,9 +3591,26 @@ public struct NTab {
     private func entry(_ path: String) -> Entry {
         for route in routes {
             guard let params = route.match(path) else { continue }
+            NativeUi.barActions = []
             let node = route.view(params)
+            let actions = NativeUi.barActions
+            NativeUi.barActions = []
             Runtime.shared.addRoot(node)
+            #if canImport(UIKit)
+            let controller = ScreenController(node, title: route.title?(params) ?? "", header: route.header || route.presentation == "modal")
+            // The screen's bar buttons; the last is its main action, in bold.
+            controller.navigationItem.rightBarButtonItems = actions.reversed().enumerated().map { i, a in
+                let item = UIBarButtonItem(title: a.label, primaryAction: UIAction { _ in
+                    a.run()
+                    Runtime.shared.update([])
+                })
+                if i == 0 { item.style = .done }
+                return item
+            }
+            #else
+            _ = actions
             let controller = ScreenController(node, title: route.title?(params) ?? "", header: route.header)
+            #endif
             if let end = route.onEndReached { controller.onEndReached = { end(params) } }
             return Entry(path: path, node: node, controller: controller, modal: route.presentation == "modal")
         }

@@ -4,16 +4,16 @@
 
 import {
   css, div, p, span, button, img, input, textarea, toggle, list, when, update, go, back, later, haptic,
-  viewport, View, StyleResult, Pan, Pinch, Point, Scroll, Action,
+  viewport, View, StyleResult, Pan, Pinch, Point, Scroll, Action, barButton
 } from "./ui"
 import { t, space, radius, font, themed } from "./theme"
 import { users, posts, user, photoUrl, photoUrlWH } from "./data"
 import { setFlag } from "./state"
 import {
-  page, groupedPage, fixedPage, column, row, rowGap, rowBetween, grow, spacer, padded, gapSm, gapMd, card,
-  title1, title2, title3, headline, body, sub, footnote, caption, strongText, accentText, primaryBtn,
-  secondaryBtn, dangerBtn, smallBtn, smallGhostBtn, avatar, section, navCell, switchCell, segmented, chip,
-  toast, actionSheet, menuAt, sheet, closeSheet, nativeSlider, alert, act, destructive, checked, submenu, divider,
+  page, groupedPage, fixedPage, column, row, rowGap, rowBetween, grow, spacer, padded, gapSm, gapMd, card, title1,
+  title2, title3, headline, body, sub, footnote, caption, strongText, accentText, avatar, section, navCell,
+  switchCell, segmented, chip, toast, actionSheet, menuAt, sheet, closeSheet, nativeSlider, alert, act, destructive,
+  checked, submenu, divider, btn, primaryButton, secondaryButton, dangerButton, smallButton, stepperField
 } from "./kit"
 
 fn abs(x: number): number => x < 0.0 ? 0.0 - x : x
@@ -170,7 +170,7 @@ export fn swipeScreen(): View {
   return div(page, div(column,
     p(intro, "Swipe right to mark read or unread, left to delete. A quick flick is enough."),
     list(() => mail, (m, i) => mailRow(m)),
-    when(() => mail.length == 0, () => div(padded, button(secondaryBtn, "Restore inbox", { onClick: () => { mail = makeMail(); update() } }))),
+    when(() => mail.length == 0, () => div(padded, secondaryButton("Restore inbox", () => { mail = makeMail(); update() }))),
   ))
 }
 
@@ -440,11 +440,12 @@ export fn slidersScreen(): View {
       p(readout, () => `volume ${toInt(volume * 11.0)} / 11`),
     ),
     p(css({ px: space.lg, pt: space.lg, pb: space.sm, fontSize: font.headline, fontWeight: "semibold", color: t().text }), "Stepper"),
-    div(stepper,
+    stepperField(() => steps, 0, 10, (v) => { steps = v }, () => div(stepper,
       button(stepBtn, "−", { onClick: () => { if (steps > 0) { steps -= 1 } haptic("light"); update() } }),
       p(stepNum, () => `${steps}`),
       button(stepBtn, "+", { onClick: () => { if (steps < 10) { steps += 1 } haptic("light"); update() } }),
-    ),
+    )),
+    p(readout, () => `${steps} of 10`),
   ))
 }
 
@@ -505,7 +506,7 @@ export fn carouselScreen(): View {
     div(dotsRow, list(() => [0, 1, 2, 3, 4], (i, k) => div(() => pageDot(i), { onClick: () => goPage(i) }))),
     div(padded,
       switchCell("▶", "#af52de", "Autoplay", () => autoplay, (v) => { autoplay = v; autoChain += 1; if (v) { const c = autoChain; later(2600, () => autoTick(c)) } }),
-      div(rowGap, button(smallGhostBtn, "‹ Previous", { onClick: () => goPage(pageAt - 1) }), div(spacer), button(smallGhostBtn, "Next ›", { onClick: () => goPage(pageAt + 1) })),
+      div(rowGap, smallButton(() => "‹ Previous", () => false, () => goPage(pageAt - 1)), div(spacer), smallButton(() => "Next ›", () => false, () => goPage(pageAt + 1))),
     ),
   ))
 }
@@ -639,7 +640,7 @@ export fn cardsScreen(): View {
         // The top card last, so it is drawn above the others.
         list(() => reversedTop(), (n, i) => deckCard(n)),
       )),
-      when(() => deck.length == 0, () => div(gapMd, p(title3, "That's everyone"), button(smallBtn, "Start over", { onClick: () => { deck = [0, 1, 2, 3, 4, 5, 6, 7]; update() } }))),
+      when(() => deck.length == 0, () => div(gapMd, p(title3, "That's everyone"), smallButton(() => "Start over", () => true, () => { deck = [0, 1, 2, 3, 4, 5, 6, 7]; update() }))),
     ),
     div(deckButtons,
       button(bigRound, "✕", { label: "Nope", onClick: () => { if (deck.length > 0) { dismissTop(false) } } }),
@@ -709,7 +710,7 @@ export fn drawScreen(): View {
     div(palette,
       list(() => [0, 1, 2, 3, 4, 5], (i, k) => button(() => inkDot(i), { label: "Ink", onClick: () => { ink = i; haptic("light"); update() } })),
       div(spacer),
-      button(smallGhostBtn, "Clear", { onClick: () => { dots = []; update() } }),
+      smallButton(() => "Clear", () => false, () => { dots = []; update() }),
     ),
     div(canvas, { onPan: (e: Pan) => paint(e) }, list(() => dots, (d, i) => div(dotStyle(d)))),
   )
@@ -811,7 +812,7 @@ fn filterContent(): View {
     p(headline, "Distance"),
     slider("Within", t().accent, () => priceMax, (v) => { priceMax = v }),
     switchCell("", "", "Only people I follow", () => showFlagged, (v) => { showFlagged = v }),
-    button(primaryBtn, "Apply", { onClick: () => { closeSheet(); toast("Filters applied") } }),
+    primaryButton("Apply", () => { closeSheet(); toast("Filters applied") }),
   )
 }
 
@@ -830,7 +831,7 @@ fn longContent(): View {
 fn nestedContent(): View {
   return div(padded,
     p(body, "A sheet can open another sheet over itself. Drag the grabber down to close it, or up to make it large."),
-    button(secondaryBtn, "Open another sheet", { onClick: () => sheet("Second sheet", "medium", () => div(padded, p(body, "This one is on top. Close it to get back to the first."), button(primaryBtn, "Open a third", { onClick: () => sheet("Third sheet", "large", () => longContent()) }))) }),
+    secondaryButton("Open another sheet", () => sheet("Second sheet", "medium", () => div(padded, p(body, "This one is on top. Close it to get back to the first."), primaryButton("Open a third", () => sheet("Third sheet", "large", () => longContent()))))),
   )
 }
 
@@ -838,21 +839,22 @@ export fn sheetsScreen(): View {
   return div(groupedPage, div(column,
     p(intro, "Sheets come up from the bottom and follow the finger: drag the grabber to move between half and full height, or down to close."),
     div(menuGrid,
-      button(secondaryBtn, "Filters (medium)", { onClick: () => sheet("Filters", "medium", () => filterContent()) }),
-      button(secondaryBtn, "Share (medium)", { onClick: () => sheet("Share", "medium", () => shareContent()) }),
-      button(secondaryBtn, "People (large, scrolls)", { onClick: () => sheet("People", "large", () => longContent()) }),
-      button(secondaryBtn, "Sheet over sheet", { onClick: () => sheet("First sheet", "medium", () => nestedContent()) }),
-      button(primaryBtn, "The platform's own sheet", { onClick: () => go("/lab/native-sheet") }),
+      secondaryButton("Filters (medium)", () => sheet("Filters", "medium", () => filterContent())),
+      secondaryButton("Share (medium)", () => sheet("Share", "medium", () => shareContent())),
+      secondaryButton("People (large, scrolls)", () => sheet("People", "large", () => longContent())),
+      secondaryButton("Sheet over sheet", () => sheet("First sheet", "medium", () => nestedContent())),
+      primaryButton("The platform's own sheet", () => go("/lab/native-sheet")),
     ),
   ))
 }
 
 /** A modal route: each platform presents it with its own sheet (UIKit, GTK, Android, the web). */
 export fn nativeSheetScreen(): View {
+  const inBar = barButton("Done", () => back())
   return div(page, div(padded,
-    p(title2, "The platform's sheet"),
-    p(body, "This screen is a modal route. iOS shows it as a page sheet, GTK as a libadwaita bottom sheet, Android over the tabs, and the web as a sheet you can drag down."),
-    button(primaryBtn, "Done", { onClick: () => back() }),
+    p(title2, "The platform's modal screen"),
+    p(body, "This screen is a modal route, with its action in the bar: a full-screen dialog on Android, a page sheet on iOS, a libadwaita dialog on GTK (a bottom sheet in a narrow window), and a sheet you can drag down on the web."),
+    when(() => !inBar, () => primaryButton("Done", () => back())),
   ))
 }
 
@@ -862,21 +864,21 @@ export fn toastsScreen(): View {
   return div(groupedPage, div(column,
     p(intro, "Toasts, alerts with two or three buttons, and the device's haptics."),
     div(menuGrid,
-      button(secondaryBtn, "Show a toast", { onClick: () => toast("Saved to your collection") }),
-      button(secondaryBtn, "Three toasts in a row", { onClick: () => { toast("One"); later(500, () => toast("Two")); later(1000, () => toast("Three")) } }),
-      button(secondaryBtn, "Alert with two buttons", { onClick: () => alert("Turn on notifications?", "Get told when people like and comment on your posts.", [
+      secondaryButton("Show a toast", () => toast("Saved to your collection")),
+      secondaryButton("Three toasts in a row", () => { toast("One"); later(500, () => toast("Two")); later(1000, () => toast("Three")) }),
+      secondaryButton("Alert with two buttons", () => alert("Turn on notifications?", "Get told when people like and comment on your posts.", [
         { label: "Not now", glyph: "", kind: "cancel", run: () => toast("Maybe later") },
         act("Turn on", "", () => { setFlag("push", true); toast("Notifications on") }),
-      ]) }),
-      button(secondaryBtn, "Alert with three buttons", { onClick: () => alert("Unsaved changes", "Save your changes before leaving?", [
+      ])),
+      secondaryButton("Alert with three buttons", () => alert("Unsaved changes", "Save your changes before leaving?", [
         { label: "Cancel", glyph: "", kind: "cancel", run: () => {} },
         destructive("Discard", "", () => toast("Discarded")),
         act("Save", "", () => toast("Saved")),
-      ]) }),
-      button(dangerBtn, "Destructive confirmation", { onClick: () => alert("Delete everything?", "This removes all items in the demo.", [
+      ])),
+      dangerButton("Destructive confirmation", () => alert("Delete everything?", "This removes all items in the demo.", [
         { label: "Cancel", glyph: "", kind: "cancel", run: () => {} },
         destructive("Delete", "", () => toast("Deleted")),
-      ]) }),
+      ])),
     ),
     section("Haptics", [
       navCell("", "", "Light tap", () => "", () => haptic("light")),
@@ -965,7 +967,7 @@ export fn formsScreen(): View {
     div(fieldWrap, p(fieldLabel, "ABOUT YOU"), textarea(areaStyle, { placeholder: "Optional", value: () => fAbout, onInput: (v) => { fAbout = v; update() } }), p(caption, () => `${fAbout.length}/200`)),
     div(css({ flexDirection: "row", alignItems: "center", gap: space.md }), p(css({ flex: 1, fontSize: font.body, color: t().text }), "Send me the newsletter"), toggle({ checked: () => fNews, onChange: (v) => { fNews = v; update() } })),
     div(css({ flexDirection: "row", alignItems: "center", gap: space.md }), p(css({ flex: 1, fontSize: font.body, color: t().text }), "I accept the terms"), toggle({ checked: () => fTerms, onChange: (v) => { fTerms = v; update() } })),
-    button(primaryBtn, "Create account", { onClick: () => submitForm() }),
+    primaryButton("Create account", () => submitForm()),
   )))
 }
 
@@ -1013,7 +1015,7 @@ export fn onboardingScreen(): View {
     ),
     div(dotsRow, list(() => [0, 1, 2, 3], (i, k) => div(() => tourDot(i), { onClick: () => { tourAt = i; update() } }))),
     div(padded,
-      button(primaryBtn, () => tourAt == 3 ? "Get started" : "Next", { onClick: () => { if (tourAt < 3) { tourAt += 1; update() } else { back() } } }),
+      btn(() => "filled", () => tourAt == 3 ? "Get started" : "Next", () => { if (tourAt < 3) { tourAt += 1; update() } else { back() } }),
       when(() => tourAt < 3, () => button(css({ color: t().muted, fontSize: font.sub, padding: space.sm }), "Skip", { onClick: () => back() })),
     ),
   )

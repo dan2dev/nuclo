@@ -3,8 +3,8 @@
 // screen is made of these, so the app looks the same on each platform.
 
 import {
-  css, div, p, span, button, img, toggle, group, list, when, update, later, haptic, viewport, Mod, View,
-  StyleResult, Pan, Point, Look, Action, nativeAlert, nativeActions, nativeMenu, nativeSheet, nativeToast, nativeCloseSheet, hasControl, segmentedControl, chipControl, sliderControl,
+  css, div, p, span, button, img, input, toggle, group, list, when, update, later, haptic, viewport, Mod, View,
+  StyleResult, Pan, Point, Look, Action, nativeAlert, nativeActions, nativeMenu, nativeSheet, nativeToast, nativeCloseSheet, hasControl, buttonControl, spinnerControl, searchControl, stepperControl, shareText, copyText, segmentedControl, chipControl, sliderControl,
 } from "./ui"
 import { t, space, radius, font, themed } from "./theme"
 import { icon, isIcon, liveIcon } from "./icons"
@@ -98,6 +98,61 @@ export const roundBtn = themed(() => css({
   width: 36, height: 36, padding: 0, borderRadius: 18, alignItems: "center", justifyContent: "center",
   backgroundColor: t().surface2, color: t().text, fontSize: 17, pressed: { opacity: 0.6, scale: 0.92 }, transition: 120,
 }))
+
+/** A button: the platform's own where it has one, else drawn in the kit's style for `kind`. */
+fn kindStyle(kind: string): StyleResult {
+  if (kind == "filled") { return primaryBtn() }
+  if (kind == "tonal") { return secondaryBtn() }
+  if (kind == "danger") { return dangerBtn() }
+  if (kind == "small") { return smallBtn() }
+  return smallGhostBtn()
+}
+
+export fn btn(kind: () => string, label: () => string, run: () => void): View {
+  if (hasControl("button")) { return buttonControl(label, kind, () => { run(); update() }) }
+  return button(() => kindStyle(kind()), () => label(), { onClick: () => run() })
+}
+
+export fn primaryButton(label: string, run: () => void) => btn(() => "filled", () => label, run)
+export fn secondaryButton(label: string, run: () => void) => btn(() => "tonal", () => label, run)
+export fn dangerButton(label: string, run: () => void) => btn(() => "danger", () => label, run)
+/** A small button: filled when `filled()` (Follow), tonal when not (Following). */
+export fn smallButton(label: () => string, filled: () => bool, run: () => void) => btn(() => filled() ? "small" : "smallTonal", label, run)
+
+/** The platform's activity indicator, or a line of text. */
+export fn spinner(text: string): View {
+  if (hasControl("spinner")) { return div(css({ alignItems: "center", py: space.lg }), spinnerControl()) }
+  return p(css({ textAlign: "center", py: space.lg, fontSize: font.footnote, color: t().muted }), text)
+}
+
+const fillRow = css({ flex: 1 })
+const centered = css({ alignItems: "center" })
+
+/** A search field: the platform's own, or `style`'s. `submit` runs on Enter. */
+export fn searchField(style: () => StyleResult, placeholder: string, value: () => string, typed: (string) => void, submit: (string) => void): View {
+  if (hasControl("search")) { return div(fillRow, searchControl(placeholder, value, (v) => { typed(v); update() }, (v) => { submit(v); update() })) }
+  return input(style, { placeholder: placeholder, value: () => value(), onInput: (v) => { typed(v); update() }, onKeyDown: (k) => { if (k == "Enter") { submit(value()); update() } } })
+}
+
+/** A stepper of whole numbers: the platform's own, or two buttons around the number. */
+export fn stepperField(value: () => int, min: int, max: int, change: (int) => void, drawn: () => View): View {
+  if (hasControl("stepper")) { return div(centered, stepperControl(value, min, max, (v) => { change(v); haptic("light"); update() })) }
+  return drawn()
+}
+
+/** Shares a link: the platform's share sheet, or the clipboard where there is none. */
+export fn shareLink(url: string) {
+  if (!shareText(url)) {
+    copyText(url)
+    toast("Link copied")
+  }
+}
+
+/** Copies a link, and says so. */
+export fn copyLink(url: string) {
+  copyText(url)
+  toast("Link copied")
+}
 
 /** A full-width button. */
 export fn bigButton(label: string, style: () => StyleResult, run: () => void) => button(style, label, { onClick: () => run() })

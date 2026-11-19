@@ -1,13 +1,14 @@
 // Profiles: a person, the signed-in person (the Profile tab), followers and following, and the profile
 // editor (a modal sheet). The grid and saved tabs of a profile switch with a segmented control.
 
-import { css, div, p, span, button, img, input, textarea, list, when, update, go, back, later, haptic, View, Point } from "./ui"
+import { css, div, p, span, button, img, input, textarea, list, when, update, go, back, later, haptic, View, Point, barButton } from "./ui"
 import { t, space, radius, font, themed } from "./theme"
 import { User, Post, users, user, postsBy, photoUrl, compact } from "./data"
 import { profile, saveProfile, isFollowing, toggleFollow, myPostList, savedIds, findAnyPost } from "./state"
 import {
-  page, column, row, gapSm, gapMd, title2, headline, sub, footnote, caption, body, smallBtn, primaryBtn,
-  secondaryBtn, iconButton, avatar, verifiedBadge, segmented, empty, toast, actionSheet, menuAt, act, destructive, notePress, pressedAt,
+  page, column, row, gapSm, gapMd, title2, headline, sub, footnote, caption, body, iconButton, avatar, verifiedBadge,
+  segmented, empty, toast, actionSheet, menuAt, act, destructive, notePress, pressedAt, primaryButton,
+  secondaryButton, smallButton, searchField, shareLink
 } from "./kit"
 import { personCell, photoGrid } from "./feed"
 
@@ -50,7 +51,7 @@ let profileTab = 0
 
 fn profileMenu(u: User, at: Point) {
   menuAt(at, u.handle, [
-    act("Share profile", "➤", () => toast("Profile link copied")),
+    act("Share profile", "➤", () => shareLink(`https://nuclo.dev/@${u.handle}`)),
     act(isFollowing(u.id) ? "Unfollow" : "Follow", "＋", () => { toast(toggleFollow(u.id) ? "Following" : "Unfollowed") }),
     act("Mute", "🔇", () => toast(`${u.handle} muted`)),
     destructive("Block", "⊘", () => toast(`${u.handle} blocked`)),
@@ -113,7 +114,8 @@ export fn toIntId(id: string): int {
 
 let peopleQuery = ""
 
-const searchField = themed(() => css({ height: 38, px: space.md, mx: space.lg, my: space.sm, borderRadius: 10, backgroundColor: t().surface2, color: t().text, fontSize: font.sub }))
+const searchFieldStyle = themed(() => css({ height: 38, px: space.md, borderRadius: 10, backgroundColor: t().surface2, color: t().text, fontSize: font.sub }))
+const searchBox = css({ px: space.lg, py: space.sm })
 
 fn peopleScreen(seed: int, following: bool): View {
   peopleQuery = ""
@@ -121,7 +123,7 @@ fn peopleScreen(seed: int, following: bool): View {
   return div(
     page,
     div(column,
-      input(searchField, { placeholder: "Search", value: () => peopleQuery, onInput: (v) => { peopleQuery = v; update() } }),
+      div(searchBox, searchField(searchFieldStyle, "Search", () => peopleQuery, (v) => { peopleQuery = v }, (v) => {})),
       list(() => all.filter((u) => peopleQuery == "" || u.name.toLowerCase().includes(peopleQuery.toLowerCase()) || u.handle.includes(peopleQuery.toLowerCase())), (u, i) => personCell(u)),
     ),
   )
@@ -185,7 +187,7 @@ export fn meScreen(): View {
       ),
       div(css({ px: space.lg, pt: space.md }), highlightsRow(3)),
       div(segBox, segmented(["Posts", "Saved"], () => meTab, (i) => { meTab = i })),
-      when(() => meTab == 0 && myPostList().length == 0, () => div(gapMd, empty("◎", "Share your first photo", "Your posts show up here."), div(css({ alignItems: "center" }), button(smallBtn, "New post", { onClick: () => go("/compose") })))),
+      when(() => meTab == 0 && myPostList().length == 0, () => div(gapMd, empty("◎", "Share your first photo", "Your posts show up here."), div(css({ alignItems: "center" }), smallButton(() => "New post", () => true, () => go("/compose"))))),
       when(() => meTab == 0 && myPostList().length > 0, () => div(list(() => [myPostList().length], (n, i) => photoGrid(myPostList())))),
       when(() => meTab == 1, () => div(list(() => [savedIds().length], (n, i) => savedIds().length == 0 ? empty("☆", "Nothing saved", "Tap the bookmark on a post to keep it here.") : photoGrid(savedPosts())))),
     ),
@@ -226,6 +228,7 @@ fn saveEdits() {
 }
 
 export fn editProfileScreen(): View {
+  const inBar = barButton("Save", () => saveEdits())
   const me = profile()
   editName = me.name
   editHandle = me.handle
@@ -239,8 +242,8 @@ export fn editProfileScreen(): View {
       div(fieldBox, p(label, "NAME"), input(field, { value: () => editName, onInput: (v) => { editName = v } })),
       div(fieldBox, p(label, "USERNAME"), input(field, { value: () => editHandle, onInput: (v) => { editHandle = v } })),
       div(fieldBox, p(label, "BIO"), textarea(area, { value: () => editBio, onInput: (v) => { editBio = v; update() } }), p(caption, () => `${editBio.length}/150`)),
-      button(primaryBtn, "Save", { onClick: () => saveEdits() }),
-      button(secondaryBtn, "Cancel", { onClick: () => back() }),
+      when(() => !inBar, () => primaryButton("Save", () => saveEdits())),
+      when(() => !inBar, () => secondaryButton("Cancel", () => back())),
     ),
   )
 }

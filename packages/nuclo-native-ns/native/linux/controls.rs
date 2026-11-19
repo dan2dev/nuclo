@@ -93,3 +93,75 @@ pub fn set_accent(accent: &str) {
     }
   });
 }
+
+/// A button in libadwaita's styles: "filled" (suggested, a pill), "tonal" (a pill), "danger" (destructive),
+/// "small" (suggested), "smallTonal" (plain).
+pub fn button(label: Rc<dyn Fn() -> String>, kind: Rc<dyn Fn() -> String>, run: Rc<dyn Fn()>) -> nu::Node {
+  let button = gtk::Button::new();
+  button.connect_clicked(move |_| run());
+  let n = node(button.clone());
+  n.bind(label, {
+    let button = button.clone();
+    move |l: &String| button.set_label(l)
+  });
+  n.bind(kind, move |k: &String| {
+    for class in ["suggested-action", "destructive-action", "pill"] {
+      button.remove_css_class(class);
+    }
+    match k.as_str() {
+      "filled" => { button.add_css_class("suggested-action"); button.add_css_class("pill"); }
+      "tonal" => button.add_css_class("pill"),
+      "danger" => { button.add_css_class("destructive-action"); button.add_css_class("pill"); }
+      "small" => button.add_css_class("suggested-action"),
+      _ => {}
+    }
+  });
+  n
+}
+
+pub fn spinner() -> nu::Node {
+  let spinner = adw::Spinner::new();
+  spinner.set_size_request(32, 32);
+  node(spinner)
+}
+
+pub fn search(placeholder: String, value: Rc<dyn Fn() -> String>, input: Rc<dyn Fn(String)>, submit: Rc<dyn Fn(String)>) -> nu::Node {
+  let entry = gtk::SearchEntry::new();
+  entry.set_placeholder_text(Some(&placeholder));
+  entry.set_hexpand(true);
+  let syncing = Rc::new(Cell::new(false));
+  let s = syncing.clone();
+  entry.connect_search_changed(move |e| {
+    if !s.get() {
+      input(e.text().to_string());
+    }
+  });
+  entry.connect_activate(move |e| submit(e.text().to_string()));
+  let n = node(entry.clone());
+  n.bind(value, move |v: &String| {
+    if entry.text().as_str() != v {
+      syncing.set(true);
+      entry.set_text(v);
+      syncing.set(false);
+    }
+  });
+  n
+}
+
+pub fn stepper(value: Rc<dyn Fn() -> i32>, min: i32, max: i32, change: Rc<dyn Fn(i32)>) -> nu::Node {
+  let spin = gtk::SpinButton::with_range(min as f64, max as f64, 1.0);
+  let syncing = Rc::new(Cell::new(false));
+  let s = syncing.clone();
+  spin.connect_value_changed(move |sp| {
+    if !s.get() {
+      change(sp.value_as_int());
+    }
+  });
+  let n = node(spin.clone());
+  n.bind(value, move |v: &i32| {
+    syncing.set(true);
+    spin.set_value(*v as f64);
+    syncing.set(false);
+  });
+  n
+}

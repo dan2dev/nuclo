@@ -2,12 +2,13 @@
 // what is trending, and creators to follow.
 
 import { css, div, p, span, button, img, input, list, when, update, go, haptic, View } from "./ui"
+import { liveIcon } from "./icons"
 import { t, space, radius, font, themed } from "./theme"
 import { Post, Tag, User, posts, users, tags, postsTagged, searchUsers, searchTags, photoUrl, compact, user } from "./data"
 import { isFollowing, toggleFollow } from "./state"
 import {
-  page, column, row, grow, gapSm, title2, title3, headline, sub, footnote, caption, strongText, smallBtn,
-  smallGhostBtn, chip, avatar, empty,
+  page, column, row, grow, gapSm, title2, title3, headline, sub, footnote, caption, strongText, chip, avatar, empty,
+  smallButton, searchField
 } from "./kit"
 import { personCell, photoGrid } from "./feed"
 
@@ -67,7 +68,7 @@ export fn exploreScreen(): View {
   return div(
     page,
     div(column,
-      div(searchBar, { onClick: () => go("/search") }, span(searchGlyph, "⌕"), p(searchHint, "Search people and tags")),
+      div(searchBar, { onClick: () => go("/search") }, liveIcon("search", () => t().muted, () => false, 18), p(searchHint, "Search people and tags")),
       div(chips, list(() => topicNames, (name, i) => chip(i == 0 ? name : `#${name}`, () => topicPick == i, () => { topicPick = i }))),
       div(sectionHead, p(headline, "Topics"), button(seeAll, "Trending", { onClick: () => go("/trending") })),
       div(topicRow, list(() => tags(), (tg, i) => topicTile(tg))),
@@ -112,12 +113,7 @@ export fn searchScreen(): View {
   return div(
     page,
     div(column,
-      div(searchTop, input(searchInput, {
-        placeholder: "Search",
-        value: () => query,
-        onInput: (v) => { query = v; update() },
-        onKeyDown: (k) => { if (k == "Enter" && query.trim() != "") { remember(query.trim()); update() } },
-      })),
+      div(searchTop, searchField(searchInput, "Search", () => query, (v) => { query = v }, (v) => { if (v.trim() != "") { remember(v.trim()) } })),
       when(() => query.trim() == "", () => div(
         div(sectionHead, p(headline, "Recent"), button(seeAll, "Clear", { onClick: () => { recent = []; update() } })),
         list(() => recent, (r, i) => div(recentRow, { onClick: () => { query = r; update() } }, span(searchGlyph, "◷"), p(css({ flex: 1, fontSize: font.body, color: t().text }), r), button(clearBtn, "✕", { onClick: () => { recent = recent.filter((x) => x != r); update() } }))),
@@ -148,9 +144,7 @@ export fn tagScreen(id: string): View {
         div(grow, gapSm,
           p(title2, `#${id}`),
           p(footnote, `${compact(1200 + xs.length * 977)} posts`),
-          button(() => followedTags.has(id) ? smallGhostBtn() : smallBtn(), () => followedTags.has(id) ? "Following" : "Follow", {
-            onClick: () => { if (followedTags.has(id)) { followedTags.delete(id) } else { followedTags.add(id) } haptic("light"); update() },
-          }),
+          smallButton(() => followedTags.has(id) ? "Following" : "Follow", () => !(followedTags.has(id)), () => { if (followedTags.has(id)) { followedTags.delete(id) } else { followedTags.add(id) } haptic("light"); update() }),
         ),
       ),
       xs.length == 0 ? empty("#", "No posts yet", "Be the first to post with this tag.") : photoGrid(xs),
@@ -189,8 +183,6 @@ export fn creatorsScreen(): View {
     div({ onClick: () => go(`/user/${u.id}`) }, avatar(u.avatar, 64)),
     p(creatorName, u.name),
     p(caption, `${compact(u.followers)} followers`),
-    button(() => isFollowing(u.id) ? smallGhostBtn() : smallBtn(), () => isFollowing(u.id) ? "Following" : "Follow", {
-      onClick: () => { toggleFollow(u.id); haptic("light"); update() },
-    }),
+    smallButton(() => isFollowing(u.id) ? "Following" : "Follow", () => !(isFollowing(u.id)), () => { toggleFollow(u.id); haptic("light"); update() }),
   )))))
 }

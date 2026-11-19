@@ -647,6 +647,13 @@ private val EASE_IN = PathInterpolator(0.42f, 0f, 1f, 1f)
 private val EASE_OUT = PathInterpolator(0f, 0f, 0.58f, 1f)
 /** Material 3's emphasized easing: navigation transitions. */
 internal val EMPHASIZED = PathInterpolator(0.2f, 0f, 0f, 1f)
+/** Material 3's emphasized decelerate (things arriving) and accelerate (things leaving). */
+internal val EMPHASIZED_DECELERATE = PathInterpolator(0.05f, 0.7f, 0.1f, 1f)
+internal val EMPHASIZED_ACCELERATE = PathInterpolator(0.3f, 0f, 0.8f, 0.15f)
+/** How far the page under a pushed one moves back, of the width. */
+private const val PARALLAX = 0.25f
+private const val PUSH_MS = 400L
+private const val POP_MS = 350L
 private val EASE_IN_OUT = PathInterpolator(0.42f, 0f, 0.58f, 1f)
 private val LINEAR = LinearInterpolator()
 private val SPRING = OvershootInterpolator(1.6f)
@@ -682,12 +689,14 @@ class Node internal constructor(internal val kind: Kind, internal val tag: Strin
                 isClickable = true
                 foreground = ctx.getDrawable(Runtime.rippleId)
             }
+            // No theme underline: a field looks as its style says, as on the other platforms.
             Kind.Input -> EditText(ctx).apply {
+                background = null
                 isSingleLine = true
                 imeOptions = EditorInfo.IME_ACTION_DONE
             }
             Kind.Checkbox -> android.widget.Switch(ctx) // nuclo-native-ns: the platform's switch
-            Kind.Textarea -> EditText(ctx).apply { inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_MULTI_LINE }
+            Kind.Textarea -> EditText(ctx).apply { background = null; inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_MULTI_LINE }
             Kind.Image -> ImageView(ctx).apply { scaleType = ImageView.ScaleType.CENTER_CROP }
             Kind.Native -> native
             Kind.Fragment -> null
@@ -1347,7 +1356,7 @@ class Node internal constructor(internal val kind: Kind, internal val tag: Strin
                 v.measure(View.MeasureSpec.makeMeasureSpec(kotlin.math.ceil(available).toInt().coerceAtLeast(0), View.MeasureSpec.AT_MOST), View.MeasureSpec.UNSPECIFIED)
                 val w = if (v is EditText && kind == Kind.Input) min(available, px(180.0)) else v.measuredWidth.toFloat()
                 // A line is exactly lineHeight tall on every platform; TextView's own spacing adds only between lines.
-                val h = if (v is TextView && v !is EditText) (v.lineCount * v.lineHeight + v.paddingTop + v.paddingBottom).toFloat() else v.measuredHeight.toFloat()
+                val h = if (v is TextView && v !is EditText && kind != Kind.Native) (v.lineCount * v.lineHeight + v.paddingTop + v.paddingBottom).toFloat() else v.measuredHeight.toFloat()
                 floatArrayOf(w, h)
             }
         }
@@ -2418,6 +2427,8 @@ class NTab(internal val path: String, internal val title: String, internal val i
  * theme. [chromeTheme] repaints the router's bars and the window's status and navigation bars.
  */
 object Chrome {
+    /** The bar buttons of the screen being built (`barButton`), taken by the router's entry. */
+    val barActions = mutableListOf<NativeAction>()
     var dark = false
     var accent = "#0a7cff"
     var background = "#ffffff"
@@ -2603,6 +2614,21 @@ object NativeUi {
         return true
     }
 
+    /** The system's share sheet for `text`. */
+    fun share(text: String) {
+        val send = Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(Intent.EXTRA_TEXT, text)
+        }
+        Runtime.activity.startActivity(Intent.createChooser(send, null))
+    }
+
+    /** Puts `text` on the clipboard (Android 13+ shows its own confirmation). */
+    fun copy(text: String) {
+        val clipboard = Runtime.activity.getSystemService(android.content.ClipboardManager::class.java)
+        clipboard.setPrimaryClip(android.content.ClipData.newPlainText("link", text))
+    }
+
     fun toast(text: String) {
         val content = Runtime.activity.findViewById<View>(android.R.id.content)
         val bar = com.google.android.material.snackbar.Snackbar.make(themed(), content, text, com.google.android.material.snackbar.Snackbar.LENGTH_SHORT)
@@ -2682,6 +2708,80 @@ object NativeControls {
         return node
     }
 
+    /** A Material button: "filled", "tonal", "danger", "small" (filled), or "smallTonal". */
+    fun button(label: () -> String, kind: () -> String, run: () -> Unit): Node {
+        val ctx = NativeUi.themed()
+        val b = com.google.android.material.button.MaterialButton(ctx).apply {
+            isAllCaps = false
+            setOnClickListener { run() }
+        }
+        val node = Node(Node.Kind.Native, "native", b)
+        node.bind(label) { b.text = it }
+        node.bind({ kind() + chrome() }) {
+            val k = kind()
+            val small = k.startsWith("small")
+            val danger = Color.parseColor(if (Chrome.dark) "#ff453a" else "#d93025")
+            val (bg, fg) = when (k) {
+                "filled", "small" -> accent to Color.WHITE
+                "danger" -> soft(danger) to danger
+                else -> soft(accent) to (if (Chrome.dark) Color.WHITE else accent)
+            }
+            b.backgroundTintList = android.content.res.ColorStateList.valueOf(bg)
+            b.setTextColor(fg)
+            b.rippleColor = android.content.res.ColorStateList.valueOf(Color.argb(40, Color.red(fg), Color.green(fg), Color.blue(fg)))
+            b.insetTop = 0
+            b.insetBottom = 0
+            b.minHeight = px(if (small) 34.0 else 50.0).roundToInt()
+            b.minimumWidth = px(if (small) 88.0 else 64.0).roundToInt()
+            b.setPadding(px(if (small) 16.0 else 24.0).roundToInt(), 0, px(if (small) 16.0 else 24.0).roundToInt(), 0)
+            b.setTextAppearance(if (small) com.google.android.material.R.style.TextAppearance_Material3_LabelLarge else com.google.android.material.R.style.TextAppearance_Material3_TitleMedium)
+            b.setTextColor(fg)
+        }
+        return node
+    }
+
+    /** Material's circular progress indicator, turning. */
+    fun spinner(): Node {
+        val ctx = NativeUi.themed()
+        val p = com.google.android.material.progressindicator.CircularProgressIndicator(ctx).apply { isIndeterminate = true }
+        val node = Node(Node.Kind.Native, "native", p)
+        node.bind(::chrome) { p.setIndicatorColor(accent) }
+        return node
+    }
+
+    /** The platform's search view, open, with the keyboard's search key. */
+    fun search(placeholder: String, value: () -> String, input: (String) -> Unit, submit: (String) -> Unit): Node {
+        val ctx = NativeUi.themed()
+        var syncing = false
+        val view = android.widget.SearchView(ctx).apply {
+            isIconified = false
+            setIconifiedByDefault(false)
+            queryHint = placeholder
+            maxWidth = Int.MAX_VALUE
+            setOnQueryTextListener(object : android.widget.SearchView.OnQueryTextListener {
+                override fun onQueryTextChange(text: String): Boolean { if (!syncing) input(text); return true }
+                override fun onQueryTextSubmit(text: String): Boolean { submit(text); clearFocus(); return true }
+            })
+        }
+        val node = Node(Node.Kind.Native, "native", view)
+        node.bind(value) { v ->
+            if (view.query.toString() != v) {
+                syncing = true
+                view.setQuery(v, false)
+                syncing = false
+            }
+        }
+        // No underline: the field's own pill is the box.
+        view.findViewById<View>(view.context.resources.getIdentifier("search_plate", "id", "android"))?.background = null
+        node.bind(::chrome) {
+            view.background = GradientDrawable().apply {
+                cornerRadius = px(28.0)
+                setColor(Color.parseColor(if (Chrome.dark) "#2c2c2e" else "#efeff4"))
+            }
+        }
+        return node
+    }
+
     /** A slider of 0…1 in `color` (the accent when empty). */
     fun slider(value: () -> Double, color: String, change: (Double) -> Unit): Node {
         val ctx = NativeUi.themed()
@@ -2710,14 +2810,21 @@ object NativeControls {
  */
 class NRouter(private val routes: List<NRoute>, private val tabs: List<NTab> = emptyList(), private val initial: String = "/") {
     /** A full entry (a story, a photo) covers the bars and the tabs; it pops as a modal does. */
-    private class Entry(val path: String, val node: Node, val view: View, val title: String, val modal: Boolean, val header: Boolean, val full: Boolean = false)
+    private class Entry(val path: String, val node: Node, val view: View, val title: String, val modal: Boolean, val header: Boolean, val full: Boolean = false, val actions: List<NativeAction> = emptyList()) {
+        /** A modal screen's full-screen dialog, while it is on screen. */
+        var dialog: android.app.Dialog? = null
+        val sheet get() = modal && !full
+        /** A pushed screen's own top app bar: it moves with the screen, as an activity's does. */
+        var toolbar: com.google.android.material.appbar.MaterialToolbar? = null
+        /** What slides: the bar and the screen, on an opaque background (no screen shows through another). */
+        lateinit var page: View
+    }
 
     private val stacks = mutableListOf<MutableList<Entry>>()
     private var active = 0
     private lateinit var root: FrameLayout
     private lateinit var content: FrameLayout
-    // nuclo-native-ns: Material 3's top app bar and navigation bar.
-    private lateinit var bar: com.google.android.material.appbar.MaterialToolbar
+    // nuclo-native-ns: Material 3's navigation bar; each screen has its own top app bar.
     private var nav: com.google.android.material.bottomnavigation.BottomNavigationView? = null
     private var selecting = false
 
@@ -2737,12 +2844,6 @@ class NRouter(private val routes: List<NRoute>, private val tabs: List<NTab> = e
             stacks.add(stack)
         }
         val column = LinearLayout(context).apply { orientation = LinearLayout.VERTICAL }
-        bar = com.google.android.material.appbar.MaterialToolbar(context).apply {
-            navigationContentDescription = "Back"
-            setNavigationOnClickListener { back() }
-            setTitleTextAppearance(context, com.google.android.material.R.style.TextAppearance_Material3_TitleLarge)
-        }
-        column.addView(bar, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT))
         content = FrameLayout(context)
         column.addView(content, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f))
         if (tabs.isNotEmpty()) {
@@ -2809,94 +2910,98 @@ class NRouter(private val routes: List<NRoute>, private val tabs: List<NTab> = e
             return
         }
         active = i
-        show(null)
+        show(0)
         Runtime.update(emptyList())
     }
 
     /** The screen under any sheets: what the content area shows. */
     private fun screenOf(stack: List<Entry>) = stack.lastOrNull { !it.modal } ?: stack[0]
 
-    /** Shows the active stack's top screen: slid in on a push (+1), out on a pop (-1); a sheet slides from the bottom. */
+    /**
+     * Shows the active stack's top screen. A push (+1) slides the new page in from the end, opaque and above, while
+     * the page under it moves back a quarter (parallax); a pop (-1) runs it backwards. Another tab (0) fades through.
+     * A modal screen is a full-screen dialog; a full one (a story) zooms in over everything.
+     */
     private fun show(direction: Int?, popped: Entry? = null) {
         val stack = stacks[active]
         val top = stack.last()
         val under = screenOf(stack)
         val width = root.width.toFloat().takeIf { it > 0 } ?: Runtime.activity.resources.displayMetrics.widthPixels.toFloat()
-        val height = root.height.toFloat().takeIf { it > 0 } ?: Runtime.activity.resources.displayMetrics.heightPixels.toFloat()
         fun detach(v: View) = (v.parent as? ViewGroup)?.removeView(v)
+        fun settle(v: View) {
+            v.animate().cancel()
+            v.translationX = 0f
+            v.translationY = 0f
+            v.alpha = 1f
+            v.scaleX = 1f
+            v.scaleY = 1f
+            v.elevation = 0f
+            v.clipToOutline = false
+        }
+        stack.forEachIndexed { i, e -> e.toolbar?.navigationIcon = if (i > 0) PathIcon.tab("back", px(24.0).roundToInt()) else null }
         when {
             direction == +1 && top.full -> {
-                detach(top.view)
-                root.addView(top.view)
-                top.view.alpha = 0f
-                top.view.scaleX = 0.94f
-                top.view.scaleY = 0.94f
-                top.view.animate().alpha(1f).scaleX(1f).scaleY(1f).setDuration(220).setInterpolator(EASE_OUT).start()
+                detach(top.page)
+                root.addView(top.page)
+                top.page.alpha = 0f
+                top.page.scaleX = 0.94f
+                top.page.scaleY = 0.94f
+                top.page.animate().alpha(1f).scaleX(1f).scaleY(1f).setDuration(240).setInterpolator(EMPHASIZED_DECELERATE).withLayer().start()
             }
-            direction == +1 && top.modal -> {
-                detach(top.view)
-                root.addView(top.view)
-                top.view.translationY = height
-                top.view.animate().translationY(0f).setDuration(280).setInterpolator(EASE_OUT).start()
-            }
+            direction == +1 && top.sheet -> openDialog(top, animated = true)
             direction == +1 -> {
-                // Material's shared axis X: the new screen slides in from the end as it fades in; the old one moves back.
-                val previous = stack.getOrNull(stack.size - 2)?.view
-                detach(top.view)
-                content.addView(top.view)
-                top.view.translationX = width * 0.3f
-                top.view.alpha = 0f
-                top.view.animate().translationX(0f).alpha(1f).setDuration(300).setInterpolator(EMPHASIZED).withEndAction { keepOnly(top.view) }.start()
-                previous?.animate()?.translationX(-width * 0.1f)?.alpha(0f)?.setDuration(300)?.setInterpolator(EMPHASIZED)?.start()
+                val previous = screenOf(stack.dropLast(1)).page
+                settle(top.page)
+                detach(top.page)
+                content.addView(top.page)
+                top.page.translationX = width
+                top.page.elevation = px(6.0)
+                top.page.animate().translationX(0f).setDuration(PUSH_MS).setInterpolator(EMPHASIZED_DECELERATE).withLayer()
+                    .withEndAction { top.page.elevation = 0f; keepOnly(top.page) }.start()
+                previous.animate().translationX(-width * PARALLAX).setDuration(PUSH_MS).setInterpolator(EMPHASIZED_DECELERATE).withLayer()
+                    .withEndAction { previous.translationX = 0f }.start()
+            }
+            direction == -1 && popped != null && popped.sheet -> closeDialog(popped) { Runtime.removeRoot(popped.node) }
+            direction == -1 && popped != null && popped.full -> {
+                popped.page.animate().alpha(0f).scaleX(0.94f).scaleY(0.94f).setDuration(200).setInterpolator(EMPHASIZED_ACCELERATE).withLayer()
+                    .withEndAction { detach(popped.page); settle(popped.page); Runtime.removeRoot(popped.node) }.start()
             }
             direction == -1 && popped != null -> {
-                // After a predictive back gesture the screen under is already in place, part way in.
-                val gestured = under.view.parent === content && !popped.modal && popped.view.scaleX < 1f
-                if (under.view.parent !== content) {
-                    detach(under.view)
-                    content.addView(under.view, 0)
+                // After a predictive back gesture, both pages are already part way: they go on from there.
+                if (under.page.parent !== content) {
+                    settle(under.page)
+                    detach(under.page)
+                    content.addView(under.page, 0)
+                    under.page.translationX = -width * PARALLAX
                 }
-                if (!popped.modal) {
-                    if (!gestured) {
-                        under.view.translationX = -width * 0.1f
-                        under.view.alpha = 0f
-                    }
-                    under.view.animate().translationX(0f).alpha(1f).setDuration(260).setInterpolator(EMPHASIZED).start()
-                } else {
-                    under.view.translationX = 0f
-                    under.view.alpha = 1f
-                }
-                val out = popped.view.animate().setDuration(if (popped.modal) 220 else 260).setInterpolator(EMPHASIZED).withEndAction {
-                    detach(popped.view)
-                    Runtime.removeRoot(popped.node)
-                    popped.view.scaleX = 1f
-                    popped.view.scaleY = 1f
-                }
-                if (popped.full) out.alpha(0f).scaleX(0.94f).scaleY(0.94f) else if (popped.modal) out.translationY(height) else out.translationX(width * 0.3f).alpha(0f)
-                out.start()
+                under.page.animate().translationX(0f).scaleX(1f).scaleY(1f).setDuration(POP_MS).setInterpolator(EMPHASIZED_DECELERATE).withLayer().start()
+                popped.page.elevation = px(6.0)
+                popped.page.animate().translationX(width).setDuration(POP_MS).setInterpolator(EMPHASIZED_DECELERATE).withLayer()
+                    .withEndAction { detach(popped.page); settle(popped.page); Runtime.removeRoot(popped.node) }.start()
             }
             else -> {
-                // Another tab, a reset: no transition, and no sheet survives it.
+                // Another tab, a reset: no sheet survives it. A new tab's page fades through.
+                for (other in stacks) for (e in other) if (e.dialog != null && e !in stack) closeDialog(e, animated = false) {}
                 for (i in root.childCount - 1 downTo 1) root.removeViewAt(i)
                 content.removeAllViews()
-                under.view.translationX = 0f
-                under.view.alpha = 1f
-                detach(under.view)
-                content.addView(under.view)
-                for (e in stack) if (e.modal) {
-                    detach(e.view)
-                    e.view.translationY = 0f
-                    e.view.alpha = 1f
-                    e.view.scaleX = 1f
-                    e.view.scaleY = 1f
-                    root.addView(e.view)
+                settle(under.page)
+                detach(under.page)
+                content.addView(under.page)
+                if (direction == 0) {
+                    under.page.alpha = 0f
+                    under.page.scaleX = 0.98f
+                    under.page.scaleY = 0.98f
+                    under.page.animate().alpha(1f).scaleX(1f).scaleY(1f).setDuration(210).setInterpolator(EMPHASIZED_DECELERATE).withLayer().start()
+                }
+                for (e in stack) if (e.sheet) {
+                    if (e.dialog == null) openDialog(e, animated = false)
+                } else if (e.modal) {
+                    settle(e.page)
+                    detach(e.page)
+                    root.addView(e.page)
                 }
             }
         }
-        bar.title = under.title
-        bar.visibility = if (under.header) View.VISIBLE else View.GONE
-        val backable = stack.indexOf(under) > 0
-        bar.navigationIcon = if (backable) PathIcon.tab("back", px(24.0).roundToInt()) else null
         nav?.let {
             selecting = true
             it.selectedItemId = active
@@ -2919,13 +3024,106 @@ class NRouter(private val routes: List<NRoute>, private val tabs: List<NTab> = e
 
     internal fun navBar(): View? = nav
 
+    /** The screen's bar buttons (`barButton`), as text actions in the accent. */
+    private fun setActions(toolbar: androidx.appcompat.widget.Toolbar, actions: List<NativeAction>) {
+        toolbar.menu.clear()
+        actions.forEachIndexed { i, a ->
+            // Material's text button, as a full-screen dialog's confirming action is.
+            val button = com.google.android.material.button.MaterialButton(toolbar.context, null, androidx.appcompat.R.attr.borderlessButtonStyle).apply {
+                text = a.label
+                isAllCaps = false
+                setTextColor(Color.parseColor(Chrome.accent))
+                setTextAppearance(com.google.android.material.R.style.TextAppearance_Material3_LabelLarge)
+                setTextColor(Color.parseColor(Chrome.accent))
+                setOnClickListener { a.run(); Runtime.update(emptyList()) }
+            }
+            toolbar.menu.add(0, i, i, a.label).apply {
+                setShowAsAction(android.view.MenuItem.SHOW_AS_ACTION_ALWAYS)
+                actionView = button
+            }
+        }
+    }
+
+    /**
+     * A modal screen as Material's full-screen dialog: a top app bar with a close button, the title, and the
+     * screen's action, over the whole window; it slides up. Back (or the close button) pops it.
+     */
+    private fun openDialog(e: Entry, animated: Boolean) {
+        val ctx = NativeUi.themed()
+        val a = Runtime.activity
+        val theme = a.resources.getIdentifier("Nuclo_${if (Chrome.dark) "Dark" else "Light"}_${Chrome.accent.removePrefix("#").lowercase()}", "style", a.packageName)
+        // A full theme, not a dialog's: the window is not floating, it covers the screen.
+        val dialog = android.app.Dialog(ctx, if (theme != 0) theme else com.google.android.material.R.style.Theme_Material3_Light_NoActionBar)
+        val text = if (Chrome.dark) Color.WHITE else Color.BLACK
+        val toolbar = com.google.android.material.appbar.MaterialToolbar(ctx).apply {
+            title = e.title
+            setTitleTextAppearance(ctx, com.google.android.material.R.style.TextAppearance_Material3_TitleLarge)
+            setTitleTextColor(text)
+            navigationIcon = PathIcon.tab("close", px(24.0).roundToInt())
+            setNavigationIconTint(text)
+            navigationContentDescription = "Close"
+            setNavigationOnClickListener { back() }
+        }
+        setActions(toolbar, e.actions)
+        (e.view.parent as? ViewGroup)?.removeView(e.view)
+        e.view.translationX = 0f
+        e.view.translationY = 0f
+        e.view.alpha = 1f
+        val column = LinearLayout(ctx).apply {
+            orientation = LinearLayout.VERTICAL
+            setBackgroundColor(Color.parseColor(Chrome.background))
+            addView(toolbar, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT))
+            addView(e.view, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f))
+            setOnApplyWindowInsetsListener { v, insets ->
+                val bars = insets.getInsets(WindowInsets.Type.systemBars() or WindowInsets.Type.ime())
+                v.setPadding(bars.left, bars.top, bars.right, bars.bottom)
+                WindowInsets.CONSUMED
+            }
+        }
+        dialog.setContentView(column)
+        dialog.setCancelable(false)
+        dialog.window?.apply {
+            setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+            setDecorFitsSystemWindows(false)
+            setWindowAnimations(0)
+            // See-through: only the page that slides up is painted, so the screen under it stays until covered.
+            setBackgroundDrawable(android.graphics.drawable.ColorDrawable(Color.TRANSPARENT))
+            statusBarColor = Color.TRANSPARENT
+            navigationBarColor = Color.TRANSPARENT
+            val light = android.view.WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS or android.view.WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS
+            insetsController?.setSystemBarsAppearance(if (Chrome.dark) 0 else light, light)
+        }
+        dialog.onBackInvokedDispatcher.registerOnBackInvokedCallback(OnBackInvokedDispatcher.PRIORITY_DEFAULT) { back() }
+        dialog.setOnKeyListener { _, code, event ->
+            if (code == android.view.KeyEvent.KEYCODE_BACK && event.action == android.view.KeyEvent.ACTION_UP) back()
+            code == android.view.KeyEvent.KEYCODE_BACK
+        }
+        e.dialog = dialog
+        dialog.show()
+        if (animated) {
+            column.translationY = Runtime.activity.resources.displayMetrics.heightPixels.toFloat()
+            column.animate().translationY(0f).setDuration(PUSH_MS).setInterpolator(EMPHASIZED_DECELERATE).withLayer().start()
+        }
+    }
+
+    private fun closeDialog(e: Entry, animated: Boolean = true, then: () -> Unit) {
+        val dialog = e.dialog ?: return then()
+        e.dialog = null
+        val column = (e.view.parent as? View)
+        fun finish() {
+            (e.view.parent as? ViewGroup)?.removeView(e.view)
+            dialog.dismiss()
+            then()
+        }
+        if (animated && column != null) {
+            column.animate().translationY(column.height.toFloat()).setDuration(250).setInterpolator(EMPHASIZED_ACCELERATE).withLayer().withEndAction { finish() }.start()
+        } else finish()
+    }
+
     /** nuclo-native-ns: the bars in the colours of [Chrome] (the app's mode and accent). */
     internal fun paintChrome() {
-        if (!::bar.isInitialized) return
         val text = if (Chrome.dark) Color.WHITE else Color.BLACK
-        bar.setBackgroundColor(Color.parseColor(Chrome.background))
-        bar.setTitleTextColor(text)
-        bar.setNavigationIconTint(text)
+        for (stack in stacks) for (e in stack) paintPage(e)
         nav?.let { n ->
             val accent = Color.parseColor(Chrome.accent)
             val muted = Color.parseColor(if (Chrome.dark) "#9a9aa0" else "#5f5f66")
@@ -2937,30 +3135,48 @@ class NRouter(private val routes: List<NRoute>, private val tabs: List<NTab> = e
         }
     }
 
-    /** The predictive back gesture (Android 14+): the top screen follows the finger; let go to pop, or it settles back. */
+    /**
+     * The predictive back gesture (Android 14+), as Material's full-screen pattern: the page shrinks toward the
+     * edge with rounded corners while the page under it comes out of its parallax; let go to pop, or it settles.
+     */
     internal fun backProgress(progress: Float) {
         val stack = stacks[active]
         if (stack.size < 2) return
         val top = stack.last()
-        val under = screenOf(stack)
-        if (!top.modal && under.view.parent !== content) {
-            (under.view.parent as? ViewGroup)?.removeView(under.view)
-            content.addView(under.view, 0)
+        if (top.modal) return
+        val under = screenOf(stack.dropLast(1))
+        val width = root.width.toFloat()
+        if (under.page.parent !== content) {
+            (under.page.parent as? ViewGroup)?.removeView(under.page)
+            content.addView(under.page, 0)
+            under.page.alpha = 1f
         }
-        if (!top.modal) {
-            under.view.alpha = progress
-            under.view.translationX = -root.width * 0.1f * (1f - progress)
-        }
+        under.page.translationX = -width * PARALLAX * (1f - progress)
         val scale = 1f - 0.1f * progress
-        top.view.scaleX = scale
-        top.view.scaleY = scale
-        top.view.translationX = if (top.modal) 0f else root.width * 0.05f * progress
+        top.page.scaleX = scale
+        top.page.scaleY = scale
+        top.page.translationX = width * 0.04f * progress
+        top.page.elevation = px(6.0)
+        val radius = px(28.0) * progress
+        top.page.outlineProvider = object : ViewOutlineProvider() {
+            override fun getOutline(view: View, outline: android.graphics.Outline) = outline.setRoundRect(0, 0, view.width, view.height, radius)
+        }
+        top.page.clipToOutline = true
     }
 
     internal fun backCancelled() {
         val stack = stacks[active]
         val top = stack.last()
-        top.view.animate().scaleX(1f).scaleY(1f).translationX(0f).setDuration(200).setInterpolator(EMPHASIZED).withEndAction { if (!top.modal) keepOnly(top.view) }.start()
+        if (top.modal) return
+        val under = screenOf(stack.dropLast(1))
+        val width = root.width.toFloat()
+        under.page.animate().translationX(-width * PARALLAX).setDuration(200).setInterpolator(EMPHASIZED_DECELERATE).start()
+        top.page.animate().scaleX(1f).scaleY(1f).translationX(0f).setDuration(200).setInterpolator(EMPHASIZED_DECELERATE).withEndAction {
+            top.page.clipToOutline = false
+            top.page.elevation = 0f
+            under.page.translationX = 0f
+            keepOnly(top.page)
+        }.start()
     }
 
     private fun keepOnly(view: View) {
@@ -2970,14 +3186,51 @@ class NRouter(private val routes: List<NRoute>, private val tabs: List<NTab> = e
     private fun entry(path: String): Entry {
         for (route in routes) {
             val params = route.match(path) ?: continue
+            Chrome.barActions.clear()
             val node = route.view(params)
+            val actions = Chrome.barActions.toList()
+            Chrome.barActions.clear()
             Runtime.addRoot(node)
             val end = route.onEndReached?.let { { it(params) } }
-            return Entry(path, node, screenView(Runtime.activity, node, end), route.title?.invoke(params) ?: "", route.presentation == "modal" || route.presentation == "full", route.header, route.presentation == "full")
+            return paged(Entry(path, node, screenView(Runtime.activity, node, end), route.title?.invoke(params) ?: "", route.presentation == "modal" || route.presentation == "full", route.header, route.presentation == "full", actions))
         }
         val node = p(A.text("No route matches $path"))
         Runtime.addRoot(node)
-        return Entry(path, node, screenView(Runtime.activity, node), "Not found", false, true)
+        return paged(Entry(path, node, screenView(Runtime.activity, node), "Not found", false, true))
+    }
+
+    /** A pushed screen's page: its own top app bar over it, on the screen's background. */
+    private fun paged(e: Entry): Entry {
+        if (e.modal || !e.header) {
+            e.page = e.view
+            if (!e.modal) e.view.setBackgroundColor(Color.parseColor(Chrome.background))
+            return e
+        }
+        val ctx = Runtime.activity
+        val toolbar = com.google.android.material.appbar.MaterialToolbar(ctx).apply {
+            title = e.title
+            navigationContentDescription = "Back"
+            setNavigationOnClickListener { back() }
+            setTitleTextAppearance(ctx, com.google.android.material.R.style.TextAppearance_Material3_TitleLarge)
+        }
+        setActions(toolbar, e.actions)
+        e.toolbar = toolbar
+        e.page = LinearLayout(ctx).apply {
+            orientation = LinearLayout.VERTICAL
+            addView(toolbar, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT))
+            addView(e.view, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f))
+        }
+        paintPage(e)
+        return e
+    }
+
+    private fun paintPage(e: Entry) {
+        val text = if (Chrome.dark) Color.WHITE else Color.BLACK
+        e.page.setBackgroundColor(Color.parseColor(Chrome.background))
+        e.toolbar?.apply {
+            setTitleTextColor(text)
+            setNavigationIconTint(text)
+        }
     }
 
     private fun tabOf(path: String): Int {
@@ -3084,6 +3337,7 @@ class PathIcon(d: String, private val strokeWidth: Float = 1.8f, private var str
             "settings" to "M4 7 H14 M18 7 H20 M4 17 H6 M10 17 H20 M16 5 V9 M8 15 V19",
             "list" to "M4 7 H20 M4 12 H20 M4 17 H20",
             "back" to "M20 12 H4.5 M10.5 5.5 L4 12 L10.5 18.5",
+            "close" to "M6 6 L18 18 M18 6 L6 18",
             "dot" to "M12 9 C13.66 9 15 10.34 15 12 C15 13.66 13.66 15 12 15 C10.34 15 9 13.66 9 12 C9 10.34 10.34 9 12 9 Z",
         )
     }

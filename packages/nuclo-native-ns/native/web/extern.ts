@@ -617,7 +617,25 @@ export const nativeSheet = (_t: string, _d: string, _c: () => unknown) => false;
 export const nativeCloseSheet = () => false;
 export const nativeToast = (_t: string) => false;
 // Of the controls, a browser has its own slider (a range input); kit.ns draws the segmented control and chips.
-export const hasControl = (kind: string) => kind === "slider";
+export const hasControl = (kind: string) => kind === "slider" || kind === "search";
+// The app bar here is drawn by this renderer: a screen shows its own button.
+export const barButton = (_l: string, _r: () => void) => false;
+export const shareText = (text: string) => {
+  if (!navigator.share) return false;
+  navigator.share({ url: text }).catch(() => {});
+  return true;
+};
+export const copyText = (text: string) => { navigator.clipboard?.writeText(text).catch(() => {}); };
+export const buttonControl = (_l: () => string, _k: () => string, _r: () => void): View => div();
+export const spinnerControl = (): View => div();
+export const stepperControl = (_v: () => number, _min: number, _max: number, _c: (v: number) => void): View => div();
+export const searchControl = (placeholder: string, value: () => string, typed: (v: string) => void, submit: (v: string) => void): View =>
+  input({
+    type: "search", placeholder, value: () => value(), enterKeyHint: "search",
+    style: { width: "100%", height: "40px", padding: "0 12px", borderRadius: "12px", backgroundColor: "var(--nn-fill, rgba(120,120,128,0.12))" } as never,
+    onInput: (e: Event) => typed((e.target as HTMLInputElement).value),
+    onKeyDown: (e: KeyboardEvent) => { if (e.key === "Enter") submit((e.target as HTMLInputElement).value); },
+  });
 export const segmentedControl = (_o: string[], _a: () => number, _p: (i: number) => void): View => div();
 export const chipControl = (_l: string, _on: () => boolean, _p: () => void): View => div();
 export const sliderControl = (value: () => number, color: string, change: (v: number) => void): View =>

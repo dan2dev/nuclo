@@ -246,7 +246,29 @@ fun nativeSheet(title: String, detent: String, content: () -> View): Boolean {
   return true
 }
 
-fun hasControl(kind: String): Boolean = kind == "segmented" || kind == "chip" || kind == "slider"
+fun hasControl(kind: String): Boolean = kind in setOf("segmented", "chip", "slider", "button", "spinner", "search")
+
+fun buttonControl(label: () -> String, kind: () -> String, run: () -> Unit): View = dev.nuclo.runtime.NativeControls.button(label, kind, run)
+
+fun spinnerControl(): View = dev.nuclo.runtime.NativeControls.spinner()
+
+fun searchControl(placeholder: String, value: () -> String, input: (String) -> Unit, submit: (String) -> Unit): View =
+  dev.nuclo.runtime.NativeControls.search(placeholder, value, input, submit)
+
+/** Android has no stepper: kit.ns draws one. */
+fun stepperControl(value: () -> Int, min: Int, max: Int, change: (Int) -> Unit): View = dev.nuclo.runtime.div()
+
+fun barButton(label: String, run: () -> Unit): Boolean {
+  dev.nuclo.runtime.Chrome.barActions.add(dev.nuclo.runtime.NativeAction(label, "default", run))
+  return true
+}
+
+fun shareText(text: String): Boolean {
+  dev.nuclo.runtime.NativeUi.share(text)
+  return true
+}
+
+fun copyText(text: String) = dev.nuclo.runtime.NativeUi.copy(text)
 
 fun segmentedControl(options: NList<String>, at: () -> Int, pick: (Int) -> Unit): View =
   dev.nuclo.runtime.NativeControls.segmented(options.toList(), at, pick)

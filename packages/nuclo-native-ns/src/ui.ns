@@ -275,7 +275,21 @@ export extern fn nativeMenu(x: float, y: float, title: string, actions: Action[]
 export extern fn nativeSheet(title: string, detent: string, content: () => View): bool
 /** Closes the native sheet on top; false when there is none. */
 export extern fn nativeCloseSheet(): bool
-/** Whether the platform has its own control `kind`: "segmented", "chip", or "slider". Where not, kit.ns draws one. */
+/**
+ * Adds a button to the navigation bar of the screen being built: call it in a route's view function. A modal
+ * screen shows it as its confirming action (Save, Share, Done), with a close button on the other side. False
+ * where the platform's bar cannot hold one: the screen shows the button itself then.
+ */
+export extern fn barButton(label: string, run: () => void): bool
+/** The platform's share sheet for `text` (a link); false where it has none. */
+export extern fn shareText(text: string): bool
+/** Puts `text` on the clipboard. */
+export extern fn copyText(text: string)
+
+/**
+ * Whether the platform has its own control `kind`: "segmented", "chip", "slider", "button", "spinner", "search",
+ * or "stepper". Where not, kit.ns draws one.
+ */
 export extern fn hasControl(kind: string): bool
 /** The platform's segmented control (Android's segmented buttons, UISegmentedControl, GTK's linked toggles). */
 export extern fn segmentedControl(options: string[], at: () => int, pick: (int) => void): View
@@ -283,6 +297,14 @@ export extern fn segmentedControl(options: string[], at: () => int, pick: (int) 
 export extern fn chipControl(label: string, on: () => bool, pick: () => void): View
 /** The platform's slider, of 0…1, in `color` ("" for the accent). */
 export extern fn sliderControl(value: () => float, color: string, change: (float) => void): View
+/** The platform's button: `kind` "filled", "tonal", "danger", "small" (filled), or "smallTonal". */
+export extern fn buttonControl(label: () => string, kind: () => string, run: () => void): View
+/** The platform's activity indicator. */
+export extern fn spinnerControl(): View
+/** The platform's search field. */
+export extern fn searchControl(placeholder: string, value: () => string, input: (string) => void, submit: (string) => void): View
+/** The platform's stepper of whole numbers from `min` to `max`. */
+export extern fn stepperControl(value: () => int, min: int, max: int, change: (int) => void): View
 /** A short message (Android's snackbar, GTK's toast). */
 export extern fn nativeToast(text: string): bool
 

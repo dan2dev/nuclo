@@ -241,6 +241,31 @@ pub struct Screen<'a> {
     pub modal: bool,
     /// `false` hides the navigation bar on this screen.
     pub header: bool,
+    /// nuclo-native-ns: the buttons of its bar (`barButton`), the last its main action.
+    pub actions: &'a [BarAction],
+}
+
+/// A button of a screen's navigation bar.
+#[derive(Clone)]
+pub struct BarAction {
+    pub label: String,
+    pub run: std::rc::Rc<dyn Fn()>,
+}
+
+thread_local!(static BAR: std::cell::RefCell<Vec<BarAction>> = const { std::cell::RefCell::new(Vec::new()) });
+
+/// nuclo-native-ns: adds a button to the bar of the screen being built; false where the backend's bar has none.
+pub fn bar_button(label: &str, run: std::rc::Rc<dyn Fn()>) -> bool {
+    if !backend().has_bar_buttons() {
+        return false;
+    }
+    BAR.with(|bar| bar.borrow_mut().push(BarAction { label: label.to_string(), run }));
+    true
+}
+
+/// The bar buttons added since the last call.
+pub(crate) fn take_bar_buttons() -> Vec<BarAction> {
+    BAR.with(|bar| std::mem::take(&mut *bar.borrow_mut()))
 }
 
 pub trait Backend {
@@ -346,6 +371,17 @@ pub trait Backend {
     // nuclo-native-ns: the platform's own components. Each gives false where the backend has none (GPUI
     // draws every view itself): the app draws its own then. `items` are (label, kind) pairs, kind one of
     // "default", "destructive", "cancel", "checked", "submenu"; `done` gets the index of the chosen one.
+
+    /// Whether screens' bars show `barButton`s.
+    fn has_bar_buttons(&self) -> bool {
+        false
+    }
+    /// The platform's share sheet; false where there is none.
+    fn native_share(&self, _text: &str) -> bool {
+        false
+    }
+    /// Puts `text` on the clipboard.
+    fn copy_text(&self, _text: &str) {}
 
     /// An alert dialog.
     fn native_alert(&self, _title: &str, _message: &str, _items: &[(String, String)], _done: Box<dyn Fn(usize)>) -> bool {

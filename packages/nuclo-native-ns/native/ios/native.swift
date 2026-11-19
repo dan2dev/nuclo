@@ -304,8 +304,31 @@ public func nativeCloseSheet() -> Bool {
   ui { Nuclo.NativeUi.closeSheet() }
 }
 
+public func barButton(_ label: String, _ run: @escaping () -> Void) -> Bool {
+  #if canImport(UIKit)
+  ui { Nuclo.NativeUi.barActions.append(Nuclo.NativeAction(label, "default", run)) }
+  return true
+  #else
+  return false
+  #endif
+}
+
+public func shareText(_ text: String) -> Bool { ui { Nuclo.NativeUi.share(text) } }
+public func copyText(_ text: String) { ui { Nuclo.NativeUi.copy(text) } }
+
 #if canImport(UIKit)
-public func hasControl(_ kind: String) -> Bool { kind == "segmented" || kind == "chip" || kind == "slider" }
+public func hasControl(_ kind: String) -> Bool { ["segmented", "chip", "slider", "button", "spinner", "search", "stepper"].contains(kind) }
+
+public func buttonControl(_ label: @escaping () -> String, _ kind: @escaping () -> String, _ run: @escaping () -> Void) -> View {
+  ui { Nuclo.NativeControls.button(label, kind, run) }
+}
+public func spinnerControl() -> View { ui { Nuclo.NativeControls.spinner() } }
+public func searchControl(_ placeholder: String, _ value: @escaping () -> String, _ input: @escaping (String) -> Void, _ submit: @escaping (String) -> Void) -> View {
+  ui { Nuclo.NativeControls.search(placeholder, value, input, submit) }
+}
+public func stepperControl(_ value: @escaping () -> Int32, _ min: Int32, _ max: Int32, _ change: @escaping (Int32) -> Void) -> View {
+  ui { Nuclo.NativeControls.stepper(value, min, max, change) }
+}
 
 public func segmentedControl(_ options: [String], _ at: @escaping () -> Int32, _ pick: @escaping (Int32) -> Void) -> View {
   ui { Nuclo.NativeControls.segmented(options, at, pick) }
@@ -324,6 +347,10 @@ public func hasControl(_ kind: String) -> Bool { false }
 public func segmentedControl(_ options: [String], _ at: @escaping () -> Int32, _ pick: @escaping (Int32) -> Void) -> View { ui { Nuclo.div() } }
 public func chipControl(_ label: String, _ on: @escaping () -> Bool, _ pick: @escaping () -> Void) -> View { ui { Nuclo.div() } }
 public func sliderControl(_ value: @escaping () -> Double, _ color: String, _ change: @escaping (Double) -> Void) -> View { ui { Nuclo.div() } }
+public func buttonControl(_ label: @escaping () -> String, _ kind: @escaping () -> String, _ run: @escaping () -> Void) -> View { ui { Nuclo.div() } }
+public func spinnerControl() -> View { ui { Nuclo.div() } }
+public func searchControl(_ placeholder: String, _ value: @escaping () -> String, _ input: @escaping (String) -> Void, _ submit: @escaping (String) -> Void) -> View { ui { Nuclo.div() } }
+public func stepperControl(_ value: @escaping () -> Int32, _ min: Int32, _ max: Int32, _ change: @escaping (Int32) -> Void) -> View { ui { Nuclo.div() } }
 #endif
 
 /// Neither UIKit nor AppKit has a toast: kit.ns draws it.

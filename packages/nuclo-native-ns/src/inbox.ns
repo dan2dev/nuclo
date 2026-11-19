@@ -6,8 +6,8 @@ import { t, space, font, themed } from "./theme"
 import { Notice, Chat, Message, notices, chats, users, user, chat, messagesOf, findPost, photoUrl, ago } from "./data"
 import { isFollowing, toggleFollow, sentIn, send } from "./state"
 import {
-  page, fixedPage, column, row, grow, headline, sub, footnote, caption, strongText, body, smallBtn,
-  smallGhostBtn, avatar, segmented, empty, toast, menuAt, act, destructive, badge, divider,
+  page, fixedPage, column, row, grow, headline, sub, footnote, caption, strongText, body, avatar, segmented, empty,
+  toast, menuAt, act, destructive, badge, divider, smallButton,
 } from "./kit"
 
 // ---- activity ------------------------------------------------------------------------------------
@@ -53,9 +53,7 @@ fn noticeCell(n: Notice): View {
     { onClick: () => go(n.kind == "follow" ? `/user/${u.id}` : `/post/${n.post}`) },
     div(avatar(u.avatar, 44), span(kindDot, css({ backgroundColor: dotColor(n.kind) }), dotGlyph(n.kind))),
     p(noticeText, noticeLine(n)),
-    when(() => n.kind == "follow", () => button(() => isFollowing(u.id) ? smallGhostBtn() : smallBtn(), () => isFollowing(u.id) ? "Following" : "Follow back", {
-      onClick: () => { toggleFollow(u.id); haptic("light"); update() },
-    })),
+    when(() => n.kind == "follow", () => smallButton(() => isFollowing(u.id) ? "Following" : "Follow back", () => !(isFollowing(u.id)), () => { toggleFollow(u.id); haptic("light"); update() })),
     when(() => n.kind != "follow", () => div(thumb, img(fill, { src: photoUrl(postPhoto(n.post), 44) }))),
   )
 }
@@ -137,8 +135,8 @@ fn requestCell(id: string): View {
       avatar(u.avatar, 48),
       div(grow, p(strongText, u.handle), p(footnote, u.name)),
       div(reqButtons,
-        button(smallBtn, "Confirm", { onClick: () => answer(id, true) }),
-        button(smallGhostBtn, "Delete", { onClick: () => answer(id, false) }),
+        smallButton(() => "Confirm", () => true, () => answer(id, true)),
+        smallButton(() => "Delete", () => false, () => answer(id, false)),
       ),
     ),
   )

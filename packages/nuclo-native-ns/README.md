@@ -24,7 +24,7 @@ src/*.ns ──nns --target ts────▶ build/web ──bun─────
 ## The platform's own components
 
 `kit.ns` asks the platform first (`nativeAlert`, `nativeActions`, `nativeMenu`, `nativeSheet`, `nativeToast`, `nativeCloseSheet`,
-and `hasControl` with `segmentedControl`, `chipControl`, `sliderControl` in `ui.ns`) and draws its own only where the platform
+`barButton`, `shareText`, `copyText`, and `hasControl` with the `…Control` builders in `ui.ns`) and draws its own only where the platform
 has none. On GTK the controls take the app's accent through libadwaita's accent colours (`native/linux/controls.rs`).
 
 | | Android (Material 3, `material` 1.14.0) | iOS | macOS | GTK (libadwaita) | web, GPUI |
@@ -38,6 +38,13 @@ has none. On GTK the controls take the app's accent through libadwaita's accent 
 | segmented | MaterialButtonToggleGroup | UISegmentedControl | drawn | AdwToggleGroup | drawn |
 | chip | Material filter Chip | toggle button (UIButton.Configuration) | drawn | GtkToggleButton | drawn |
 | slider | Material Slider | UISlider | drawn | GtkScale | range input (web), drawn (GPUI) |
+| modal screen | full-screen dialog: close button, title, text action | page sheet in a navigation bar: Cancel, bold action | window sheet | AdwDialog with a header bar | drawn sheet |
+| bar buttons (`barButton`) | toolbar text buttons | UIBarButtonItems | in the screen | header bar buttons | in the screen |
+| button | MaterialButton (filled, tonal) | UIButton.Configuration | drawn | GtkButton (suggested, destructive, pill) | drawn |
+| spinner | CircularProgressIndicator | UIActivityIndicatorView | drawn | AdwSpinner | drawn |
+| search field | SearchView | UISearchTextField | drawn | GtkSearchEntry | search input |
+| stepper | drawn (Material has none) | UIStepper | drawn | GtkSpinButton | drawn |
+| share, copy | share sheet, ClipboardManager | UIActivityViewController, UIPasteboard | NSSharingServicePicker, NSPasteboard | the clipboard (no share sheet) | Web Share, Clipboard API |
 
 The Android app's mode and accent reach these through the `Nuclo.Light_…` and `Nuclo.Dark_…` themes of
 `hosts/android/app/src/main/res/values/accents.xml`.

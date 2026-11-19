@@ -315,7 +315,22 @@ impl Gtk {
     fn framed(&self, screen: &Screen) -> adw::ToolbarView {
         let toolbar = adw::ToolbarView::new();
         if screen.header {
-            toolbar.add_top_bar(&adw::HeaderBar::new());
+            let bar = adw::HeaderBar::new();
+            // nuclo-native-ns: the screen's buttons at the end of the header bar, the last one suggested.
+            let count = screen.actions.len();
+            for (i, action) in screen.actions.iter().enumerate().rev() {
+                let button = gtk::Button::with_label(&action.label);
+                if i + 1 == count {
+                    button.add_css_class("suggested-action");
+                }
+                let run = action.run.clone();
+                button.connect_clicked(move |_| {
+                    run();
+                    crate::nuclo::prelude::update(&[]);
+                });
+                bar.pack_end(&button);
+            }
+            toolbar.add_top_bar(&bar);
         }
         toolbar.set_content(Some(&self.screen(screen.root)));
         toolbar
@@ -557,7 +572,7 @@ impl Backend for Gtk {
     }
 
     fn native_sheet(&self, root: ViewId, title: &str, detent: &str, closed: Box<dyn Fn()>) -> bool {
-        let screen = Screen { root, title, modal: true, header: true };
+        let screen = Screen { root, title, modal: true, header: true, actions: &[] };
         let height = if detent == "large" { (self.window.height() - 40).max(400) } else { (self.window.height() as f32 * 0.55) as i32 };
         let dialog = adw::Dialog::builder().title(if title.is_empty() { " " } else { title }).child(&self.framed(&screen)).content_width(420).content_height(height).build();
         dialog.connect_closed(move |d| {
@@ -575,6 +590,14 @@ impl Backend for Gtk {
         let Some(dialog) = self.sheets.borrow_mut().pop() else { return false };
         dialog.close();
         true
+    }
+
+    fn has_bar_buttons(&self) -> bool {
+        true
+    }
+
+    fn copy_text(&self, text: &str) {
+        self.window.clipboard().set_text(text);
     }
 
     fn native_toast(&self, text: &str) -> bool {
@@ -1046,7 +1069,7 @@ impl Backend for Gtk {
     }
 
     fn show_screen(&self, root: ViewId) {
-        self.layers.set_child(Some(&self.framed(&Screen { root, title: "", modal: false, header: true })));
+        self.layers.set_child(Some(&self.framed(&Screen { root, title: "", modal: false, header: true, actions: &[] })));
     }
 
     fn show_overlay(&self, root: ViewId) {

@@ -5,7 +5,7 @@
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 
-use super::backend::{backend, Screen, TabInfo, ViewId};
+use super::backend::{backend, BarAction, Screen, TabInfo, ViewId};
 use super::js::Map;
 use super::node::{self, p, Node, Params, A};
 
@@ -68,6 +68,7 @@ struct Entry {
     title: String,
     modal: bool,
     header: bool,
+    actions: Vec<BarAction>,
 }
 
 impl Entry {
@@ -76,7 +77,7 @@ impl Entry {
     }
 
     fn screen(&self) -> Screen<'_> {
-        Screen { root: self.view(), title: &self.title, modal: self.modal, header: self.header }
+        Screen { root: self.view(), title: &self.title, modal: self.modal, header: self.header || self.modal, actions: &self.actions }
     }
 }
 
@@ -199,16 +200,18 @@ impl Router {
 
     fn entry(&self, path: &str) -> Entry {
         let found = self.0.routes.iter().find_map(|route| route.matches(path).map(|params| (route, params)));
+        let _ = super::backend::take_bar_buttons();
         let (node, title, modal, header) = match &found {
             Some((route, params)) => ((route.view)(params.clone()), route.title.as_ref().map_or_else(String::new, |title| title(params.clone())), route.modal, route.header),
             None => (p(vec![A::text(&format!("No route matches {path}"))]), "Not found".to_string(), false, true),
         };
+        let actions = super::backend::take_bar_buttons();
         node::add_root(&node, false, false);
         if let Some((Route { on_end_reached: Some(end), .. }, params)) = found {
             let (end, params) = (end.clone(), params);
             node::on_end_reached(&node, Rc::new(move || end(params.clone())));
         }
-        Entry { path: path.to_string(), node, title, modal, header }
+        Entry { path: path.to_string(), node, title, modal, header, actions }
     }
 
     /// The tab whose path owns `path`: the longest prefix wins.
