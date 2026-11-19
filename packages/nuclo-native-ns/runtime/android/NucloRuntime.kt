@@ -39,6 +39,7 @@ import android.util.Log
 import android.util.TypedValue
 import android.view.Choreographer
 import android.view.GestureDetector
+import android.view.HapticFeedbackConstants
 import android.view.Gravity
 import android.view.MotionEvent
 import android.view.ScaleGestureDetector
@@ -695,7 +696,8 @@ class Node internal constructor(internal val kind: Kind, internal val tag: Strin
                 isSingleLine = true
                 imeOptions = EditorInfo.IME_ACTION_DONE
             }
-            Kind.Checkbox -> android.widget.Switch(ctx) // nuclo-native-ns: the platform's switch
+            // nuclo-native-ns: the platform's switch, Material 3's, in the accent.
+            Kind.Checkbox -> com.google.android.material.materialswitch.MaterialSwitch(NativeUi.themed())
             Kind.Textarea -> EditText(ctx).apply { background = null; inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_MULTI_LINE }
             Kind.Image -> ImageView(ctx).apply { scaleType = ImageView.ScaleType.CENTER_CROP }
             Kind.Native -> native
@@ -816,6 +818,12 @@ class Node internal constructor(internal val kind: Kind, internal val tag: Strin
     }
 
     internal val scrolls get() = view !== flex && flex != null
+
+    /**
+     * A screen that scrolls itself: its root is a scroller, or has one as a child (a chat's thread over a
+     * fixed composer, a list under a header that stays). The page around it does not scroll then.
+     */
+    internal val scrollsItself get() = scrolls || (flex != null && children.flatMap { it.flatViews }.any { it.scrolls && it.view is ScrollView })
 
     /** The nearest node with a view: where this node's views are inserted. */
     private val host: Node?
@@ -977,6 +985,16 @@ class Node internal constructor(internal val kind: Kind, internal val tag: Strin
         }
     }
 
+    /** A field shows it has the keyboard with the accent's outline, in the field's own shape. */
+    private fun focusRing(v: EditText, radius: Float) {
+        val ring = android.graphics.drawable.GradientDrawable().apply {
+            cornerRadius = radius
+            setStroke(px(2.0).roundToInt(), Color.parseColor(Chrome.accent))
+        }
+        v.foreground = if (v.isFocused) ring else null
+        v.setOnFocusChangeListener { _, focused -> v.foreground = if (focused) ring else null }
+    }
+
     private fun paint(v: View, s: Style, before: Style?) {
         // A transition animates what changed since the last paint; the first paint is applied at once.
         val duration = if (before != null) (s.transitionDuration ?: 0.0).toLong() else 0L
@@ -987,6 +1005,7 @@ class Node internal constructor(internal val kind: Kind, internal val tag: Strin
         val widths = s.borders
         val border = widths.any { it > 0 }
         val radius = px(s.borderRadius ?: 0.0)
+        if (v is EditText) focusRing(v, radius)
         val animatesBackground = s.animation?.frames?.any { it.style.backgroundColor != null } == true
         if (bg != Color.TRANSPARENT || border || radius > 0 || s.hasShadow || animatesBackground) {
             val d = shape ?: Backdrop().also {
@@ -1073,7 +1092,7 @@ class Node internal constructor(internal val kind: Kind, internal val tag: Strin
         if (curve != null && before != null) resize(v, before, s, duration, delay, curve)
         if (s.animation != before?.animation) runAnimation(v, s)
 
-        if (v is TextView && kind != Kind.Native) paintText(v, s, before)
+        if (v is TextView && kind != Kind.Native && kind != Kind.Checkbox) paintText(v, s, before)
     }
 
     /**
@@ -1427,6 +1446,7 @@ internal class Touch(private val node: Node, private val view: View) : View.OnTo
             cancel.action = MotionEvent.ACTION_CANCEL
             view.onTouchEvent(cancel)
             cancel.recycle()
+            view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
             pointers["longPress"]?.invoke(pointer(e))
         }
 
@@ -1948,7 +1968,7 @@ internal class ScreenView(context: Context, val root: Node, private val onEndRea
 
 /** A screen around a root node: it scrolls, unless the root is itself a scrolling box. */
 internal fun screenView(context: Context, root: Node, onEndReached: (() -> Unit)? = null): View =
-    if (!root.scrolls) ScreenView(context, root, onEndReached)
+    if (!root.scrollsItself) ScreenView(context, root, onEndReached)
     else FrameLayout(context).apply {
         setBackgroundColor(screenBackground)
         addView(root.view, FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT))
@@ -2017,10 +2037,15 @@ object Runtime {
         rootLayout.setOnApplyWindowInsetsListener { v, insets ->
             val bars = insets.getInsets(WindowInsets.Type.systemBars() or WindowInsets.Type.ime())
             v.setPadding(bars.left, bars.top, bars.right, bars.bottom)
+            // The tab bar stays under the keyboard, as the platform's apps do: the screen gets the room.
+            onKeyboard?.invoke(insets.isVisible(WindowInsets.Type.ime()))
             WindowInsets.CONSUMED
         }
         activity.setContentView(rootLayout)
     }
+
+    /** Told when the keyboard shows or hides (the router hides its tab bar then). */
+    internal var onKeyboard: ((Boolean) -> Unit)? = null
 
     internal fun addRoot(node: Node) {
         roots.add(node)
@@ -2560,29 +2585,59 @@ object NativeUi {
         dialog.show()
     }
 
-    /** A popup menu at a point of the window, in dp (a point past the right edge: at the edge). */
-    fun menu(x: Double, y: Double, title: String, actions: List<NativeAction>) {
-        val content = Runtime.activity.findViewById<FrameLayout>(android.R.id.content)
-        val anchor = View(Runtime.activity)
-        val left = min(px(x), content.width - 1f).coerceAtLeast(0f)
-        content.addView(anchor, FrameLayout.LayoutParams(1, 1).apply {
-            leftMargin = left.roundToInt()
-            topMargin = px(y).roundToInt()
-        })
-        val popup = androidx.appcompat.widget.PopupMenu(themed(), anchor, if (left > content.width / 2) Gravity.END else Gravity.START)
+    private var menuAnchor: View? = null
+    private var captured: MutableList<NativeAction>? = null
+    /** True while a submenu's items are being collected (its menuAt opens nothing then). */
+    val capturing get() = captured != null
+
+    /** The items a submenu's action would open, collected instead of shown. */
+    private fun children(a: NativeAction): List<NativeAction> {
+        val items = mutableListOf<NativeAction>()
+        captured = items
+        try { a.run() } finally { captured = null }
+        return items
+    }
+
+    private fun fill(menu: android.view.Menu, actions: List<NativeAction>, nested: Boolean) {
+        val checks = actions.count { it.kind == "checked" || it.kind == "unchecked" }
+        // A list of choices with one picked is a radio group; check boxes otherwise.
+        val radio = checks == actions.size && actions.count { it.kind == "checked" } == 1
         actions.forEachIndexed { i, a ->
-            val label: CharSequence = when {
-                a.kind == "destructive" -> android.text.SpannableString(a.label).apply { setSpan(android.text.style.ForegroundColorSpan(danger), 0, length, 0) }
-                a.kind == "submenu" -> "${a.label}  ›"
+            if (a.kind == "cancel") return@forEachIndexed
+            // Android nests one level: deeper, the item opens its own menu.
+            val kids = if (a.kind == "submenu" && !nested) children(a) else emptyList()
+            if (kids.isNotEmpty()) {
+                val sub = menu.addSubMenu(0, android.view.Menu.NONE, i, a.label)
+                sub.setHeaderTitle(a.label)
+                fill(sub, kids, true)
+                return@forEachIndexed
+            }
+            val label: CharSequence = when (a.kind) {
+                "destructive" -> android.text.SpannableString(a.label).apply { setSpan(android.text.style.ForegroundColorSpan(danger), 0, length, 0) }
+                "submenu" -> "${a.label}…"
                 else -> a.label
             }
-            val item = popup.menu.add(0, i, i + 1, label)
-            if (a.kind == "checked") item.setCheckable(true).isChecked = true
+            val item = menu.add(if (radio) 1 else 0, android.view.Menu.NONE, i, label)
+            if (checks > 0 && (a.kind == "checked" || a.kind == "unchecked")) item.setCheckable(true).isChecked = a.kind == "checked"
+            item.setOnMenuItemClickListener { later(a); true }
         }
-        if (title.isNotEmpty()) popup.menu.add(0, -1, 0, title).isEnabled = false
-        popup.setOnMenuItemClickListener { item -> actions.getOrNull(item.itemId)?.let(::later); true }
-        popup.setOnDismissListener { content.removeView(anchor) }
-        // Laid out first, so the menu finds its anchor.
+        if (radio) menu.setGroupCheckable(1, true, true)
+    }
+
+    /** A popup menu at a point of the window, in dp (a point past the right edge: at the edge). */
+    fun menu(x: Double, y: Double, title: String, actions: List<NativeAction>) {
+        captured?.let { it.addAll(actions); return }
+        val content = Runtime.activity.findViewById<FrameLayout>(android.R.id.content)
+        val left = min(px(x), content.width - 1f).coerceAtLeast(0f)
+        // One anchor, kept: a submenu still points at it after its parent menu is gone.
+        val anchor = menuAnchor ?: View(Runtime.activity).also { menuAnchor = it; content.addView(it, FrameLayout.LayoutParams(1, 1)) }
+        anchor.layoutParams = (anchor.layoutParams as FrameLayout.LayoutParams).apply {
+            leftMargin = left.roundToInt()
+            topMargin = px(y).roundToInt()
+        }
+        val popup = androidx.appcompat.widget.PopupMenu(themed(), anchor, if (left > content.width / 2) Gravity.END else Gravity.START)
+        fill(popup.menu, actions, false)
+        // Laid out first, so the menu finds its anchor where it now is.
         anchor.post { popup.show() }
     }
 
@@ -2592,15 +2647,23 @@ object NativeUi {
         val ctx = dialog.context
         Runtime.addRoot(node)
         val screen = Runtime.activity.resources.displayMetrics.heightPixels
+        val radius = px(28.0)
         val column = LinearLayout(ctx).apply {
             orientation = LinearLayout.VERTICAL
             setBackgroundColor(Color.parseColor(Chrome.background))
+            // The sheet's rounded top corners, over the app's background.
+            outlineProvider = object : ViewOutlineProvider() {
+                override fun getOutline(view: View, outline: android.graphics.Outline) =
+                    outline.setRoundRect(0, 0, view.width, view.height + radius.roundToInt(), radius)
+            }
+            clipToOutline = true
             addView(handle(ctx))
             if (title.isNotEmpty()) addView(TextView(ctx).apply {
                 text = title
                 setTextAppearance(com.google.android.material.R.style.TextAppearance_Material3_TitleLarge)
                 setTextColor(if (Chrome.dark) Color.WHITE else Color.BLACK)
-                setPadding(px(24.0).roundToInt(), 0, px(24.0).roundToInt(), px(8.0).roundToInt())
+                // In line with the content's own padding.
+                setPadding(px(16.0).roundToInt(), 0, px(16.0).roundToInt(), px(4.0).roundToInt())
             })
             addView(screenView(Runtime.activity, node), LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f))
         }
@@ -2616,11 +2679,25 @@ object NativeUi {
                 state = com.google.android.material.bottomsheet.BottomSheetBehavior.STATE_COLLAPSED
             }
         }
-        // Edge to edge: the content stays clear of the navigation bar.
-        column.setOnApplyWindowInsetsListener { v, insets ->
-            v.setPadding(0, 0, 0, insets.getInsets(WindowInsets.Type.navigationBars() or WindowInsets.Type.ime()).bottom)
+        // The content ends where the sheet's visible part ends (half height too), clear of the navigation
+        // bar and the keyboard: what is below can be scrolled to, not left under the screen's edge.
+        var inset = 0
+        fun fit() {
+            val sheet = column.parent as? View ?: return
+            val parent = sheet.parent as? View ?: return
+            val hidden = (sheet.top + sheet.height - parent.height).coerceAtLeast(0)
+            column.setPadding(0, 0, 0, hidden + inset)
+        }
+        column.setOnApplyWindowInsetsListener { _, insets ->
+            inset = insets.getInsets(WindowInsets.Type.navigationBars() or WindowInsets.Type.ime()).bottom
+            fit()
             insets
         }
+        dialog.behavior.addBottomSheetCallback(object : com.google.android.material.bottomsheet.BottomSheetBehavior.BottomSheetCallback() {
+            override fun onStateChanged(sheet: View, state: Int) = fit()
+            override fun onSlide(sheet: View, offset: Float) = fit()
+        })
+        column.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ -> column.post { fit() } }
         sheets.add(dialog)
         dialog.setOnDismissListener {
             sheets.remove(dialog)
@@ -2658,6 +2735,69 @@ object NativeUi {
         val bar = com.google.android.material.snackbar.Snackbar.make(themed(), content, text, com.google.android.material.snackbar.Snackbar.LENGTH_SHORT)
         Chrome.router?.navBar()?.takeIf { it.isShown }?.let { bar.anchorView = it }
         bar.show()
+    }
+}
+
+internal class PaintView(context: Context, private val strokeWidth: Float) : View(context) {
+    private class Stroke(val path: Path, val paint: Paint)
+    private val strokes = mutableListOf<Stroke>()
+    var ink = Color.BLACK
+    private var current: Stroke? = null
+    private var lastX = 0f
+    private var lastY = 0f
+
+    private fun newPaint() = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = ink
+        style = Paint.Style.STROKE
+        strokeWidth = this@PaintView.strokeWidth
+        strokeCap = Paint.Cap.ROUND
+        strokeJoin = Paint.Join.ROUND
+    }
+
+    fun clear() {
+        strokes.clear()
+        current = null
+        invalidate()
+    }
+
+    override fun onDraw(canvas: Canvas) {
+        for (s in strokes) canvas.drawPath(s.path, s.paint)
+    }
+
+    override fun onTouchEvent(e: MotionEvent): Boolean {
+        val x = e.x
+        val y = e.y
+        when (e.actionMasked) {
+            MotionEvent.ACTION_DOWN -> {
+                // The stroke is this view's from the first touch: the page around it does not scroll.
+                parent?.requestDisallowInterceptTouchEvent(true)
+                val path = Path().apply { moveTo(x, y); lineTo(x + 0.1f, y) }
+                current = Stroke(path, newPaint()).also { strokes.add(it) }
+                lastX = x
+                lastY = y
+            }
+            MotionEvent.ACTION_MOVE -> {
+                val path = current?.path ?: return true
+                // The points the system batched between frames too, so a fast stroke keeps its shape.
+                for (h in 0 until e.historySize) {
+                    val hx = e.getHistoricalX(h)
+                    val hy = e.getHistoricalY(h)
+                    path.quadTo(lastX, lastY, (lastX + hx) / 2f, (lastY + hy) / 2f)
+                    lastX = hx
+                    lastY = hy
+                }
+                path.quadTo(lastX, lastY, (lastX + x) / 2f, (lastY + y) / 2f)
+                lastX = x
+                lastY = y
+            }
+            MotionEvent.ACTION_UP -> {
+                current?.path?.lineTo(x, y)
+                current = null
+            }
+            MotionEvent.ACTION_CANCEL -> current = null
+        }
+        invalidate()
+        return true
     }
 }
 
@@ -2829,6 +2969,19 @@ object NativeControls {
         return node
     }
 
+    /**
+     * nuclo-native-ns: a drawing surface. Each stroke is a Path smoothed through the midpoints of the touch's
+     * points (quadratic curves), drawn by the view itself: no view per point, nothing dropped.
+     */
+    fun paint(ink: () -> String, width: Double, clears: () -> Int): Node {
+        val view = PaintView(Runtime.activity, px(width))
+        val node = Node(Node.Kind.Native, "native", view)
+        node.add(listOf(css(Style(flex = 1.0))))
+        node.bind(ink) { view.ink = Color.parseColor(it) }
+        node.bind(clears) { view.clear() }
+        return node
+    }
+
     /** A slider of 0…1 in `color` (the accent when empty). */
     fun slider(value: () -> Double, color: String, change: (Double) -> Unit): Node {
         val ctx = NativeUi.themed()
@@ -2905,6 +3058,11 @@ class NRouter(private val routes: List<NRoute>, private val tabs: List<NTab> = e
                 setOnApplyWindowInsetsListener { _, insets -> insets }
             }
             nav = bottom
+            Runtime.onKeyboard = { shown ->
+                bottom.visibility = if (shown) View.GONE else View.VISIBLE
+                // The keyboard put away: no field has it any more.
+                if (!shown) Runtime.activity.currentFocus?.clearFocus()
+            }
             column.addView(bottom, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT))
         }
         root = FrameLayout(context)

@@ -148,7 +148,7 @@ private fun attributes(a: Attributes): List<NodeMod> = listOfNotNull(
   a.onKeyDown?.let { f -> A.onKeyDown { f(it.key) } },
   a.panAxis?.let { A.panAxis(it) },
   a.onPan?.let { f -> A.onPan { f(Pan(it.state, it.translationX, it.translationY, it.velocityX, it.velocityY, it.x, it.y)) } },
-  a.onPinch?.let { f -> A.onPinch { f(Pinch(it.state, it.scale)) } },
+  a.onPinch?.let { f -> A.onPinch { f(Pinch(it.state, it.scale, it.focalX, it.focalY)) } },
   a.onLongPress?.let { f -> A.onLongPress { f(point(it)) } },
   a.onDoubleClick?.let { f -> A.onDoubleClick { f(point(it)) } },
   a.onPointerDown?.let { f -> A.onPointerDown { f(point(it)) } },
@@ -247,7 +247,9 @@ internal fun nativeSheet(title: String, detent: String, content: () -> View): Bo
   return true
 }
 
-internal fun hasControl(kind: String): Boolean = kind in setOf("segmented", "chip", "slider", "button", "spinner", "search", "refresh")
+internal fun paintControl(ink: () -> String, width: Double, clears: () -> Int): View = dev.nuclo.runtime.NativeControls.paint(ink, width, clears)
+
+internal fun hasControl(kind: String): Boolean = kind == "paint" || kind in setOf("segmented", "chip", "slider", "button", "spinner", "search", "refresh")
 
 internal fun refreshControl(content: View, refreshing: () -> Boolean, refresh: () -> Unit): View =
   dev.nuclo.runtime.NativeControls.refresh(content as Node, refreshing, refresh)

@@ -308,7 +308,7 @@ fn attributes(a: &Attributes) -> Vec<nu::Mod> {
     })));
   }
   if let Some(f) = a.on_pinch.clone() {
-    m.push(nu::A::on_pinch(Rc::new(move |e: nu::PinchEvent| f(Pinch { state: Str::from(e.state), scale: e.scale }))));
+    m.push(nu::A::on_pinch(Rc::new(move |e: nu::PinchEvent| f(Pinch { state: Str::from(e.state), scale: e.scale, x: e.focal_x, y: e.focal_y }))));
   }
   if let Some(f) = a.on_long_press.clone() {
     m.push(nu::A::on_long_press(Rc::new(move |e| f(point(e)))));
@@ -470,8 +470,38 @@ pub fn native_actions(title: Str, actions: List<Action>) -> bool {
   nu::backend().native_actions(&title, &items, chosen(runs))
 }
 
+type Entry = (String, String, Rc<dyn Fn()>);
+
+// While a submenu's items are collected, its menuAt lands here instead of opening a menu.
+thread_local!(static CAPTURED: RefCell<Option<Vec<Entry>>> = const { RefCell::new(None) });
+
+/// Flattens `entries` into `items` and `runs`: a submenu becomes "submenu:N", its N items after it.
+fn nest(entries: Vec<Entry>, items: &mut Vec<(String, String)>, runs: &mut Vec<Rc<dyn Fn()>>) {
+  for (label, kind, run) in entries {
+    if kind == "submenu" {
+      CAPTURED.with(|c| *c.borrow_mut() = Some(Vec::new()));
+      run();
+      let kids = CAPTURED.with(|c| c.borrow_mut().take()).unwrap_or_default();
+      if !kids.is_empty() {
+        items.push((label, format!("submenu:{}", kids.len())));
+        runs.push(run);
+        nest(kids, items, runs);
+        continue;
+      }
+    }
+    items.push((label, kind));
+    runs.push(run);
+  }
+}
+
 pub fn native_menu(x: f64, y: f64, title: Str, actions: List<Action>) -> bool {
-  let (items, runs) = items(&actions);
+  let entries: Vec<Entry> = actions.iter().map(|a| (a.label.to_string(), a.kind.to_string(), a.run_.clone())).collect();
+  if CAPTURED.with(|c| c.borrow().is_some()) {
+    CAPTURED.with(|c| *c.borrow_mut() = Some(entries));
+    return true;
+  }
+  let (mut items, mut runs) = (Vec::new(), Vec::new());
+  nest(entries, &mut items, &mut runs);
   nu::backend().native_menu(x as f32, y as f32, &title, &items, chosen(runs))
 }
 
@@ -483,7 +513,7 @@ pub fn native_sheet(title: Str, detent: Str, content: Rc<dyn Fn() -> View>) -> b
 }
 
 pub fn has_control(kind: Str) -> bool {
-  crate::controls::HAS && matches!(&*kind, "segmented" | "chip" | "slider" | "button" | "spinner" | "search" | "stepper")
+  crate::controls::HAS && matches!(&*kind, "segmented" | "chip" | "slider" | "button" | "spinner" | "search" | "stepper" | "paint")
 }
 
 pub fn bar_button(label: Str, run: Rc<dyn Fn()>) -> bool {
@@ -505,6 +535,10 @@ pub fn button_control(label: Rc<dyn Fn() -> Str>, kind: Rc<dyn Fn() -> Str>, run
 /// No pull to refresh on a desktop: kit.ns draws one.
 pub fn refresh_control(content: View, _refreshing: Rc<dyn Fn() -> bool>, _refresh: Rc<dyn Fn()>) -> View {
   content
+}
+
+pub fn paint_control(ink: Rc<dyn Fn() -> Str>, width: f64, clears: Rc<dyn Fn() -> i32>) -> View {
+  nu::Mod::from(crate::controls::paint(Rc::new(move || ink().to_string()), width, clears))
 }
 
 pub fn spinner_control() -> View {

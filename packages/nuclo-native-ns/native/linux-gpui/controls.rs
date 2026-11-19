@@ -31,3 +31,7 @@ pub fn search(_placeholder: String, _value: Rc<dyn Fn() -> String>, _input: Rc<d
 pub fn stepper(_value: Rc<dyn Fn() -> i32>, _min: i32, _max: i32, _change: Rc<dyn Fn(i32)>) -> nu::Node {
   nu::div(vec![])
 }
+
+pub fn paint(_ink: Rc<dyn Fn() -> String>, _width: f64, _clears: Rc<dyn Fn() -> i32>) -> nu::Node {
+  nu::div(vec![])
+}

@@ -4,8 +4,9 @@
 
 import {
   css, div, p, span, button, img, input, textarea, toggle, list, when, update, go, back, later, haptic,
-  viewport, View, StyleResult, Pan, Pinch, Point, Scroll, Action, barButton
+  viewport, View, StyleResult, Pan, Pinch, Point, Scroll, Action, barButton, hasControl, paintControl
 } from "./ui"
+import { liveIcon } from "./icons"
 import { t, space, radius, font, themed } from "./theme"
 import { users, posts, user, photoUrl, photoUrlWH } from "./data"
 import { setFlag } from "./state"
@@ -13,7 +14,7 @@ import {
   page, groupedPage, fixedPage, column, row, rowGap, rowBetween, grow, spacer, padded, gapSm, gapMd, card, title1,
   title2, title3, headline, body, sub, footnote, caption, strongText, accentText, avatar, section, navCell,
   switchCell, segmented, chip, toast, actionSheet, menuAt, sheet, closeSheet, nativeSlider, alert, act, destructive,
-  checked, submenu, divider, btn, primaryButton, secondaryButton, dangerButton, smallButton, stepperField, refreshable
+  checked, submenu, divider, notePress, pressedAt, btn, primaryButton, secondaryButton, dangerButton, smallButton, stepperField, refreshable
 } from "./kit"
 
 fn abs(x: number): number => x < 0.0 ? 0.0 - x : x
@@ -233,42 +234,114 @@ export fn swipeScreen(): View {
 // ---- pinch and zoom --------------------------------------------------------------------------------
 
 let pz = 1.0
-let pzStart = 1.0
 let px = 0.0
 let py = 0.0
 let pActive = false
+// Where a gesture started: a pinch keeps the point between the fingers under them, a drag moves on from here.
+let pzStart = 1.0
+let pxStart = 0.0
+let pyStart = 0.0
+let focalStartX = 0.0
+let focalStartY = 0.0
+let pinching = false
+let panRebase = false
 
+/** The photo frame's side: the screen's width, up to 360. */
+fn frameSide() => clamp(viewport().width - 40.0, 160.0, 360.0)
+
+/** How far the photo can move from the middle at scale `s` before its edge shows. */
+fn panLimit(s: number) => s > 1.0 ? (s - 1.0) * frameSide() / 2.0 : 0.0
+
+/** `v` held within ±`limit`, with a rubber band past it. */
+fn rubber(v: number, limit: number): number {
+  if (v > limit) { return limit + (v - limit) * 0.3 }
+  if (v < 0.0 - limit) { return 0.0 - limit + (v + limit) * 0.3 }
+  return v
+}
+
+/** Back within bounds: the scale between 1 and 5, the photo covering the frame. */
+fn settlePinch() {
+  pz = clamp(pz, 1.0, 5.0)
+  px = clamp(px, 0.0 - panLimit(pz), panLimit(pz))
+  py = clamp(py, 0.0 - panLimit(pz), panLimit(pz))
+}
+
+/** Zooms to `s` keeping the frame's point (`fx`, `fy`) from its top-left corner where it is. */
+fn zoomAt(s: number, fx: number, fy: number) {
+  const cx = fx - frameSide() / 2.0
+  const cy = fy - frameSide() / 2.0
+  px = cx - (cx - px) * s / pz
+  py = cy - (cy - py) * s / pz
+  pz = s
+}
+
+const pinchStage = css({ flex: 1, alignItems: "center", justifyContent: "center", padding: space.xl })
+fn pinchFrame() => css({ width: frameSide(), height: frameSide(), borderRadius: 16, overflow: "hidden", backgroundColor: t().skeleton })
 fn pinchImg() => css({
-  widthPct: 100, aspectRatio: 1, borderRadius: 16, translateX: px, translateY: py, scale: pz,
-  transition: pActive ? 0 : 380, easing: "spring",
+  position: "absolute", top: 0, left: 0, right: 0, bottom: 0, translateX: px, translateY: py, scale: pz,
+  transition: pActive ? 0 : 420, easing: "spring",
 })
-const pinchStage = css({ flex: 1, alignItems: "center", justifyContent: "center", padding: space.xl, overflow: "hidden" })
 
 export fn pinchScreen(): View {
   pz = 1.0
   px = 0.0
   py = 0.0
+  pActive = false
   return div(stage,
     p(intro, "Pinch with two fingers (ctrl + scroll on a desktop), drag to move, double tap to zoom in or reset."),
     p(readout, () => `scale ${toInt(pz * 100.0)}% · x ${toInt(px)} · y ${toInt(py)}`),
     div(pinchStage,
-      {
-        onPinch: (e: Pinch) => {
-          if (e.state == "start") { pzStart = pz; pActive = true }
-          pz = clamp(pzStart * e.scale, 0.5, 5.0)
-          if (e.state == "end" || e.state == "cancel") { pActive = false; if (pz < 1.0) { pz = 1.0 } }
-          update()
+      div(() => pinchFrame(),
+        {
+          onPinch: (e: Pinch) => {
+            if (e.state == "start") {
+              pzStart = pz
+              pxStart = px
+              pyStart = py
+              focalStartX = e.x - frameSide() / 2.0
+              focalStartY = e.y - frameSide() / 2.0
+              pinching = true
+              pActive = true
+            }
+            // The point that was under the fingers stays under them, as they spread and as they move.
+            const s = clamp(pzStart * e.scale, 0.6, 6.0)
+            px = e.x - frameSide() / 2.0 - (focalStartX - pxStart) * s / pzStart
+            py = e.y - frameSide() / 2.0 - (focalStartY - pyStart) * s / pzStart
+            pz = s
+            if (e.state == "end" || e.state == "cancel") {
+              pinching = false
+              pActive = false
+              panRebase = true
+              settlePinch()
+            }
+            update()
+          },
+          onPan: (e: Pan) => {
+            if (pinching) { panRebase = true; return }
+            if (e.state == "start" || panRebase) {
+              pxStart = px - e.dx
+              pyStart = py - e.dy
+              panRebase = false
+            }
+            pActive = e.state == "start" || e.state == "move"
+            px = rubber(pxStart + e.dx, panLimit(pz))
+            py = rubber(pyStart + e.dy, panLimit(pz))
+            if (!pActive) {
+              // A flick carries on a little, then the photo settles inside the frame.
+              px = px + e.vx * 0.12
+              py = py + e.vy * 0.12
+              settlePinch()
+            }
+            update()
+          },
+          onDoubleClick: (pt: Point) => {
+            if (pz > 1.0) { pz = 1.0; px = 0.0; py = 0.0 } else { zoomAt(2.5, pt.x, pt.y); settlePinch() }
+            haptic("light")
+            update()
+          },
         },
-        onPan: (e: Pan) => {
-          pActive = e.state != "end" && e.state != "cancel"
-          px = e.dx
-          py = e.dy
-          if (!pActive && pz <= 1.0) { px = 0.0; py = 0.0 }
-          update()
-        },
-        onDoubleClick: (pt: Point) => { pz = pz > 1.0 ? 1.0 : 2.5; px = 0.0; py = 0.0; haptic("light"); update() },
-      },
-      img(() => pinchImg(), { src: photoUrl(64, 360) }),
+        img(() => pinchImg(), { src: photoUrl(64, 720) }),
+      ),
     ),
   )
 }
@@ -465,7 +538,9 @@ let red = 0.38
 let green = 0.62
 let blue = 0.95
 let volume = 0.5
-let volStart = 0.5
+/** The finger's last angle around the knob, in degrees: the knob turns by how much it changed. */
+let lastAngle = 0.0
+let lastStep = 5
 let steps = 3
 let trackW = 300.0
 
@@ -475,9 +550,24 @@ fn hex2(v: number): string {
   return `${digits[n / 16]}${digits[n % 16]}`
 }
 fn mixed() => `#${hex2(red)}${hex2(green)}${hex2(blue)}`
+/** Dark text on a light colour, white on a dark one (relative luminance). */
+fn swatchInk() => 0.2126 * red + 0.7152 * green + 0.0722 * blue > 0.6 ? "#000000" : "#ffffff"
+
+const PI = 3.14159265
+/** atan2 in degrees (within about 0.3°: enough for a knob). Nuclo Script has no trigonometry yet. */
+fn angleOf(x: float, y: float): float {
+  if (x == 0.0 && y == 0.0) { return 0.0 }
+  const ax = abs(x)
+  const ay = abs(y)
+  const z = ax > ay ? ay / ax : ax / ay
+  let a = PI / 4.0 * z - z * (z - 1.0) * (0.2447 + 0.0663 * z)
+  if (ay > ax) { a = PI / 2.0 - a }
+  if (x < 0.0) { a = PI - a }
+  if (y < 0.0) { a = 0.0 - a }
+  return a * 180.0 / PI
+}
 
 const swatchBox = css({ height: 120, mx: space.lg, borderRadius: radius.lg, alignItems: "center", justifyContent: "center" })
-const swatchText = css({ color: "#ffffff", fontSize: font.title3, fontWeight: "bold", fontFamily: "monospace" })
 const sliderRow = css({ gap: space.xs, px: space.lg, py: space.sm })
 const trackStyle = themed(() => css({ height: 36, justifyContent: "center" }))
 const trackLine = themed(() => css({ height: 6, borderRadius: 3, backgroundColor: t().surface2, flexDirection: "row", overflow: "hidden" }))
@@ -508,10 +598,35 @@ fn slider(name: string, color: string, get: () => number, set: (number) => void)
   )
 }
 
+const KNOB = 140.0
+// The pad takes the touches and stays still (its points are the finger's); the dial on it turns.
+const knobPad = css({ width: KNOB, height: KNOB, alignSelf: "center" })
 fn knob() => css({
-  width: 140, height: 140, borderRadius: 70, alignSelf: "center", backgroundColor: t().surface, borderWidth: 1, borderColor: t().line,
-  rotate: -135.0 + volume * 270.0, shadowColor: "rgba(0,0,0,0.15)", shadowRadius: 20, shadowOffsetY: 8, alignItems: "center",
+  position: "absolute", top: 0, left: 0, width: KNOB, height: KNOB, borderRadius: KNOB / 2.0, backgroundColor: t().surface, borderWidth: 1, borderColor: t().line,
+  rotate: -135.0 + volume * 270.0, shadowColor: "rgba(0,0,0,0.15)", shadowRadius: 20, shadowOffsetY: 8, alignItems: "center", pointerEvents: "none",
 })
+
+/** The finger's angle around the knob's centre: 0 at the top, clockwise. */
+fn fingerAngle(e: Pan) => angleOf(e.x - KNOB / 2.0, KNOB / 2.0 - e.y)
+
+fn turnKnob(e: Pan) {
+  // angleOf gives the angle from the x axis, counterclockwise; the knob counts from the top, clockwise.
+  const a = 90.0 - fingerAngle(e)
+  if (e.state == "start") { lastAngle = a; return }
+  if (e.state != "move") { return }
+  // The change since the last event, the short way round (across ±180°).
+  let d = a - lastAngle
+  if (d > 180.0) { d -= 360.0 }
+  if (d < -180.0) { d += 360.0 }
+  lastAngle = a
+  volume = clamp(volume + d / 270.0, 0.0, 1.0)
+  const step = toInt(volume * 11.0 + 0.5)
+  if (step != lastStep) {
+    lastStep = step
+    haptic("light")
+  }
+  update()
+}
 const knobMark = themed(() => css({ width: 6, height: 26, borderRadius: 3, mt: 10, backgroundColor: t().accent }))
 const stepper = themed(() => css({ flexDirection: "row", alignItems: "center", alignSelf: "center", borderRadius: radius.md, backgroundColor: t().surface2, overflow: "hidden" }))
 const stepBtn = themed(() => css({ width: 52, height: 40, padding: 0, color: t().text, fontSize: 22, pressed: { backgroundColor: t().line } }))
@@ -520,21 +635,15 @@ const stepNum = themed(() => css({ width: 48, textAlign: "center", fontSize: fon
 export fn slidersScreen(): View {
   trackW = clamp(viewport().width, 0.0, 680.0) - 32.0
   return div(page, div(column,
-    p(intro, "The platform's own sliders, and a knob and a stepper: each a drag recognized on the view, mapped to a value."),
-    div(() => css({ height: 120, mx: space.lg, borderRadius: radius.lg, alignItems: "center", justifyContent: "center", backgroundColor: mixed() }), p(swatchText, () => mixed())),
+    p(intro, "The platform's own sliders and stepper, and a knob: turn it around its centre, with a tick at each of its 11 steps."),
+    div(() => css({ height: 120, mx: space.lg, borderRadius: radius.lg, alignItems: "center", justifyContent: "center", backgroundColor: mixed() }), p(() => css({ color: swatchInk(), fontSize: font.title3, fontWeight: "bold", fontFamily: "monospace" }), () => mixed())),
     slider("Red", "#ff3b30", () => red, (v) => { red = v }),
     slider("Green", "#34c759", () => green, (v) => { green = v }),
     slider("Blue", "#0a84ff", () => blue, (v) => { blue = v }),
     p(css({ px: space.lg, pt: space.lg, fontSize: font.headline, fontWeight: "semibold", color: t().text }), "Knob"),
     div(css({ py: space.md, gap: space.sm }),
-      div(() => knob(), {
-        onPan: (e: Pan) => {
-          if (e.state == "start") { volStart = volume }
-          volume = clamp(volStart + (e.dx - e.dy) / 300.0, 0.0, 1.0)
-          update()
-        },
-      }, div(knobMark)),
-      p(readout, () => `volume ${toInt(volume * 11.0)} / 11`),
+      div(knobPad, { onPan: (e: Pan) => turnKnob(e) }, div(() => knob(), div(knobMark))),
+      p(readout, () => `volume ${toInt(volume * 11.0 + 0.5)} / 11`),
     ),
     p(css({ px: space.lg, pt: space.lg, pb: space.sm, fontSize: font.headline, fontWeight: "semibold", color: t().text }), "Stepper"),
     stepperField(() => steps, 0, 10, (v) => { steps = v }, () => div(stepper,
@@ -551,59 +660,97 @@ export fn slidersScreen(): View {
 let pageAt = 0
 let pageDx = 0.0
 let pageDragging = false
+/** No transition for one update: the jump from the copy of the first page back to the first. */
+let pageJump = false
 let autoplay = false
 let autoChain = 0
 const slides: int[] = [10, 11, 12, 13, 14]
 
 fn pageW() => clamp(viewport().width, 0.0, 680.0)
-
+/** The pages, and a copy of the first after the last: autoplay goes on to it, then back to the first unseen. */
 fn strip() => css({
-  flexDirection: "row", width: pageW() * toFloat(slides.length), translateX: 0.0 - toFloat(pageAt) * pageW() + pageDx,
-  transition: pageDragging ? 0 : 420, easing: "spring",
+  flexDirection: "row", width: pageW() * toFloat(slides.length + 1), translateX: 0.0 - toFloat(pageAt) * pageW() + pageDx,
+  transition: pageDragging || pageJump ? 0 : 380, easing: "ease-out",
 })
 fn slide() => css({ width: pageW(), height: 300, padding: space.lg })
 const slideCard = css({ flex: 1, borderRadius: radius.xl, overflow: "hidden" })
 const slideText = css({ position: "absolute", left: 0, right: 0, bottom: 0, padding: space.lg, backgroundColor: "rgba(0,0,0,0.35)", color: "#ffffff", fontSize: font.title3, fontWeight: "bold" })
 const dotsRow = css({ flexDirection: "row", gap: space.sm, alignSelf: "center", py: space.md })
-fn pageDot(i: int) => css({ width: i == pageAt ? 22 : 8, height: 8, borderRadius: 4, backgroundColor: i == pageAt ? t().accent : t().line, transition: 260, easing: "spring" })
+/** The page a dot stands for (the copy is the first). */
+fn shownPage() => pageAt % slides.length
+fn pageDot(i: int) => css({ width: i == shownPage() ? 22 : 8, height: 8, borderRadius: 4, backgroundColor: i == shownPage() ? t().accent : t().line, transition: 260, easing: "spring" })
 const carouselBox = css({ overflow: "hidden" })
 
+/** A page by hand: the five real ones only. Autoplay waits a full turn after it. */
 fn goPage(i: int) {
-  pageAt = toInt(clamp(toFloat(i), 0.0, toFloat(slides.length - 1)))
+  const to = toInt(clamp(toFloat(i), 0.0, toFloat(slides.length - 1)))
+  if (to != shownPage()) { haptic("light") }
+  pageAt = to
+  restartAutoplay()
   update()
 }
 
+fn restartAutoplay() {
+  autoChain += 1
+  if (autoplay) {
+    const c = autoChain
+    later(2600, () => autoTick(c))
+  }
+}
+
 fn autoTick(chain: int) {
-  if (chain != autoChain || !autoplay) { return }
-  goPage((pageAt + 1) % slides.length)
+  if (chain != autoChain || !autoplay || pageDragging) { return }
+  pageAt += 1
+  update()
+  // On the copy of the first page: back to the real one, without a transition, once it has slid in.
+  if (pageAt == slides.length) {
+    later(400, () => {
+      if (pageAt != slides.length) { return }
+      pageJump = true
+      pageAt = 0
+      update()
+      later(16, () => { pageJump = false })
+    })
+  }
   later(2600, () => autoTick(chain))
+}
+
+fn swipePage(e: Pan) {
+  if (e.state == "start") {
+    // From the copy, a drag starts on the real first page (they look the same).
+    if (pageAt == slides.length) { pageJump = true; pageAt = 0; update(); pageJump = false }
+    autoChain += 1
+  }
+  pageDragging = e.state == "start" || e.state == "move"
+  // Past the first or the last page, the strip resists (a rubber band).
+  const edge = (pageAt == 0 && e.dx > 0.0) || (pageAt == slides.length - 1 && e.dx < 0.0)
+  pageDx = edge ? e.dx / (1.0 + abs(e.dx) / 80.0) : e.dx
+  if (!pageDragging) {
+    pageDx = 0.0
+    // A flick turns the page the way it goes; a slow drag turns it past a third of the width.
+    if (e.vx < -400.0 || (e.dx < 0.0 - pageW() / 3.0 && e.vx < 200.0)) { goPage(pageAt + 1) }
+    else if (e.vx > 400.0 || (e.dx > pageW() / 3.0 && e.vx > -200.0)) { goPage(pageAt - 1) }
+    else { restartAutoplay() }
+  }
+  update()
 }
 
 export fn carouselScreen(): View {
   pageAt = 0
+  pageDx = 0.0
   return div(page, div(column,
     p(intro, "Swipe between pages: a page snaps into place, and a flick turns it even when the drag is short."),
     div(carouselBox,
       div(() => strip(),
-        {
-          onPan: (e: Pan) => {
-            pageDragging = e.state == "start" || e.state == "move"
-            pageDx = (pageAt == 0 && e.dx > 0.0) || (pageAt == slides.length - 1 && e.dx < 0.0) ? e.dx / 3.0 : e.dx
-            if (!pageDragging) {
-              pageDx = 0.0
-              if (e.dx < 0.0 - pageW() / 4.0 || e.vx < -500.0) { goPage(pageAt + 1); haptic("light") }
-              else if (e.dx > pageW() / 4.0 || e.vx > 500.0) { goPage(pageAt - 1); haptic("light") }
-            }
-            update()
-          },
-        },
-        list(() => slides, (n, i) => div(() => slide(), div(slideCard, img(fill, { src: photoUrlWH(n, 360, 280) }), p(slideText, `Page ${i + 1} of ${slides.length}`)))),
+        { onPan: (e: Pan) => swipePage(e), panAxis: "x" },
+        list(() => slides, (n, i) => div(() => slide(), div(slideCard, img(fill, { src: photoUrlWH(n, 720, 560) }), p(slideText, `Page ${i + 1} of ${slides.length}`)))),
+        div(() => slide(), div(slideCard, img(fill, { src: photoUrlWH(slides[0], 720, 560) }), p(slideText, `Page 1 of ${slides.length}`))),
       ),
     ),
     div(dotsRow, list(() => [0, 1, 2, 3, 4], (i, k) => div(() => pageDot(i), { onClick: () => goPage(i) }))),
     div(padded,
-      switchCell("▶", "#af52de", "Autoplay", () => autoplay, (v) => { autoplay = v; autoChain += 1; if (v) { const c = autoChain; later(2600, () => autoTick(c)) } }),
-      div(rowGap, smallButton(() => "‹ Previous", () => false, () => goPage(pageAt - 1)), div(spacer), smallButton(() => "Next ›", () => false, () => goPage(pageAt + 1))),
+      switchCell("▶", "#af52de", "Autoplay", () => autoplay, (v) => { autoplay = v; restartAutoplay() }),
+      div(rowGap, smallButton(() => "‹ Previous", () => false, () => goPage(shownPage() - 1)), div(spacer), smallButton(() => "Next ›", () => false, () => goPage(shownPage() + 1))),
     ),
   ))
 }
@@ -694,19 +841,20 @@ let topDy = 0.0
 let topDragging = false
 let liked = 0
 let noped = 0
-/** The card flying off, and where to: the next card comes up under it at once. */
-let flying = -1
-let flyX = 0.0
-let flyY = 0.0
+/** The cards flying off, out of the deck already, and where to: a fast swipe can send the next one before they land. */
+type Fly = { x: number, y: number }
+let flyers: Map<int, Fly> = {}
+let inFlight = 0
 
 const deckBox = css({ flex: 1, alignItems: "center", justifyContent: "center", padding: space.lg })
 /** The cards' place: a box of their size, so the cards (absolute, from its corner) are centered on every platform. */
 const deckStack = css({ width: 300, height: 420 })
 fn swipeCard(n: int): StyleResult {
-  if (n == flying) {
+  const fly = flyers.get(n)
+  if (fly != null) {
     return css({
       position: "absolute", top: 0, left: 0, width: 300, height: 420, borderRadius: radius.xl, overflow: "hidden", backgroundColor: t().surface,
-      translateX: flyX, translateY: flyY, rotate: flyX / 18.0, zIndex: 20, shadowColor: "rgba(0,0,0,0.2)", shadowRadius: 20, shadowOffsetY: 8,
+      translateX: fly.x, translateY: fly.y, rotate: fly.x / 18.0, zIndex: 20, shadowColor: "rgba(0,0,0,0.2)", shadowRadius: 20, shadowOffsetY: 8,
       transition: 340, easing: "ease-out",
     })
   }
@@ -721,7 +869,7 @@ fn swipeCard(n: int): StyleResult {
 }
 
 /** How far the card is pulled: its stamps show it. */
-fn pulledX(n: int) => n == flying ? flyX : topDx
+fn pulledX(n: int) => flyers.get(n)?.x ?? topDx
 const cardInfo = css({ position: "absolute", left: 0, right: 0, bottom: 0, padding: space.lg, gap: 2, backgroundColor: "rgba(0,0,0,0.38)" })
 const cardName = css({ color: "#ffffff", fontSize: font.title2, fontWeight: "bold" })
 const cardSub = css({ color: "rgba(255,255,255,0.85)", fontSize: font.sub })
@@ -734,11 +882,13 @@ const deckButtons = css({ flexDirection: "row", gap: space.xl, justifyContent: "
 const bigRound = themed(() => css({ width: 64, height: 64, borderRadius: 32, padding: 0, backgroundColor: t().surface, fontSize: 28, shadowColor: "rgba(0,0,0,0.15)", shadowRadius: 12, shadowOffsetY: 4, pressed: { scale: 0.9 }, transition: 160, easing: "spring" }))
 
 fn dismissTop(right: bool) {
-  if (deck.length == 0 || flying >= 0) { return }
+  if (deck.length == 0) { return }
   // It flies on from where it was let go, and the next card is the top one now.
-  flying = deck[0]
-  flyX = topDx
-  flyY = topDy
+  const n = deck[0]
+  const y = topDy
+  deck.removeAt(0)
+  flyers.set(n, { x: topDx, y: y })
+  inFlight += 1
   topDx = 0.0
   topDy = 0.0
   topDragging = false
@@ -746,13 +896,12 @@ fn dismissTop(right: bool) {
   haptic(right ? "success" : "light")
   update()
   later(16, () => {
-    flyX = right ? 700.0 : -700.0
-    flyY = flyY * 2.0
+    flyers.set(n, { x: right ? 700.0 : -700.0, y: y * 2.0 })
     update()
   })
   later(360, () => {
-    if (deck.length > 0) { deck.removeAt(0) }
-    flying = -1
+    flyers.delete(n)
+    inFlight -= 1
     update()
   })
 }
@@ -762,7 +911,7 @@ fn deckCard(n: int): View {
   const u = user(`${n + 3}`)
   return div(() => swipeCard(n),
     { onPan: (e: Pan) => {
-      if (n == flying || depthOf(n) != 0) { return }
+      if (flyers.get(n) != null || depthOf(n) != 0) { return }
       topDragging = e.state == "start" || e.state == "move"
       topDx = e.dx
       topDy = e.dy
@@ -776,8 +925,8 @@ fn deckCard(n: int): View {
     } },
     img(fill, { src: photoUrlWH(50 + n * 3, 300, 420) }),
     div(cardInfo, p(cardName, u.name), p(cardSub, `${u.city} · ${u.bio}`)),
-    when(() => depthOf(n) == 0 || n == flying, () => span(() => stamp(true, pulledX(n)), "LIKE")),
-    when(() => depthOf(n) == 0 || n == flying, () => span(() => stamp(false, pulledX(n)), "NOPE")),
+    when(() => depthOf(n) == 0 || flyers.get(n) != null, () => span(() => stamp(true, pulledX(n)), "LIKE")),
+    when(() => depthOf(n) == 0 || flyers.get(n) != null, () => span(() => stamp(false, pulledX(n)), "NOPE")),
   )
 }
 
@@ -785,11 +934,11 @@ export fn cardsScreen(): View {
   return div(stage,
     p(readout, () => `♥ ${liked}   ✕ ${noped}   ${deck.length} left`),
     div(deckBox,
-      when(() => deck.length > 0, () => div(deckStack,
+      when(() => deck.length > 0 || inFlight > 0, () => div(deckStack,
         // The top card last, so it is drawn above the others.
         list(() => reversedTop(), (n, i) => deckCard(n)),
       )),
-      when(() => deck.length == 0, () => div(gapMd, p(title3, "That's everyone"), smallButton(() => "Start over", () => true, () => { deck = [0, 1, 2, 3, 4, 5, 6, 7]; update() }))),
+      when(() => deck.length == 0 && inFlight == 0, () => div(gapMd, p(title3, "That's everyone"), smallButton(() => "Start over", () => true, () => { deck = [0, 1, 2, 3, 4, 5, 6, 7]; update() }))),
     ),
     div(deckButtons,
       button(bigRound, "✕", { label: "Nope", onClick: () => { if (deck.length > 0) { dismissTop(false) } } }),
@@ -798,21 +947,21 @@ export fn cardsScreen(): View {
   )
 }
 
-/** A card's place in the deck, the one flying off not counted. */
+/** A card's place in the deck (a flying card has none). */
 fn depthOf(n: int): int {
-  for (const i of 0..deck.length - 1) { if (deck[i] == n) { return flying >= 0 && i > 0 ? i - 1 : i } }
+  for (const i of 0..deck.length - 1) { if (deck[i] == n) { return i } }
   return 0
 }
 
-/** The top three cards, the top one last. */
+/** The top three cards, the top one last, and the flying ones above them. */
 fn reversedTop(): int[] {
   let out: int[] = []
-  const shown = flying >= 0 ? 4 : 3
-  let i = deck.length < shown ? deck.length - 1 : shown - 1
+  let i = deck.length < 3 ? deck.length - 1 : 2
   while (i >= 0) {
     out.push(deck[i])
     i -= 1
   }
+  for (const n of flyers.keys()) { if (!out.includes(n)) { out.push(n) } }
   return out
 }
 
@@ -856,14 +1005,19 @@ fn tail(xs: Dot[], n: int): Dot[] {
   return out
 }
 
+let clears = 0
+
 export fn drawScreen(): View {
   return div(stage,
     div(palette,
       list(() => [0, 1, 2, 3, 4, 5], (i, k) => button(() => inkDot(i), { label: "Ink", onClick: () => { ink = i; haptic("light"); update() } })),
       div(spacer),
-      smallButton(() => "Clear", () => false, () => { dots = []; update() }),
+      smallButton(() => "Clear", () => false, () => { dots = []; clears += 1; haptic("light"); update() }),
     ),
-    div(canvas, { onPan: (e: Pan) => paint(e) }, list(() => dots, (d, i) => div(dotStyle(d)))),
+    // The platform's canvas where it has one; else a dot per point (a few hundred at most).
+    hasControl("paint")
+      ? div(canvas, paintControl(() => inks[ink], 5.0, () => clears))
+      : div(canvas, { onPan: (e: Pan) => paint(e) }, list(() => dots, (d, i) => div(dotStyle(d)))),
   )
 }
 
@@ -902,7 +1056,6 @@ fn densityMenu(at: Point) {
     checked("Compact", density == "Compact", () => { density = "Compact" }),
     checked("Comfortable", density == "Comfortable", () => { density = "Comfortable" }),
     checked("Spacious", density == "Spacious", () => { density = "Spacious" }),
-    submenu("Back to view options", "‹", () => viewMenu(at)),
   ])
 }
 
@@ -911,7 +1064,6 @@ fn fontMenu(at: Point) {
     checked("System", fontPick == "System", () => { fontPick = "System" }),
     checked("Serif", fontPick == "Serif", () => { fontPick = "Serif" }),
     checked("Monospace", fontPick == "Monospace", () => { fontPick = "Monospace" }),
-    submenu("Back to view options", "‹", () => viewMenu(at)),
   ])
 }
 
@@ -929,9 +1081,9 @@ export fn menusScreen(): View {
   return div(groupedPage, div(column,
     p(intro, "Popover menus with check marks and submenus, an action sheet, and a context menu. Each one remembers its choice."),
     div(menuGrid,
-      div(menuBtn, span(grow, () => `Sort: ${sortBy}`), span(footnote, "⌄"), { onPointerUp: (pt: Point) => sortMenu(pt) }),
-      div(menuBtn, span(grow, () => `View: ${density} · ${fontPick}`), span(footnote, "⌄"), { onPointerUp: (pt: Point) => viewMenu(pt) }),
-      div(menuBtn, span(grow, "File menu with nested submenus"), span(footnote, "⋯"), { onPointerUp: (pt: Point) => fileMenu(pt) }),
+      div(menuBtn, span(grow, () => `Sort: ${sortBy}`), span(footnote, "⌄"), { onPointerDown: (pt: Point) => notePress(pt), onClick: () => sortMenu(pressedAt()) }),
+      div(menuBtn, span(grow, () => `View: ${density} · ${fontPick}`), span(footnote, "⌄"), { onPointerDown: (pt: Point) => notePress(pt), onClick: () => viewMenu(pressedAt()) }),
+      div(menuBtn, span(grow, "File menu with nested submenus"), span(footnote, "⋯"), { onPointerDown: (pt: Point) => notePress(pt), onClick: () => fileMenu(pressedAt()) }),
       div(menuBtn, span(grow, "Action sheet"), span(footnote, "↑"), { onClick: () => actionSheet("Photo", [
         act("Take photo", "◉", () => toast("Camera")), act("Choose from library", "▦", () => toast("Library")),
         act("Browse files", "▤", () => toast("Files")), destructive("Remove current photo", "", () => toast("Removed")),
@@ -1043,27 +1195,58 @@ export fn toastsScreen(): View {
 
 let scrollTop = 0.0
 
-fn heroH() => clamp(260.0 - scrollTop, 64.0, 260.0)
-fn heroBox() => css({ position: "absolute", top: 0, left: 0, right: 0, height: heroH(), overflow: "hidden", zIndex: 5, backgroundColor: t().surface })
-fn heroImg() => css({ position: "absolute", top: 0, left: 0, right: 0, height: 260, opacity: clamp((heroH() - 64.0) / 140.0, 0.0, 1.0), scale: 1.0 + clamp(0.0 - scrollTop, 0.0, 200.0) / 400.0 })
-fn heroTitle() => css({
-  position: "absolute", left: space.lg, bottom: space.md, color: heroH() > 120.0 ? "#ffffff" : t().text,
-  fontSize: 17.0 + clamp((heroH() - 64.0) / 196.0, 0.0, 1.0) * 17.0, fontWeight: "bold",
+// The hero scrolls with the list (a scroll moves it, not a relayout); a bar over it fades in as it goes.
+// Everything that follows the scroll is a transform or an opacity: no layout on a scroll frame.
+const HERO_H = 260.0
+const BAR_H = 56.0
+/** 0 while the hero shows, 1 once it is under the bar. */
+fn collapsed() => clamp((scrollTop - (HERO_H - BAR_H - 60.0)) / 60.0, 0.0, 1.0)
+
+const heroBox = css({ height: HERO_H, overflow: "hidden" })
+fn heroImg() => css({
+  position: "absolute", top: 0, left: 0, right: 0, height: HERO_H,
+  // Parallax: the photo moves at half the scroll; pulled down, it grows.
+  translateY: scrollTop > 0.0 ? scrollTop * 0.5 : scrollTop, scale: 1.0 + clamp(0.0 - scrollTop, 0.0, 200.0) / HERO_H,
 })
+const heroShade = css({ position: "absolute", left: 0, right: 0, bottom: 0, height: 120, backgroundColor: "rgba(0,0,0,0.28)" })
+fn bigTitle() => css({
+  position: "absolute", left: space.lg, right: space.lg, bottom: space.lg, color: "#ffffff", fontSize: 32, fontWeight: "bold",
+  opacity: 1.0 - clamp((scrollTop - 40.0) / 100.0, 0.0, 1.0),
+})
+const bar = css({ position: "absolute", top: 0, left: 0, right: 0, height: BAR_H, flexDirection: "row", alignItems: "center", gap: space.xs, px: space.xs })
+fn barFill() => css({
+  position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: t().surface, opacity: collapsed(),
+  borderBottomWidth: 1, borderColor: t().line,
+})
+fn barTitle() => css({ fontSize: font.headline, fontWeight: "semibold", color: t().text, opacity: collapsed(), translateY: (1.0 - collapsed()) * 8.0 })
+// The back button: a dark round behind it over the photo, gone once the bar is opaque.
+const backBox = css({ width: 44, height: 44, alignItems: "center", justifyContent: "center", pressed: { opacity: 0.5 } })
+fn backRound() => css({ position: "absolute", top: 4, left: 4, width: 36, height: 36, borderRadius: 18, backgroundColor: "rgba(0,0,0,0.35)", opacity: 1.0 - collapsed() })
+
 const collapseScroll = css({ flex: 1, overflow: "scroll" })
-const collapseBody = css({ pt: 260, gap: 0 })
 
 export fn collapsingScreen(): View {
   scrollTop = 0.0
   return div(fixedPage,
-    div(() => heroBox(), img(() => heroImg(), { src: photoUrlWH(29, 420, 260) }), p(() => heroTitle(), "Kyoto in autumn")),
     div(collapseScroll, { onScroll: (e: Scroll) => { scrollTop = e.top; update() } },
-      div(collapseBody,
-        list(() => posts, (x, i) => div(css({ flexDirection: "row", gap: space.md, padding: space.lg, borderBottomWidth: 1, borderColor: t().line }),
-          img(css({ width: 64, height: 64, borderRadius: radius.sm }), { src: photoUrl(x.photo, 64) }),
-          div(grow, p(strongText, x.place), p(footnote, x.caption)),
-        )),
+      div(heroBox,
+        img(() => heroImg(), { src: photoUrlWH(29, 720, 446) }),
+        div(heroShade),
+        p(() => bigTitle(), "Kyoto in autumn"),
       ),
+      list(() => posts, (x, i) => div(css({ flexDirection: "row", gap: space.md, padding: space.lg, borderBottomWidth: 1, borderColor: t().line }),
+        img(css({ width: 64, height: 64, borderRadius: radius.sm }), { src: photoUrl(x.photo, 64) }),
+        div(grow, p(strongText, x.place), p(footnote, x.caption)),
+      )),
+    ),
+    // After the list: drawn over it on every platform.
+    div(bar,
+      div(() => barFill()),
+      div(backBox, { label: "Back", onClick: () => back() },
+        div(() => backRound()),
+        liveIcon("arrowBack", () => collapsed() > 0.5 ? t().text : "#ffffff", () => false, 24),
+      ),
+      p(() => barTitle(), "Kyoto in autumn"),
     ),
   )
 }
@@ -1099,10 +1282,23 @@ fn submitForm() {
     alert("Welcome, " + fName.trim() + "!", `Plan: ${["Free", "Plus", "Pro"][fPlan]}. Check ${fEmail} to confirm.`, [act("OK", "", () => {})])
   } else {
     haptic("medium")
-    toast(fTerms ? "Check the fields in red" : "Accept the terms to continue")
+    toast(fName.trim() == "" || !validEmail() || fPass.length < 8 ? "Check the fields in red" : "Accept the terms to continue")
   }
   update()
 }
+
+const switchRowStyle = css({ flexDirection: "row", alignItems: "center", gap: space.md, minHeight: 44 })
+const switchLabel = themed(() => css({ flex: 1, fontSize: font.body, color: t().text }))
+
+const switchOnly = css({ pointerEvents: "none" })
+
+/** A label and its switch: a tap on the label flips it too, as in the platform's settings. */
+fn switchRow(label: string, on: () => bool, set: (bool) => void): View =>
+  div(switchRowStyle, { onClick: () => { set(!on()); haptic("light"); update() } },
+    p(switchLabel, label),
+    // The row takes every tap (a tap on the switch would reach the row too on the web): the switch shows the state.
+    toggle(switchOnly, { checked: () => on(), label: label }),
+  )
 
 export fn formsScreen(): View {
   return div(page, div(column, div(formBox,
@@ -1116,8 +1312,8 @@ export fn formsScreen(): View {
     div(fieldWrap, p(fieldLabel, "PLAN"), segmented(["Free", "Plus", "Pro"], () => fPlan, (i) => { fPlan = i })),
     div(fieldWrap, p(fieldLabel, "T-SHIRT SIZE"), div(css({ flexDirection: "row", gap: space.sm, flexWrap: "wrap" }), list(() => ["XS", "S", "M", "L", "XL"], (s, i) => chip(s, () => fSize == i, () => { fSize = i })))),
     div(fieldWrap, p(fieldLabel, "ABOUT YOU"), textarea(areaStyle, { placeholder: "Optional", value: () => fAbout, onInput: (v) => { fAbout = v; update() } }), p(caption, () => `${fAbout.length}/200`)),
-    div(css({ flexDirection: "row", alignItems: "center", gap: space.md }), p(css({ flex: 1, fontSize: font.body, color: t().text }), "Send me the newsletter"), toggle({ checked: () => fNews, onChange: (v) => { fNews = v; update() } })),
-    div(css({ flexDirection: "row", alignItems: "center", gap: space.md }), p(css({ flex: 1, fontSize: font.body, color: t().text }), "I accept the terms"), toggle({ checked: () => fTerms, onChange: (v) => { fTerms = v; update() } })),
+    switchRow("Send me the newsletter", () => fNews, (v) => { fNews = v }),
+    switchRow("I accept the terms", () => fTerms, (v) => { fTerms = v }),
     primaryButton("Create account", () => submitForm()),
   )))
 }

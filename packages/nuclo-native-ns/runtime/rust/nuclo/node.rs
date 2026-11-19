@@ -1391,10 +1391,25 @@ pub(crate) fn measure_root(view: ViewId, width: f32) -> f32 {
     node_of(view).map_or(0.0, |node| flex::layout(&node, width, None, None, false)[1])
 }
 
+/// Whether the screen of `view` scrolls itself: its root is a scroller, or has a vertical one as a child (a
+/// chat's thread over a fixed composer). The page around it does not scroll then.
+pub(crate) fn scrolls_itself(view: ViewId) -> bool {
+    node_of(view).is_some_and(|node| {
+        let mut children = Vec::new();
+        for child in node.children.borrow().iter() {
+            child.flat_views(&mut children);
+        }
+        node.scrolls.get().is_some() || children.iter().any(|c| c.scrolls.get() == Some(false))
+    })
+}
+
 pub(crate) fn layout_root(view: ViewId, width: f32, height: f32) {
     let Some(node) = node_of(view) else { return };
     if node.scrolls.get().is_some() {
         node.place_scrolled(width, height);
+    } else if scrolls_itself(view) {
+        // Exactly the window: its scroller takes what the fixed parts leave.
+        node.place(width, Some(height));
     } else {
         let overlay = node.is_overlay();
         // A screen is as tall as its content, or the window when that is taller (then a column's

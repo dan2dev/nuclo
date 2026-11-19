@@ -209,11 +209,16 @@ function gestures(a: Attributes) {
       const [p, q] = [...pointers.values()];
       return Math.hypot(p!.x - q!.x, p!.y - q!.y);
     };
+    const pinch = (state: string, scale: number) => {
+      const [p, q] = [...pointers.values()];
+      const r = el.getBoundingClientRect();
+      a.onPinch!({ state, scale, x: (p!.x + (q ?? p!).x) / 2 - r.left, y: (p!.y + (q ?? p!).y) / 2 - r.top });
+    };
     el.addEventListener("pointerdown", (e) => {
       pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
       if (pointers.size === 2 && a.onPinch) {
         pinchStart = spread();
-        a.onPinch({ state: "start", scale: 1 });
+        pinch("start", 1);
         return;
       }
       if (pointers.size > 1) return;
@@ -230,7 +235,7 @@ function gestures(a: Attributes) {
       if (!pointers.has(e.pointerId)) return;
       pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
       if (pointers.size === 2 && a.onPinch && pinchStart > 0) {
-        a.onPinch({ state: "move", scale: spread() / pinchStart });
+        pinch("move", spread() / pinchStart);
         return;
       }
       if (!start) return;
@@ -251,7 +256,12 @@ function gestures(a: Attributes) {
       if (!pointers.delete(e.pointerId)) return;
       if (longTimer) { clearTimeout(longTimer); longTimer = 0; }
       if (pinchStart > 0) {
-        if (pointers.size < 2) { pinchStart = 0; a.onPinch?.({ state: "end", scale: 1 }); start = null; }
+        if (pointers.size < 2) {
+          const r = el.getBoundingClientRect();
+          a.onPinch?.({ state: "end", scale: 1, x: e.clientX - r.left, y: e.clientY - r.top });
+          pinchStart = 0;
+          start = null;
+        }
         return;
       }
       if (panning) { if (e.timeStamp - last.t > 80) last.vx = last.vy = 0; pan(state, e); }
@@ -275,10 +285,12 @@ function gestures(a: Attributes) {
       el.addEventListener("wheel", (e) => {
         if (!e.ctrlKey) return;
         e.preventDefault();
-        if (!idle) { scale = 1; a.onPinch!({ state: "start", scale }); } else clearTimeout(idle);
+        const r = el.getBoundingClientRect();
+        const [x, y] = [e.clientX - r.left, e.clientY - r.top];
+        if (!idle) { scale = 1; a.onPinch!({ state: "start", scale, x, y }); } else clearTimeout(idle);
         scale *= Math.exp(-e.deltaY / 100);
-        a.onPinch!({ state: "move", scale });
-        idle = window.setTimeout(() => { idle = 0; a.onPinch!({ state: "end", scale }); }, 150);
+        a.onPinch!({ state: "move", scale, x, y });
+        idle = window.setTimeout(() => { idle = 0; a.onPinch!({ state: "end", scale, x, y }); }, 150);
       }, { passive: false });
     }
   };
@@ -621,7 +633,7 @@ export const nativeSheet = (_t: string, _d: string, _c: () => unknown) => false;
 export const nativeCloseSheet = () => false;
 export const nativeToast = (_t: string) => false;
 // Of the controls, a browser has its own slider (a range input); kit.ns draws the segmented control and chips.
-export const hasControl = (kind: string) => kind === "slider" || kind === "search";
+export const hasControl = (kind: string) => kind === "paint" || kind === "slider" || kind === "search";
 // The app bar here is drawn by this renderer: a screen shows its own button.
 export const barButton = (_l: string, _r: () => void) => false;
 export const shareText = (text: string) => {
@@ -632,6 +644,51 @@ export const shareText = (text: string) => {
 export const copyText = (text: string) => { navigator.clipboard?.writeText(text).catch(() => {}); };
 export const buttonControl = (_l: () => string, _k: () => string, _r: () => void): View => div();
 export const spinnerControl = (): View => div();
+/** A canvas at the screen's pixel density: strokes through the midpoints of the pointer's points (quadratic curves). */
+export const paintControl = (ink: () => string, width: number, clears: () => number): View => {
+  const c = document.createElement("canvas");
+  c.style.cssText = "position:absolute;inset:0;width:100%;height:100%;touch-action:none";
+  const g = c.getContext("2d")!;
+  let last: { x: number; y: number } | null = null;
+  let cleared = clears();
+  const fit = () => {
+    const r = c.getBoundingClientRect(), d = devicePixelRatio || 1;
+    if (c.width !== Math.round(r.width * d) || c.height !== Math.round(r.height * d)) {
+      c.width = Math.round(r.width * d); c.height = Math.round(r.height * d);
+      g.setTransform(d, 0, 0, d, 0, 0);
+    }
+  };
+  const at = (e: PointerEvent) => { const r = c.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
+  c.addEventListener("pointerdown", (e) => {
+    fit();
+    try { c.setPointerCapture(e.pointerId); } catch { /* a synthetic pointer */ }
+    if (clears() !== cleared) { cleared = clears(); g.clearRect(0, 0, c.width, c.height); }
+    last = at(e);
+    g.strokeStyle = ink(); g.lineWidth = width; g.lineCap = "round"; g.lineJoin = "round";
+    g.beginPath(); g.moveTo(last.x, last.y); g.lineTo(last.x + 0.1, last.y); g.stroke();
+  });
+  c.addEventListener("pointermove", (e) => {
+    if (!last) return;
+    for (const ev of e.getCoalescedEvents?.() ?? [e]) {
+      const p = at(ev), mid = { x: (last.x + p.x) / 2, y: (last.y + p.y) / 2 };
+      g.beginPath(); g.moveTo(last.x, last.y); g.quadraticCurveTo(last.x, last.y, mid.x, mid.y); g.lineTo(p.x, p.y); g.stroke();
+      last = p;
+    }
+  });
+  const end = () => { last = null; };
+  c.addEventListener("pointerup", end);
+  c.addEventListener("pointercancel", end);
+  // A Clear: the canvas empties when `clears()` changes (checked each frame while the canvas is on screen).
+  let shown = false;
+  const watch = () => {
+    if (c.isConnected) shown = true;
+    else if (shown) return;
+    if (clears() !== cleared) { cleared = clears(); g.clearRect(0, 0, c.width, c.height); }
+    requestAnimationFrame(watch);
+  };
+  requestAnimationFrame(watch);
+  return div({ style: { position: "relative", flex: "1" } as never }, c as never);
+};
 export const refreshControl = (content: View, _r: () => boolean, _f: () => void): View => content;
 export const stepperControl = (_v: () => number, _min: number, _max: number, _c: (v: number) => void): View => div();
 export const searchControl = (placeholder: string, value: () => string, typed: (v: string) => void, submit: (v: string) => void): View =>

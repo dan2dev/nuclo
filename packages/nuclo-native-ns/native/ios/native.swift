@@ -147,7 +147,7 @@ private func point(_ e: Nuclo.PointerEvent) -> Point { Point(x: e.x, y: e.y, pag
   if let f = a.onPan {
     m.append(Nuclo.A.onPan { e in f(Pan(state: e.state, dx: e.translationX, dy: e.translationY, vx: e.velocityX, vy: e.velocityY, x: e.x, y: e.y)) })
   }
-  if let f = a.onPinch { m.append(Nuclo.A.onPinch { e in f(Pinch(state: e.state, scale: e.scale)) }) }
+  if let f = a.onPinch { m.append(Nuclo.A.onPinch { e in f(Pinch(state: e.state, scale: e.scale, x: e.focalX, y: e.focalY)) }) }
   if let f = a.onLongPress { m.append(Nuclo.A.onLongPress { e in f(point(e)) }) }
   if let f = a.onDoubleClick { m.append(Nuclo.A.onDoubleClick { e in f(point(e)) }) }
   if let f = a.onPointerDown { m.append(Nuclo.A.onPointerDown { e in f(point(e)) }) }
@@ -318,7 +318,11 @@ func shareText(_ text: String) -> Bool { ui { Nuclo.NativeUi.share(text) } }
 func copyText(_ text: String) { ui { Nuclo.NativeUi.copy(text) } }
 
 #if canImport(UIKit)
-func hasControl(_ kind: String) -> Bool { ["segmented", "chip", "slider", "button", "spinner", "search", "stepper", "refresh"].contains(kind) }
+func hasControl(_ kind: String) -> Bool { ["segmented", "chip", "slider", "button", "spinner", "search", "stepper", "refresh", "paint"].contains(kind) }
+
+func paintControl(_ ink: @escaping () -> String, _ width: Double, _ clears: @escaping () -> Int32) -> View {
+  ui { Nuclo.NativeControls.paint(ink, width, clears) }
+}
 
 func refreshControl(_ content: View, _ refreshing: @escaping () -> Bool, _ refresh: @escaping () -> Void) -> View {
   ui { Nuclo.NativeControls.refresh((content as? Nuclo.Node) ?? Nuclo.div(), refreshing, refresh) }
@@ -354,6 +358,7 @@ func chipControl(_ label: String, _ on: @escaping () -> Bool, _ pick: @escaping 
 func sliderControl(_ value: @escaping () -> Double, _ color: String, _ change: @escaping (Double) -> Void) -> View { ui { Nuclo.div() } }
 func buttonControl(_ label: @escaping () -> String, _ kind: @escaping () -> String, _ run: @escaping () -> Void) -> View { ui { Nuclo.div() } }
 func spinnerControl() -> View { ui { Nuclo.div() } }
+func paintControl(_ ink: @escaping () -> String, _ width: Double, _ clears: @escaping () -> Int32) -> View { ui { Nuclo.div() } }
 func refreshControl(_ content: View, _ refreshing: @escaping () -> Bool, _ refresh: @escaping () -> Void) -> View { ui { Nuclo.div() } }
 func searchControl(_ placeholder: String, _ value: @escaping () -> String, _ input: @escaping (String) -> Void, _ submit: @escaping (String) -> Void) -> View { ui { Nuclo.div() } }
 func stepperControl(_ value: @escaping () -> Int32, _ min: Int32, _ max: Int32, _ change: @escaping (Int32) -> Void) -> View { ui { Nuclo.div() } }

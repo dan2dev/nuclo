@@ -336,7 +336,7 @@ export const verifiedBadge = themed(() => css({
 
 export fn act(label: string, glyph: string, run: () => void): Action => ({ label: label, glyph: glyph, kind: "default", run: run })
 export fn destructive(label: string, glyph: string, run: () => void): Action => ({ label: label, glyph: glyph, kind: "destructive", run: run })
-export fn checked(label: string, on: bool, run: () => void): Action => ({ label: label, glyph: on ? "✓" : "", kind: on ? "checked" : "default", run: run })
+export fn checked(label: string, on: bool, run: () => void): Action => ({ label: label, glyph: on ? "✓" : "", kind: on ? "checked" : "unchecked", run: run })
 export fn submenu(label: string, glyph: string, run: () => void): Action => ({ label: label, glyph: glyph, kind: "submenu", run: run })
 
 /** A layer: what it is ("toast", "actions", "menu", "sheet", "alert") and where (menus). */
@@ -407,7 +407,6 @@ export fn actionSheet(title: string, actions: Action[]) {
 
 /** A popover menu at a point of the window (a long press, a "more" button). A submenu opens over it. */
 export fn menuAt(at: Point, title: string, actions: Action[]) {
-  haptic("medium")
   if (nativeMenu(at.pageX, at.pageY, title, actions)) { return }
   const key = nextKey
   actionsOf.set(key, actions)

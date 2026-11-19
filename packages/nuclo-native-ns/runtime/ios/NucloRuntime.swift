@@ -970,6 +970,12 @@ private func points(_ value: Double?) -> CGFloat? {
 
     var scrolls: Bool { flex != nil && view !== flex }
 
+    /// A screen that scrolls itself: its root is a scroller, or has one as a child (a chat's thread over a
+    /// fixed composer, a list under a header that stays). The page around it does not scroll then.
+    var scrollsItself: Bool {
+        scrolls || (flex != nil && children.flatMap { $0.flatViews }.contains { $0.scrolls && ($0.view as? ScrollBox)?.isVertical == true })
+    }
+
     /// The view the content sits in: a scrolling box's container is inside its `view`.
     private var innermost: UIView? {
         if let flex { return flex }
@@ -1792,7 +1798,9 @@ final class PointerRecognizer: UIGestureRecognizer {
     }
 
     @objc private func longPressed(_ g: UILongPressGestureRecognizer) {
-        if g.state == .began { pointers["longPress"]?(pointer(g)) }
+        guard g.state == .began, let handler = pointers["longPress"] else { return }
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+        handler(pointer(g))
     }
 
     @objc private func doubleTapped(_ g: UITapGestureRecognizer) {
@@ -1999,6 +2007,7 @@ final class ScrollBox: UIScrollView, UIScrollViewDelegate {
     weak var node: Node?
     private let content: FlexView
     private let horizontal: Bool
+    var isVertical: Bool { !horizontal }
     /// The size the content was last fitted for.
     private var fitted: CGSize?
 
@@ -2431,7 +2440,7 @@ final class ScreenController: UIViewController {
     var onEndReached: (() -> Void)?
 
     override func loadView() {
-        if root.scrolls {
+        if root.scrollsItself {
             view = FixedScreenView(root)
         } else {
             let screen = ScreenView(root)
@@ -2889,6 +2898,22 @@ public struct NativeAction {
         }
     }
 
+    private static var captured: [NativeAction]?
+
+    /// The items a submenu's action would open, collected instead of shown (its menuAt opens nothing then).
+    private static func children(_ a: NativeAction) -> [NativeAction] {
+        guard a.kind == "submenu" else { return [] }
+        captured = []
+        a.run()
+        defer { captured = nil }
+        return captured ?? []
+    }
+
+    /// A list of choices with one picked: picking one is a single selection.
+    private static func isChoice(_ actions: [NativeAction]) -> Bool {
+        actions.allSatisfy { $0.kind == "checked" || $0.kind == "unchecked" } && actions.filter { $0.kind == "checked" }.count == 1
+    }
+
     #if canImport(UIKit)
     /// The controller on top: what presents the next alert or sheet.
     private static func top() -> UIViewController {
@@ -2922,17 +2947,24 @@ public struct NativeAction {
 
     private static var menuButton: UIButton?
 
+    private static func uiMenu(_ title: String, _ actions: [NativeAction]) -> UIMenu {
+        UIMenu(title: title, options: isChoice(actions) ? .singleSelection : [], children: actions.filter { $0.kind != "cancel" }.map { a -> UIMenuElement in
+            let kids = children(a)
+            if !kids.isEmpty { return uiMenu(a.label, kids) }
+            let item = UIAction(title: a.label, attributes: a.kind == "destructive" ? .destructive : []) { _ in later(a) }
+            if a.kind == "checked" { item.state = .on }
+            return item
+        })
+    }
+
     /// A UIMenu at a point of the window (iOS 17.4+, which can open a button's menu from code); an action sheet before.
     public static func menu(_ x: Double, _ y: Double, _ title: String, _ actions: [NativeAction]) -> Bool {
+        if captured != nil { captured = actions; return true }
         guard #available(iOS 17.4, *) else { return Self.actions(title, actions) }
         let host = Runtime.shared.root.view!
         menuButton?.removeFromSuperview()
         let button = UIButton(frame: CGRect(x: min(x, Double(host.bounds.width) - 2), y: y, width: 1, height: 1))
-        button.menu = UIMenu(title: title, children: actions.map { a in
-            let item = UIAction(title: a.kind == "submenu" ? "\(a.label)…" : a.label, attributes: a.kind == "destructive" ? .destructive : []) { _ in later(a) }
-            if a.kind == "checked" { item.state = .on }
-            return item
-        })
+        button.menu = uiMenu(title, actions)
         button.showsMenuAsPrimaryAction = true
         host.addSubview(button)
         menuButton = button
@@ -3008,20 +3040,32 @@ public struct NativeAction {
         @objc func fire() { NativeUi.later(action) }
     }
 
-    /// An NSMenu at a point of the window (in points from its top left).
-    public static func menu(_ x: Double, _ y: Double, _ title: String, _ actions: [NativeAction]) -> Bool {
-        guard let view = NSApp.keyWindow?.contentView else { return false }
+    private static func nsMenu(_ title: String, _ actions: [NativeAction], _ targets: inout [Target]) -> NSMenu {
         let menu = NSMenu(title: title)
-        var targets: [Target] = []
         if !title.isEmpty { menu.addItem(NSMenuItem.sectionHeader(title: title)) }
         for a in actions where a.kind != "cancel" {
-            let target = Target(a)
-            targets.append(target)
-            let item = NSMenuItem(title: a.kind == "submenu" ? "\(a.label)…" : a.label, action: #selector(Target.fire), keyEquivalent: "")
-            item.target = target
-            if a.kind == "checked" { item.state = .on }
+            let item = NSMenuItem(title: a.label, action: nil, keyEquivalent: "")
+            let kids = children(a)
+            if !kids.isEmpty {
+                item.submenu = nsMenu("", kids, &targets)
+            } else {
+                let target = Target(a)
+                targets.append(target)
+                item.action = #selector(Target.fire)
+                item.target = target
+                if a.kind == "checked" { item.state = .on }
+            }
             menu.addItem(item)
         }
+        return menu
+    }
+
+    /// An NSMenu at a point of the window (in points from its top left).
+    public static func menu(_ x: Double, _ y: Double, _ title: String, _ actions: [NativeAction]) -> Bool {
+        if captured != nil { captured = actions; return true }
+        guard let view = NSApp.keyWindow?.contentView else { return false }
+        var targets: [Target] = []
+        let menu = nsMenu(title, actions, &targets)
         menu.popUp(positioning: nil, at: NSPoint(x: min(x, Double(view.bounds.width) - 4), y: Double(view.bounds.height) - y), in: view)
         _ = targets
         return true
@@ -3036,7 +3080,7 @@ public struct NativeAction {
         let height = detent == "large" ? window.frame.height - 60 : window.frame.height * 0.55
         let panel = NSWindow(contentRect: NSRect(x: 0, y: 0, width: window.frame.width - 40, height: height), styleMask: [.titled], backing: .buffered, defer: false)
         panel.title = title
-        let content = node.scrolls ? FixedScreenView(node) as UIView : ScreenView(node)
+        let content = node.scrollsItself ? FixedScreenView(node) as UIView : ScreenView(node)
         panel.contentView = content
         sheets.append((panel, node))
         window.beginSheet(panel)
@@ -3135,6 +3179,17 @@ public struct NativeAction {
         return node
     }
 
+    /// A drawing surface: each stroke a CAShapeLayer whose path runs through the touch's midpoints.
+    public static func paint(_ ink: @escaping () -> String, _ width: Double, _ clears: @escaping () -> Int32) -> Node {
+        let view = PaintView()
+        view.lineWidth = CGFloat(width)
+        let node = Node(.native, tag: "native", native: view)
+        node.add([css(Style(flex: 1))])
+        node.bind(ink) { view.ink = parseColor($0) ?? .label }
+        node.bind(clears) { _ in view.clear() }
+        return node
+    }
+
     public static func spinner() -> Node {
         let view = UIActivityIndicatorView(style: .medium)
         view.startAnimating()
@@ -3172,6 +3227,54 @@ public struct NativeAction {
         let node = Node(.native, tag: "native", native: slider)
         node.bind(value) { v in if !slider.isTracking { slider.value = Float(v) } }
         return node
+    }
+}
+
+final class PaintView: UIView {
+    var ink: UIColor = .label
+    var lineWidth: CGFloat = 5
+    private var path: UIBezierPath?
+    private var stroke: CAShapeLayer?
+    private var last = CGPoint.zero
+
+    func clear() {
+        layer.sublayers?.forEach { $0.removeFromSuperlayer() }
+        path = nil
+    }
+
+    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        guard let p = touches.first?.location(in: self) else { return }
+        let shape = CAShapeLayer()
+        shape.strokeColor = ink.cgColor
+        shape.fillColor = nil
+        shape.lineWidth = lineWidth
+        shape.lineCap = .round
+        shape.lineJoin = .round
+        layer.addSublayer(shape)
+        let bezier = UIBezierPath()
+        bezier.move(to: p)
+        bezier.addLine(to: CGPoint(x: p.x + 0.1, y: p.y))
+        path = bezier
+        stroke = shape
+        shape.path = bezier.cgPath
+        last = p
+    }
+
+    override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
+        guard let touch = touches.first, let bezier = path else { return }
+        // The touches iOS coalesced between frames too, so a fast stroke keeps its shape.
+        for t in event?.coalescedTouches(for: touch) ?? [touch] {
+            let p = t.location(in: self)
+            bezier.addQuadCurve(to: CGPoint(x: (last.x + p.x) / 2, y: (last.y + p.y) / 2), controlPoint: last)
+            last = p
+        }
+        stroke?.path = bezier.cgPath
+    }
+
+    override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
+        path?.addLine(to: last)
+        stroke?.path = path?.cgPath
+        path = nil
     }
 }
 

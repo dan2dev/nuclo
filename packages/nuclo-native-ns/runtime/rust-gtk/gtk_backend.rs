@@ -296,7 +296,7 @@ impl Gtk {
         let Some((widget, scrolls)) = self.view(root, |view| (view.widget.clone(), view.content.is_some())) else { return gtk::Box::default().upcast() };
         widget.imp().root.set(true);
         self.roots.borrow_mut().push(widget.clone());
-        let page: gtk::Widget = if scrolls {
+        let page: gtk::Widget = if scrolls || host::scrolls_itself(root) {
             let page = adw::Bin::builder().child(&widget).vexpand(true).build();
             page.upcast()
         } else {
@@ -540,21 +540,11 @@ impl Backend for Gtk {
     }
 
     fn native_menu(&self, x: f32, y: f32, title: &str, items: &[(String, String)], done: Box<dyn Fn(usize)>) -> bool {
-        let model = gio::Menu::new();
-        let section = gio::Menu::new();
         let group = gio::SimpleActionGroup::new();
         let done: Rc<dyn Fn(usize)> = Rc::from(done);
-        for (i, (label, kind)) in items.iter().enumerate() {
-            if kind == "cancel" {
-                continue;
-            }
-            let name = format!("i{i}");
-            let action = if kind == "checked" { gio::SimpleAction::new_stateful(&name, None, &true.to_variant()) } else { gio::SimpleAction::new(&name, None) };
-            let run = done.clone();
-            action.connect_activate(move |_, _| run(i));
-            group.add_action(&action);
-            section.append(Some(&if kind == "submenu" { format!("{label}…") } else { label.clone() }), Some(&format!("native.{name}")));
-        }
+        let mut at = 0;
+        let section = menu_items(items, &mut at, items.len(), &group, &done);
+        let model = gio::Menu::new();
         model.append_section((!title.is_empty()).then_some(title), &section);
         let popover = gtk::PopoverMenu::from_model(Some(&model));
         popover.insert_action_group("native", Some(&group));
@@ -1333,11 +1323,20 @@ impl Gtk {
         let wheel = gtk::EventControllerScroll::new(gtk::EventControllerScrollFlags::VERTICAL);
         let scale = Rc::new(Cell::new(1.0f64));
         let rest: Rc<RefCell<Option<glib::SourceId>>> = Rc::default();
+        // Where the pointer is: the wheel zooms around it.
+        let at = Rc::new(Cell::new((0.0f64, 0.0f64)));
+        let motion = gtk::EventControllerMotion::new();
+        motion.connect_motion({
+            let at = at.clone();
+            move |_, x, y| at.set((x, y))
+        });
+        widget.add_controller(motion);
         wheel.connect_scroll(move |controller, _, dy| {
             if !controller.current_event_state().contains(gdk::ModifierType::CONTROL_MASK) {
                 return glib::Propagation::Proceed;
             }
-            let event = |state: &str, scale: f64| host::pinch(view, PinchEvent { state: state.into(), scale, focal_x: 0.0, focal_y: 0.0 });
+            let (focal_x, focal_y) = at.get();
+            let event = |state: &str, scale: f64| host::pinch(view, PinchEvent { state: state.into(), scale, focal_x, focal_y });
             match rest.take() {
                 Some(pending) => pending.remove(),
                 None => {
@@ -1350,7 +1349,7 @@ impl Gtk {
             let (scale, done) = (scale.clone(), rest.clone());
             *rest.borrow_mut() = Some(glib::timeout_add_local_once(Duration::from_millis(250), move || {
                 done.take();
-                host::pinch(view, PinchEvent { state: "end".into(), scale: scale.get(), focal_x: 0.0, focal_y: 0.0 });
+                host::pinch(view, PinchEvent { state: "end".into(), scale: scale.get(), focal_x, focal_y });
             }));
             glib::Propagation::Stop
         });
@@ -1430,4 +1429,50 @@ pub fn run(entry: fn()) {
         window.present();
     });
     app.run();
+}
+
+/// The next `count` items of a menu from `items[*at]` on: "submenu:N" nests the N after it.
+fn menu_items(items: &[(String, String)], at: &mut usize, count: usize, group: &gio::SimpleActionGroup, done: &Rc<dyn Fn(usize)>) -> gio::Menu {
+    let menu = gio::Menu::new();
+    // A list of choices with one picked (no submenus among them): radio items of one stateful action.
+    let level = &items[*at..(*at + count).min(items.len())];
+    let choice = |k: &str| k == "checked" || k == "unchecked";
+    let radio = level.iter().all(|(_, k)| choice(k)) && level.iter().filter(|(_, k)| k == "checked").count() == 1;
+    let pick = format!("pick{}", *at);
+    if radio {
+        let picked = *at + level.iter().position(|(_, k)| k == "checked").unwrap_or(0);
+        let run = done.clone();
+        let action = gio::SimpleAction::new_stateful(&pick, Some(glib::VariantTy::UINT64), &(picked as u64).to_variant());
+        action.connect_activate(move |a, v| {
+            let Some(i) = v.and_then(|v| v.get::<u64>()) else { return };
+            a.set_state(&i.to_variant());
+            run(i as usize);
+        });
+        group.add_action(&action);
+    }
+    for _ in 0..count {
+        let Some((label, kind)) = items.get(*at) else { break };
+        let i = *at;
+        *at += 1;
+        if let Some(n) = kind.strip_prefix("submenu:").and_then(|n| n.parse::<usize>().ok()) {
+            menu.append_submenu(Some(label), &menu_items(items, at, n, group, done));
+            continue;
+        }
+        if kind == "cancel" {
+            continue;
+        }
+        if radio {
+            let item = gio::MenuItem::new(Some(label), None);
+            item.set_action_and_target_value(Some(&format!("native.{pick}")), Some(&(i as u64).to_variant()));
+            menu.append_item(&item);
+            continue;
+        }
+        let name = format!("i{i}");
+        let action = if choice(kind) { gio::SimpleAction::new_stateful(&name, None, &(kind == "checked").to_variant()) } else { gio::SimpleAction::new(&name, None) };
+        let run = done.clone();
+        action.connect_activate(move |_, _| run(i));
+        group.add_action(&action);
+        menu.append(Some(label), Some(&format!("native.{name}")));
+    }
+    menu
 }

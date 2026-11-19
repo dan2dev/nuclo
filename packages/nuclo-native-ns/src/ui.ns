@@ -156,8 +156,8 @@ export extern fn css(style: Style): StyleResult
 export type Point = { x: number, y: number, pageX: number, pageY: number }
 /** A drag: "start", "move", "end", or "cancel". `dx`, `dy` from where it started; `vx`, `vy` in points per second. */
 export type Pan = { state: string, dx: number, dy: number, vx: number, vy: number, x: number, y: number }
-/** Two fingers (ctrl + wheel on a desktop). `scale` is 1 when the gesture starts. */
-export type Pinch = { state: string, scale: number }
+/** Two fingers (ctrl + wheel on a desktop). `scale` is 1 when the gesture starts; `x`, `y`: the point between the fingers, from the box's top-left corner. */
+export type Pinch = { state: string, scale: number, x: number, y: number }
 /** The scroll position of an `overflow: "scroll"` box. */
 export type Scroll = { top: number, height: number, viewport: number }
 
@@ -262,8 +262,8 @@ export extern fn overlay(view: () => View)
 /** Runs `f` once, after `ms` milliseconds, on the UI thread. */
 export extern fn later(ms: int, f: () => void)
 /**
- * One choice of a menu, an action sheet, or an alert. `kind`: "default", "destructive", "cancel", "checked"
- * (a check mark), or "submenu" (`run` opens the next menu).
+ * One choice of a menu, an action sheet, or an alert. `kind`: "default", "destructive", "cancel", "checked" or
+ * "unchecked" (a choice, picked or not), or "submenu" (`run` calls `menuAt` with its items; native menus nest them).
  */
 export type Action = { label: string, glyph: string, kind: string, run: () => void }
 
@@ -315,6 +315,11 @@ export extern fn stepperControl(value: () => int, min: int, max: int, change: (i
  * indicator turns while `refreshing()` (Android's swipe refresh, iOS's refresh control).
  */
 export extern fn refreshControl(content: View, refreshing: () => bool, refresh: () => void): View
+/**
+ * The platform's drawing surface: the finger's strokes, smoothed, in `ink()` and `width`, kept by the view
+ * (no view per point). It clears when `clears()` changes.
+ */
+export extern fn paintControl(ink: () => string, width: float, clears: () => int): View
 /** A short message (Android's snackbar, GTK's toast). */
 export extern fn nativeToast(text: string): bool
 

@@ -38,7 +38,7 @@ fn colorMenu(n: Note, at: Point) {
   const names: string[] = ["Sun", "Mint", "Sky", "Pink", "Lilac", "Orange"]
   let actions: Action[] = []
   for (const i of 0..names.length - 1) {
-    actions.push({ label: names[i], glyph: i == n.color ? "✓" : "●", kind: i == n.color ? "checked" : "default", run: () => recolorNote(n.id, i) })
+    actions.push({ label: names[i], glyph: i == n.color ? "✓" : "●", kind: i == n.color ? "checked" : "unchecked", run: () => recolorNote(n.id, i) })
   }
   menuAt(at, "Color", actions)
 }

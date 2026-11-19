@@ -165,3 +165,64 @@ pub fn stepper(value: Rc<dyn Fn() -> i32>, min: i32, max: i32, change: Rc<dyn Fn
   });
   n
 }
+
+/// A drawing surface: a DrawingArea that keeps the strokes and draws them with cairo, round and smooth.
+pub fn paint(ink: Rc<dyn Fn() -> String>, width: f64, clears: Rc<dyn Fn() -> i32>) -> nu::Node {
+  type Stroke = (gtk::gdk::RGBA, Vec<(f64, f64)>);
+  let strokes: Rc<std::cell::RefCell<Vec<Stroke>>> = Rc::default();
+  let area = gtk::DrawingArea::new();
+  area.set_hexpand(true);
+  area.set_vexpand(true);
+  {
+    let strokes = strokes.clone();
+    area.set_draw_func(move |_, cr, _, _| {
+      cr.set_line_width(width);
+      cr.set_line_cap(gtk::cairo::LineCap::Round);
+      cr.set_line_join(gtk::cairo::LineJoin::Round);
+      for (color, points) in strokes.borrow().iter() {
+        let Some(&(x0, y0)) = points.first() else { continue };
+        cr.set_source_rgba(color.red() as f64, color.green() as f64, color.blue() as f64, color.alpha() as f64);
+        cr.move_to(x0, y0);
+        cr.line_to(x0 + 0.1, y0);
+        // Through the midpoints: each point is a control point (a quadratic curve as a cubic).
+        let mut last = (x0, y0);
+        for &(x, y) in points.iter().skip(1) {
+          let mid = ((last.0 + x) / 2.0, (last.1 + y) / 2.0);
+          cr.curve_to(last.0, last.1, last.0, last.1, mid.0, mid.1);
+          last = (x, y);
+        }
+        cr.line_to(last.0, last.1);
+        let _ = cr.stroke();
+      }
+    });
+  }
+  let drag = gtk::GestureDrag::new();
+  let origin = Rc::new(Cell::new((0.0, 0.0)));
+  {
+    let (strokes, origin, area2, ink) = (strokes.clone(), origin.clone(), area.clone(), ink.clone());
+    drag.connect_drag_begin(move |_, x, y| {
+      origin.set((x, y));
+      let color = gtk::gdk::RGBA::parse(ink().as_str()).unwrap_or(gtk::gdk::RGBA::BLACK);
+      strokes.borrow_mut().push((color, vec![(x, y)]));
+      area2.queue_draw();
+    });
+  }
+  {
+    let (strokes, origin, area2) = (strokes.clone(), origin.clone(), area.clone());
+    drag.connect_drag_update(move |_, dx, dy| {
+      let (x, y) = origin.get();
+      if let Some(stroke) = strokes.borrow_mut().last_mut() {
+        stroke.1.push((x + dx, y + dy));
+      }
+      area2.queue_draw();
+    });
+  }
+  area.add_controller(drag);
+  let n = node(area.clone());
+  n.bind(clears, move |_: &i32| {
+    strokes.borrow_mut().clear();
+    area.queue_draw();
+  });
+  let _ = ink;
+  n
+}

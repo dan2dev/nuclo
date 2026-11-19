@@ -370,7 +370,8 @@ pub trait Backend {
     }
     // nuclo-native-ns: the platform's own components. Each gives false where the backend has none (GPUI
     // draws every view itself): the app draws its own then. `items` are (label, kind) pairs, kind one of
-    // "default", "destructive", "cancel", "checked", "submenu"; `done` gets the index of the chosen one.
+    // "default", "destructive", "cancel", "checked", "unchecked", "submenu"; `done` gets the index of the chosen
+    // one. In a menu, "submenu:N" is a submenu whose N items follow it (nested ones counted as one).
 
     /// Whether screens' bars show `barButton`s.
     fn has_bar_buttons(&self) -> bool {
@@ -461,6 +462,9 @@ pub mod host {
     }
 
     /// Lays out a root view in `width` × `height`: every view under it gets its frame.
+    pub fn scrolls_itself(root: ViewId) -> bool {
+        node::scrolls_itself(root)
+    }
     pub fn layout_root(root: ViewId, width: f32, height: f32) {
         node::layout_root(root, width, height)
     }
