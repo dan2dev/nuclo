@@ -194,7 +194,9 @@ function gestures(a: Attributes) {
     let longTimer = 0;
     let pinchStart = 0;
     let lastTap = 0;
-    if (a.onPan || a.onPinch) el.style.touchAction = "none";
+    // A pan on one axis leaves the other to the browser's scrolling (a list of swipeable rows still scrolls).
+    const axis = a.panAxis ?? "both";
+    if (a.onPan || a.onPinch) el.style.touchAction = a.onPinch || axis === "both" ? "none" : axis === "x" ? "pan-y" : "pan-x";
     const local = (e: PointerEvent) => {
       const r = el.getBoundingClientRect();
       return { x: e.clientX - r.left, y: e.clientY - r.top, pageX: e.clientX, pageY: e.clientY };
@@ -236,6 +238,8 @@ function gestures(a: Attributes) {
       last = { x: e.clientX, y: e.clientY, t: e.timeStamp, vx: ((e.clientX - last.x) / dt) * 1000, vy: ((e.clientY - last.y) / dt) * 1000 };
       if (!panning && Math.hypot(e.clientX - start.x, e.clientY - start.y) > SLOP) {
         if (longTimer) { clearTimeout(longTimer); longTimer = 0; }
+        const ax = Math.abs(e.clientX - start.x), ay = Math.abs(e.clientY - start.y);
+        if (a.onPan && ((axis === "x" && ay > ax) || (axis === "y" && ax > ay))) { start = null; return; }
         if (a.onPan) {
           panning = panned = true;
           try { el.setPointerCapture(e.pointerId); } catch { /* a pointer the browser does not track (a synthetic one) */ }

@@ -123,13 +123,31 @@ fn makeMail(): Mail[] {
 let mail: Mail[] = makeMail()
 let swipeId = -1
 let swipeX = 0.0
+/** Past the threshold, letting go acts: the action shows it, and a tick says so once. */
+let armed = false
+/** The row going out to the left, before it leaves the list. */
+let removingId = -1
 
-const mailOuter = themed(() => css({ overflow: "hidden", backgroundColor: swipeX > 0.0 ? t().success : t().danger }))
+fn deleteAt() => 0.0 - viewport().width * 0.4
+fn readAt() => viewport().width * 0.25
+
+/** What shows behind a row: the colour of the side it is pulled to (none at rest). */
+fn mailBack(m: Mail): StyleResult {
+  const pulled = swipeId == m.id || removingId == m.id
+  const x = removingId == m.id ? -1.0 : swipeX
+  return css({ overflow: "hidden", backgroundColor: !pulled ? t().bg : x > 0.0 ? t().accent : t().danger })
+}
 const mailBehind = css({ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, flexDirection: "row", alignItems: "center", justifyContent: "space-between", px: space.xl })
-const behindText = css({ color: "#ffffff", fontWeight: "bold", fontSize: font.sub })
+/** An action's label: shown on its side only, full size once armed. */
+fn behindLabel(m: Mail, right: bool) => css({
+  color: "#ffffff", fontWeight: "bold", fontSize: font.sub,
+  opacity: swipeId == m.id && (right ? swipeX > 0.0 : swipeX < 0.0) ? 1.0 : 0.0,
+  scale: swipeId == m.id && armed ? 1.15 : 0.9, transition: 160, easing: "spring",
+})
 fn mailFront(m: Mail) => css({
   flexDirection: "row", gap: space.md, px: space.lg, py: space.md, backgroundColor: t().bg,
-  translateX: swipeId == m.id ? swipeX : 0.0, transition: swipeId == m.id ? 0 : 300, easing: "spring",
+  translateX: removingId == m.id ? 0.0 - viewport().width : swipeId == m.id ? swipeX : 0.0,
+  transition: swipeId == m.id ? 0 : removingId == m.id ? 220 : 320, easing: removingId == m.id ? "ease-in" : "spring",
 })
 const unreadDot = themed(() => css({ width: 10, height: 10, borderRadius: 5, mt: 6, backgroundColor: t().accent }))
 const readDot = css({ width: 10, height: 10 })
@@ -137,30 +155,42 @@ const mailFrom = themed(() => css({ fontSize: font.body, fontWeight: "semibold",
 const mailPreview = themed(() => css({ fontSize: font.sub, color: t().muted, numberOfLines: 2, lineHeight: 19 }))
 
 fn swipeMail(m: Mail, e: Pan) {
+  if (removingId == m.id) { return }
   swipeId = m.id
   swipeX = e.dx
+  const nowArmed = e.dx < deleteAt() || e.dx > readAt()
+  if (nowArmed != armed && e.state == "move") { haptic("light") }
+  armed = nowArmed
   if (e.state == "end" || e.state == "cancel") {
-    const v = viewport()
-    if (e.dx < 0.0 - v.width * 0.4 || e.vx < -1100.0) {
-      mail = mail.filter((x) => x.id != m.id)
-      haptic("medium")
-      toast("Deleted")
-    } else if (e.dx > v.width * 0.3 || e.vx > 1100.0) {
-      for (const i of 0..mail.length - 1) { if (mail[i].id == m.id) { mail[i].read = !mail[i].read } }
-      haptic("light")
-    }
+    // A flick acts too, if it goes the way the row was pulled.
+    const del = e.state == "end" && (e.dx < deleteAt() || (e.vx < -1100.0 && e.dx < 0.0))
+    const read = e.state == "end" && !del && (e.dx > readAt() || (e.vx > 1100.0 && e.dx > 0.0))
     swipeId = -1
     swipeX = 0.0
+    armed = false
+    if (del) {
+      // Out to the left first, then off the list.
+      removingId = m.id
+      haptic("medium")
+      later(230, () => {
+        mail = mail.filter((x) => x.id != m.id)
+        removingId = -1
+        toast("Deleted")
+        update()
+      })
+    } else if (read) {
+      for (const i of 0..mail.length - 1) { if (mail[i].id == m.id) { mail[i].read = !mail[i].read } }
+    }
   }
   update()
 }
 
 fn mailRow(m: Mail): View {
   return div(
-    mailOuter,
-    div(mailBehind, p(behindText, m.read ? "● Unread" : "✓ Read"), p(behindText, "Delete ✕")),
-    div(() => mailFront(m), { onPan: (e: Pan) => swipeMail(m, e) },
-      span(m.read ? readDot : unreadDot()),
+    () => mailBack(m),
+    div(mailBehind, p(() => behindLabel(m, true), () => m.read ? "Unread" : "Read"), p(() => behindLabel(m, false), "Delete")),
+    div(() => mailFront(m), { onPan: (e: Pan) => swipeMail(m, e), panAxis: "x" },
+      span(() => m.read ? readDot : unreadDot()),
       div(grow, gapSm, div(rowBetween, p(mailFrom, m.src), p(caption, "9:41")), p(strongText, m.subject), p(mailPreview, m.preview)),
     ),
   )
@@ -296,6 +326,12 @@ let items: Item[] = [
 ]
 let moving = -1
 let moveY = 0.0
+// The drop: the row let go settles from where the finger left it into its new place. In the frame the order
+// changes, `snap` keeps every row where it was on screen (the new layout less the offsets, no transition).
+let lastTarget = -1
+let settling = -1
+let settleY = 0.0
+let snap = false
 const ROW_H = 64.0
 
 fn targetIndex(src: int): int {
@@ -312,7 +348,7 @@ fn indexOf(id: int): int {
 
 /** Where a row sits while another moves: the rows between make room. */
 fn shift(i: int): number {
-  if (moving < 0) { return 0.0 }
+  if (moving < 0) { return items[i].id == settling ? settleY : 0.0 }
   const src = indexOf(moving)
   const to = targetIndex(src)
   if (items[i].id == moving) { return moveY }
@@ -321,29 +357,50 @@ fn shift(i: int): number {
   return 0.0
 }
 
+fn lifted(it: Item) => it.id == moving || (it.id == settling && snap)
+
 /** A row's place is read on each update: rows are kept by item when the order changes. */
 fn reorderRow(it: Item) => css({
   flexDirection: "row", alignItems: "center", gap: space.md, height: ROW_H, px: space.lg, backgroundColor: t().surface,
-  borderBottomWidth: 1, borderColor: t().line, translateY: shift(indexOf(it.id)), zIndex: it.id == moving ? 10 : 0,
-  scale: it.id == moving ? 1.03 : 1.0, shadowColor: "rgba(0,0,0,0.2)", shadowRadius: it.id == moving ? 18 : 0, shadowOffsetY: 6,
-  transition: it.id == moving ? 0 : 220, easing: "ease-out",
+  borderBottomWidth: 1, borderColor: t().line, translateY: shift(indexOf(it.id)), zIndex: it.id == moving || it.id == settling ? 10 : 0,
+  scale: lifted(it) ? 1.03 : 1.0, shadowColor: "rgba(0,0,0,0.2)", shadowRadius: lifted(it) ? 18 : 0, shadowOffsetY: 6,
+  transition: it.id == moving || snap ? 0 : 240, easing: "ease-out",
 })
 const handle = themed(() => css({ width: 44, height: 44, lineHeight: 44, textAlign: "center", color: t().muted, fontSize: 22 }))
 const rowGlyph = css({ fontSize: 22, width: 30, textAlign: "center" })
 
 fn dragRow(it: Item, e: Pan) {
-  if (e.state == "start") { moving = it.id; haptic("medium") }
+  if (e.state == "start") { moving = it.id; lastTarget = indexOf(it.id); haptic("medium") }
   moveY = e.dy
+  // A tick each time the row would land somewhere else, as the platforms' own lists do.
+  const target = targetIndex(indexOf(it.id))
+  if (e.state == "move" && target != lastTarget) {
+    lastTarget = target
+    haptic("light")
+  }
   if (e.state == "end" || e.state == "cancel") {
     const src = indexOf(it.id)
-    const to = targetIndex(src)
+    const to = e.state == "cancel" ? src : targetIndex(src)
     if (src != to) {
       const x = items.removeAt(src)
       items.insert(to, x)
       haptic("light")
     }
+    // Where the row is on screen, from its new place: it settles from there.
+    settling = it.id
+    settleY = moveY - toFloat(to - src) * ROW_H
+    snap = true
     moving = -1
     moveY = 0.0
+    update()
+    const id = it.id
+    later(16, () => {
+      snap = false
+      settleY = 0.0
+      update()
+      later(260, () => { if (settling == id && !snap) { settling = -1; update() } })
+    })
+    return
   }
   update()
 }
@@ -600,7 +657,8 @@ fn dismissTop(right: bool) {
   if (right) { liked += 1 } else { noped += 1 }
   haptic(right ? "success" : "light")
   update()
-  later(260, () => {
+  // Gone once it is off the screen (the fly-out takes its whole transition).
+  later(360, () => {
     if (deck.length > 0) { deck.removeAt(0) }
     topDx = 0.0
     topDy = 0.0

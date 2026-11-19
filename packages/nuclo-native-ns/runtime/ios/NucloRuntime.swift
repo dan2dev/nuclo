@@ -1668,6 +1668,9 @@ final class PointerRecognizer: UIGestureRecognizer {
     private var hover: UIHoverGestureRecognizer?
     private var holds: [UIGestureRecognizer] = []
     private var made = Set<String>()
+    /// nuclo-native-ns: "x", "y", or "both": a pan on one axis does not begin along the other (the scroller takes it).
+    var axis = "both"
+    private var panRecognizer: UIPanGestureRecognizer?
 
     init(_ node: Node, _ view: UIView) {
         self.node = node
@@ -1709,6 +1712,13 @@ final class PointerRecognizer: UIGestureRecognizer {
         g.delegate = self
         view.addGestureRecognizer(g)
         holds.append(g)
+        panRecognizer = g
+    }
+
+    func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
+        guard gestureRecognizer === panRecognizer, axis != "both", let pan = panRecognizer else { return true }
+        let v = pan.velocity(in: view)
+        return axis == "x" ? abs(v.x) > abs(v.y) : abs(v.y) > abs(v.x)
     }
 
     func pinch(_ handler: @escaping @MainActor (PinchEvent) -> Void) {
@@ -2826,6 +2836,7 @@ public struct Attr: NodeMod {
     public static func onLongPress(_ handler: @escaping @MainActor (PointerEvent) -> Void) -> NodeMod { Attr { $0.touched()?.longPress(handler) } }
     public static func onDoubleClick(_ handler: @escaping @MainActor (PointerEvent) -> Void) -> NodeMod { Attr { $0.touched()?.doubleClick(handler) } }
     public static func onPan(_ handler: @escaping @MainActor (PanEvent) -> Void) -> NodeMod { Attr { $0.touched()?.pan(handler) } }
+    public static func panAxis(_ axis: String) -> NodeMod { Attr { $0.touched()?.axis = axis } }
     public static func onPinch(_ handler: @escaping @MainActor (PinchEvent) -> Void) -> NodeMod { Attr { $0.touched()?.pinch(handler) } }
     public static func onScroll(_ handler: @escaping @MainActor (ScrollEvent) -> Void) -> NodeMod { Attr { $0.onScroll = handler } }
 

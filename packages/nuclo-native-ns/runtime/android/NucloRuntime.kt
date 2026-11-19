@@ -1403,6 +1403,10 @@ internal class Touch(private val node: Node, private val view: View) : View.OnTo
     val pointers = HashMap<String, (PointerEvent) -> Unit>()
     var onPan: ((PanEvent) -> Unit)? = null
     var onPinch: ((PinchEvent) -> Unit)? = null
+    /** "x", "y", or "both". */
+    var axis = "both"
+    /** A one-axis pan saw a drag along the other axis: this touch is the scroller's. */
+    private var declined = false
 
     private val slop = ViewConfiguration.get(view.context).scaledTouchSlop
     private var tracker: VelocityTracker? = null
@@ -1474,16 +1478,24 @@ internal class Touch(private val node: Node, private val view: View) : View.OnTo
                 startX = e.rawX
                 startY = e.rawY
                 panning = false
-                if (onPan != null || onPinch != null) v.parent?.requestDisallowInterceptTouchEvent(true)
+                declined = false
+                // A pan on one axis does not hold the touch yet: it decides once the drag has a direction.
+                if ((onPan != null && axis == "both") || onPinch != null) v.parent?.requestDisallowInterceptTouchEvent(true)
                 pointers["pointerDown"]?.invoke(pointer(e))
             }
             MotionEvent.ACTION_MOVE -> {
                 pointers["pointerMove"]?.invoke(pointer(e))
-                if (onPan != null && !pinching) {
+                if (onPan != null && !pinching && !declined) {
+                    val ax = kotlin.math.abs(e.rawX - startX)
+                    val ay = kotlin.math.abs(e.rawY - startY)
                     if (panning) {
                         pan("move", e)
-                    } else if (max(kotlin.math.abs(e.rawX - startX), kotlin.math.abs(e.rawY - startY)) > slop) {
+                    } else if (max(ax, ay) > slop && ((axis == "x" && ay > ax) || (axis == "y" && ax > ay))) {
+                        // Along the other axis: the scroller takes it (it intercepts on its next move).
+                        declined = true
+                    } else if (max(ax, ay) > slop) {
                         panning = true
+                        v.parent?.requestDisallowInterceptTouchEvent(true)
                         // The translation counts from where the drag was recognized, so the view does not jump.
                         startX = e.rawX
                         startY = e.rawY
@@ -2198,6 +2210,8 @@ object A {
     fun onLongPress(handler: (PointerEvent) -> Unit) = NodeMod { it.touch().pointers["longPress"] = handler }
     fun onDoubleClick(handler: (PointerEvent) -> Unit) = NodeMod { it.touch().pointers["doubleClick"] = handler }
     fun onPan(handler: (PanEvent) -> Unit) = NodeMod { it.touch().onPan = handler }
+    /** nuclo-native-ns: "x" or "y": the pan starts only along that axis; a drag along the other goes to the scroller. */
+    fun panAxis(axis: String) = NodeMod { it.touch().axis = axis }
     fun onPinch(handler: (PinchEvent) -> Unit) = NodeMod { it.touch().onPinch = handler }
     fun onScroll(handler: (ScrollEvent) -> Unit) = NodeMod { it.onScroll = handler }
 

@@ -143,6 +143,7 @@ private func point(_ e: Nuclo.PointerEvent) -> Point { Point(x: e.x, y: e.y, pag
   if let f = a.onInput { m.append(Nuclo.A.onInput { e in f(e.target.value) }) }
   if let f = a.onChange { m.append(Nuclo.A.onChange { e in f(e.target.checked) }) }
   if let f = a.onKeyDown { m.append(Nuclo.A.onKeyDown { e in f(e.key) }) }
+  if let axis = a.panAxis { m.append(Nuclo.A.panAxis(axis)) }
   if let f = a.onPan {
     m.append(Nuclo.A.onPan { e in f(Pan(state: e.state, dx: e.translationX, dy: e.translationY, vx: e.velocityX, vy: e.velocityY, x: e.x, y: e.y)) })
   }

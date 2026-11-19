@@ -180,6 +180,11 @@ export type Attributes = {
   onChange?: (bool) => void,
   onKeyDown?: (string) => void,
   onPan?: (Pan) => void,
+  /**
+   * The axis a pan takes: "x" (a row's swipe), "y", or "both" (the default). A pan on one axis lets a drag
+   * along the other go to the scroller around it: a list of swipeable rows still scrolls.
+   */
+  panAxis?: string,
   onPinch?: (Pinch) => void,
   onLongPress?: (Point) => void,
   onDoubleClick?: (Point) => void,

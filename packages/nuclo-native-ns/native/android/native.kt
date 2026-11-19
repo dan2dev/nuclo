@@ -146,6 +146,7 @@ private fun attributes(a: Attributes): List<NodeMod> = listOfNotNull(
   a.onInput?.let { f -> A.onInput { f(it.target.value) } },
   a.onChange?.let { f -> A.onChange { f(it.target.checked) } },
   a.onKeyDown?.let { f -> A.onKeyDown { f(it.key) } },
+  a.panAxis?.let { A.panAxis(it) },
   a.onPan?.let { f -> A.onPan { f(Pan(it.state, it.translationX, it.translationY, it.velocityX, it.velocityY, it.x, it.y)) } },
   a.onPinch?.let { f -> A.onPinch { f(Pinch(it.state, it.scale)) } },
   a.onLongPress?.let { f -> A.onLongPress { f(point(it)) } },
