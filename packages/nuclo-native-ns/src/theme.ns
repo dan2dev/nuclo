@@ -1,0 +1,113 @@
+// The design tokens: colors, spacing, radii, and type, for a light and a dark mode and five accents.
+// The look is custom (rounded surfaces, one accent, soft depth) and stays close to the platforms' own
+// metrics: a 44 point touch target, 17 point body text, 16 point margins, grouped lists.
+//
+// Every themed style is a `themed(...)` value: a function that gives the same style class until the mode
+// or the accent changes. The views take it as a dynamic class, so `update()` restyles the app after a
+// switch, and touches nothing otherwise.
+
+import { StyleResult, theme } from "./ui"
+
+/** The color variables of one mode. */
+export type Palette = {
+  bg: string,
+  grouped: string,
+  surface: string,
+  surface2: string,
+  elevated: string,
+  text: string,
+  text2: string,
+  muted: string,
+  line: string,
+  accent: string,
+  accentText: string,
+  accentSoft: string,
+  danger: string,
+  dangerSoft: string,
+  success: string,
+  warning: string,
+  scrim: string,
+  skeleton: string,
+}
+
+export type Spacing = { xxs: number, xs: number, sm: number, md: number, lg: number, xl: number, xxl: number }
+export type Radii = { sm: number, md: number, lg: number, xl: number, pill: number }
+export type TypeScale = { caption: number, footnote: number, sub: number, body: number, headline: number, title3: number, title2: number, title1: number, large: number }
+
+/** The spacing scale, in points. */
+export const space: Spacing = { xxs: 2, xs: 4, sm: 8, md: 12, lg: 16, xl: 20, xxl: 28 }
+/** The corner radii, in points. */
+export const radius: Radii = { sm: 8, md: 12, lg: 16, xl: 22, pill: 999 }
+/** The type scale, in points: the platforms' text styles. */
+export const font: TypeScale = { caption: 12, footnote: 13, sub: 15, body: 16, headline: 17, title3: 20, title2: 22, title1: 28, large: 34 }
+
+/** An accent: its name and its shade in each mode. */
+export type Accent = { name: string, light: string, dark: string, softLight: string, softDark: string }
+
+export const accents: Accent[] = [
+  { name: "Ocean", light: "#0a7cff", dark: "#3d9bff", softLight: "#e5f1ff", softDark: "#0f2a4a" },
+  { name: "Violet", light: "#7b5cff", dark: "#9d86ff", softLight: "#efebff", softDark: "#271f4d" },
+  { name: "Coral", light: "#ff5a5f", dark: "#ff7b7f", softLight: "#ffebec", softDark: "#4a1c1e" },
+  { name: "Mint", light: "#0fb37f", dark: "#2fd39e", softLight: "#e2f8f0", softDark: "#0f3a2c" },
+  { name: "Amber", light: "#f59e0b", dark: "#fbbf24", softLight: "#fff4dc", softDark: "#463312" },
+]
+
+// ---- state -------------------------------------------------------------------------
+
+let dark = false
+let accentAt = 0
+/** Changes with each switch: the styles of `themed` are made again once per version. */
+let version = 0
+let palette: Palette = make()
+
+export fn isDark() => dark
+export fn accentIndex() => accentAt
+export fn themeVersion() => version
+
+fn make(): Palette {
+  const a = accents[accentAt]
+  if (dark) {
+    return {
+      bg: "#000000", grouped: "#000000", surface: "#1c1c1e", surface2: "#2c2c2e", elevated: "#242426",
+      text: "#ffffff", text2: "#ebebf5", muted: "#8e8e93", line: "#38383a",
+      accent: a.dark, accentText: "#ffffff", accentSoft: a.softDark,
+      danger: "#ff453a", dangerSoft: "#3a1715", success: "#30d158", warning: "#ffd60a",
+      scrim: "rgba(0,0,0,0.55)", skeleton: "#232325",
+    }
+  }
+  return {
+    bg: "#ffffff", grouped: "#f2f2f7", surface: "#ffffff", surface2: "#f2f2f7", elevated: "#ffffff",
+    text: "#0b0b0f", text2: "#3c3c43", muted: "#8a8a8e", line: "#e3e3e8",
+    accent: a.light, accentText: "#ffffff", accentSoft: a.softLight,
+    danger: "#ff3b30", dangerSoft: "#ffecea", success: "#34c759", warning: "#ff9f0a",
+    scrim: "rgba(0,0,0,0.38)", skeleton: "#ececf0",
+  }
+}
+
+/** The palette of the current mode and accent. */
+export fn t() => palette
+
+/** Applies the mode and accent: the palette, the platform's chrome, and the styles (on the next update). */
+export fn setTheme(isDarkMode: bool, accent: int) {
+  dark = isDarkMode
+  accentAt = accent
+  version += 1
+  palette = make()
+  theme(dark, palette.accent, palette.bg)
+}
+
+/**
+ * A style that reads the palette: `make` runs once per theme version, and the same class is given until
+ * the theme changes, so a dynamic class is cheap to check on each `update()`.
+ */
+export fn themed(make: () => StyleResult): () => StyleResult {
+  let at = -1
+  let cls: StyleResult? = null
+  return () => {
+    if (at != version || cls == null) {
+      cls = make()
+      at = version
+    }
+    return cls ?? make()
+  }
+}

@@ -1,0 +1,557 @@
+// The component kit: text styles, buttons, cells, avatars, chips, a segmented control, and the overlay
+// layer (toasts, action sheets, popover menus with submenus, bottom sheets with detents, alerts). Every
+// screen is made of these, so the app looks the same on each platform.
+
+import {
+  css, div, p, span, button, img, toggle, group, list, when, update, later, haptic, viewport, Mod, View,
+  StyleResult, Pan, Point, Look,
+} from "./ui"
+import { t, space, radius, font, themed } from "./theme"
+
+// ---- text -----------------------------------------------------------------------------
+
+export const largeTitle = themed(() => css({ fontSize: font.large, fontWeight: "bold", color: t().text, letterSpacing: -0.6 }))
+export const title1 = themed(() => css({ fontSize: font.title1, fontWeight: "bold", color: t().text, letterSpacing: -0.4 }))
+export const title2 = themed(() => css({ fontSize: font.title2, fontWeight: "bold", color: t().text, letterSpacing: -0.3 }))
+export const title3 = themed(() => css({ fontSize: font.title3, fontWeight: "semibold", color: t().text }))
+export const headline = themed(() => css({ fontSize: font.headline, fontWeight: "semibold", color: t().text }))
+export const body = themed(() => css({ fontSize: font.body, color: t().text, lineHeight: 22 }))
+export const sub = themed(() => css({ fontSize: font.sub, color: t().text2, lineHeight: 20 }))
+export const footnote = themed(() => css({ fontSize: font.footnote, color: t().muted }))
+export const caption = themed(() => css({ fontSize: font.caption, color: t().muted }))
+export const strongText = themed(() => css({ fontSize: font.sub, fontWeight: "semibold", color: t().text }))
+export const accentText = themed(() => css({ fontSize: font.sub, fontWeight: "semibold", color: t().accent }))
+export const sectionLabel = themed(() => css({ fontSize: font.footnote, fontWeight: "semibold", color: t().muted, textTransform: "uppercase", letterSpacing: 0.4, px: space.lg + space.xs, pt: space.xl, pb: space.sm }))
+export const oneLine = css({ numberOfLines: 1 })
+export const twoLines = css({ numberOfLines: 2 })
+
+// ---- layout -----------------------------------------------------------------------------
+
+/** A screen: fills the window and scrolls. */
+export const page = themed(() => css({ flex: 1, backgroundColor: t().bg, overflow: "scroll" }))
+/** A screen of grouped lists (settings). */
+export const groupedPage = themed(() => css({ flex: 1, backgroundColor: t().grouped, overflow: "scroll" }))
+/** A screen that does not scroll: it lays its parts out itself. */
+export const fixedPage = themed(() => css({ flex: 1, backgroundColor: t().bg }))
+/** The content column: readable on a wide window. */
+export const column = css({ alignSelf: "center", widthPct: 100, maxWidth: 680, pb: space.xxl })
+export const padded = css({ padding: space.lg, gap: space.md })
+export const row = css({ flexDirection: "row", alignItems: "center" })
+export const rowGap = css({ flexDirection: "row", alignItems: "center", gap: space.sm })
+export const rowBetween = css({ flexDirection: "row", alignItems: "center", justifyContent: "space-between" })
+export const grow = css({ flex: 1 })
+export const center = css({ alignItems: "center", justifyContent: "center" })
+export const spacer = css({ flex: 1 })
+export const gapSm = css({ gap: space.sm })
+export const gapMd = css({ gap: space.md })
+export const gapLg = css({ gap: space.lg })
+
+export const card = themed(() => css({ backgroundColor: t().surface, borderRadius: radius.lg, padding: space.lg, gap: space.md, borderWidth: 1, borderColor: t().line }))
+export const divider = themed(() => css({ height: 1, backgroundColor: t().line }))
+export const hairline = themed(() => css({ height: 1, backgroundColor: t().line, ml: space.lg }))
+
+// ---- buttons ----------------------------------------------------------------------------
+
+const pressedLook: Look = { opacity: 0.55 }
+
+export const primaryBtn = themed(() => css({
+  height: 48, px: space.xl, borderRadius: radius.md, backgroundColor: t().accent, color: t().accentText,
+  fontSize: font.headline, fontWeight: "semibold", alignItems: "center", justifyContent: "center", pressed: { opacity: 0.75, scale: 0.98 }, transition: 120,
+}))
+export const secondaryBtn = themed(() => css({
+  height: 48, px: space.xl, borderRadius: radius.md, backgroundColor: t().accentSoft, color: t().accent,
+  fontSize: font.headline, fontWeight: "semibold", alignItems: "center", justifyContent: "center", pressed: { opacity: 0.7, scale: 0.98 }, transition: 120,
+}))
+export const dangerBtn = themed(() => css({
+  height: 48, px: space.xl, borderRadius: radius.md, backgroundColor: t().dangerSoft, color: t().danger,
+  fontSize: font.headline, fontWeight: "semibold", alignItems: "center", justifyContent: "center", pressed: { opacity: 0.7 },
+}))
+export const smallBtn = themed(() => css({
+  height: 32, px: space.lg, py: 0, borderRadius: radius.pill, backgroundColor: t().accent, color: t().accentText,
+  fontSize: font.footnote, fontWeight: "semibold", alignItems: "center", justifyContent: "center", pressed: { opacity: 0.7 },
+}))
+export const smallGhostBtn = themed(() => css({
+  height: 32, px: space.lg, py: 0, borderRadius: radius.pill, backgroundColor: t().surface2, color: t().text,
+  fontSize: font.footnote, fontWeight: "semibold", alignItems: "center", justifyContent: "center", pressed: { opacity: 0.7 },
+}))
+export const linkBtn = themed(() => css({ padding: space.sm, color: t().accent, fontSize: font.headline, pressed: pressedLook }))
+export const iconBtn = themed(() => css({
+  width: 40, height: 40, padding: 0, borderRadius: 20, alignItems: "center", justifyContent: "center",
+  color: t().text, fontSize: 22, pressed: { opacity: 0.5, scale: 0.9 }, transition: 120, hover: { backgroundColor: t().surface2 },
+}))
+export const roundBtn = themed(() => css({
+  width: 36, height: 36, padding: 0, borderRadius: 18, alignItems: "center", justifyContent: "center",
+  backgroundColor: t().surface2, color: t().text, fontSize: 17, pressed: { opacity: 0.6, scale: 0.92 }, transition: 120,
+}))
+
+/** A full-width button. */
+export fn bigButton(label: string, style: () => StyleResult, run: () => void) => button(style, label, { onClick: () => run() })
+
+// ---- avatars ----------------------------------------------------------------------------
+
+fn avatarStyle(size: number) => css({ width: size, height: size, borderRadius: size / 2.0, overflow: "hidden" })
+const avatar24 = avatarStyle(24)
+const avatar32 = avatarStyle(32)
+const avatar40 = avatarStyle(40)
+const avatar48 = avatarStyle(48)
+const avatar64 = avatarStyle(64)
+const avatar88 = avatarStyle(88)
+
+export fn avatar(url: string, size: int): View {
+  const s = size <= 24 ? avatar24 : size <= 32 ? avatar32 : size <= 40 ? avatar40 : size <= 48 ? avatar48 : size <= 64 ? avatar64 : avatar88
+  return img(s, { src: url, label: "Profile photo" })
+}
+
+/** A story ring: the accent around an unseen story, a line around a seen one. */
+export fn ringed(url: string, size: int, seen: () => bool): View {
+  return div(
+    () => seen() ? ringSeen() : ringNew(),
+    div(ringGap, avatar(url, size)),
+  )
+}
+const ringNew = themed(() => css({ padding: 2.5, borderRadius: 999, backgroundColor: t().accent }))
+const ringSeen = themed(() => css({ padding: 2.5, borderRadius: 999, backgroundColor: t().line }))
+const ringGap = themed(() => css({ padding: 2, borderRadius: 999, backgroundColor: t().bg }))
+
+// ---- cells (grouped lists) ------------------------------------------------------------------
+
+export const group_ = themed(() => css({ backgroundColor: t().surface, borderRadius: radius.md, mx: space.lg, overflow: "hidden" }))
+const cellStyle = themed(() => css({
+  flexDirection: "row", alignItems: "center", gap: space.md, minHeight: 48, px: space.lg, py: space.sm,
+  backgroundColor: t().surface, pressed: { backgroundColor: t().surface2 }, hover: { backgroundColor: t().surface2 },
+}))
+const cellTitle = themed(() => css({ flex: 1, fontSize: font.body, color: t().text }))
+const cellDetail = themed(() => css({ fontSize: font.body, color: t().muted }))
+const chevron = themed(() => css({ fontSize: 20, color: t().muted, fontWeight: "light" }))
+fn iconTile(color: string) => css({ width: 30, height: 30, borderRadius: 8, backgroundColor: color, color: "#ffffff", fontSize: 16, textAlign: "center", lineHeight: 30 })
+const sectionNote = themed(() => css({ fontSize: font.footnote, color: t().muted, px: space.lg + space.xs, pt: space.sm, lineHeight: 18 }))
+
+/** A titled group of cells, separated by hairlines. */
+export fn section(title: string, cells: View[]): View {
+  let ms: Mod[] = []
+  let first = true
+  for (const c of cells) {
+    if (!first) { ms.push(Part(div(hairline))) }
+    ms.push(Part(c))
+    first = false
+  }
+  ms.push(Class(group_()))
+  if (title == "") { return div(sectionGap, group(ms)) }
+  return div(p(sectionLabel, title), group(ms))
+}
+
+const sectionGap = css({ pt: space.xl })
+
+export fn noteText(text: string) => p(sectionNote, text)
+
+/** A cell that opens something: an icon tile, a title, a detail, and a chevron. */
+export fn navCell(glyph: string, color: string, title: string, detail: () => string, run: () => void): View {
+  return div(
+    cellStyle,
+    { onClick: () => run() },
+    when(() => glyph != "", () => span(iconTile(color), glyph)),
+    p(cellTitle, title),
+    span(cellDetail, detail),
+    span(chevron, "›"),
+  )
+}
+
+/** A cell with a switch. */
+export fn switchCell(glyph: string, color: string, title: string, on: () => bool, set: (bool) => void): View {
+  return div(
+    cellStyle,
+    when(() => glyph != "", () => span(iconTile(color), glyph)),
+    p(cellTitle, title),
+    toggle({ checked: () => on(), onChange: (v) => { set(v); haptic("light"); update() }, label: title }),
+  )
+}
+
+/** A cell with a check mark when `on()`: one of a choice. */
+export fn checkCell(title: string, on: () => bool, pick: () => void): View {
+  return div(
+    cellStyle,
+    { onClick: () => { pick(); haptic("light"); update() } },
+    p(cellTitle, title),
+    span(() => on() ? checkOn() : checkOff(), "✓"),
+  )
+}
+const checkOn = themed(() => css({ fontSize: 18, fontWeight: "bold", color: t().accent }))
+const checkOff = themed(() => css({ fontSize: 18, color: t().surface, opacity: 0 }))
+
+/** A cell of plain text and a value. */
+export fn valueCell(title: string, value: () => string): View {
+  return div(cellStyle, p(cellTitle, title), span(cellDetail, value))
+}
+
+/** A red cell that does something. */
+export fn actionCell(title: string, danger: bool, run: () => void): View {
+  return div(cellStyle, { onClick: () => run() }, p(danger ? dangerCellText : accentCellText, title))
+}
+const dangerCellText = themed(() => css({ flex: 1, fontSize: font.body, color: t().danger }))
+const accentCellText = themed(() => css({ flex: 1, fontSize: font.body, color: t().accent }))
+
+// ---- chips and segments ---------------------------------------------------------------------
+
+const chipOff = themed(() => css({
+  height: 34, px: space.lg, py: 0, borderRadius: radius.pill, backgroundColor: t().surface2, color: t().text,
+  fontSize: font.sub, fontWeight: "medium", alignItems: "center", justifyContent: "center", pressed: { opacity: 0.6 }, transition: 160,
+}))
+const chipOn = themed(() => css({
+  height: 34, px: space.lg, py: 0, borderRadius: radius.pill, backgroundColor: t().text, color: t().bg,
+  fontSize: font.sub, fontWeight: "semibold", alignItems: "center", justifyContent: "center", pressed: { opacity: 0.6 }, transition: 160,
+}))
+
+export fn chip(label: string, on: () => bool, pick: () => void): View {
+  return button(() => on() ? chipOn() : chipOff(), label, { onClick: () => { pick(); haptic("light"); update() } })
+}
+
+const segTrack = themed(() => css({ flexDirection: "row", padding: 2, borderRadius: 9, backgroundColor: t().surface2, height: 36 }))
+const segOn = themed(() => css({
+  flex: 1, borderRadius: 7, backgroundColor: t().elevated, color: t().text, fontSize: font.footnote, fontWeight: "semibold",
+  padding: 0, alignItems: "center", justifyContent: "center", shadowColor: "rgba(0,0,0,0.12)", shadowRadius: 4, shadowOffsetY: 1, transition: 180,
+}))
+const segOff = themed(() => css({
+  flex: 1, borderRadius: 7, color: t().text2, fontSize: font.footnote, fontWeight: "medium", padding: 0,
+  alignItems: "center", justifyContent: "center", transition: 180, pressed: { opacity: 0.6 },
+}))
+
+/** The platform's segmented control: one of `options`, by index. */
+export fn segmented(options: string[], at: () => int, pick: (int) => void): View {
+  let ms: Mod[] = [Class(segTrack())]
+  for (const i of 0..options.length - 1) {
+    ms.push(Part(button(() => at() == i ? segOn() : segOff(), options[i], { onClick: () => { pick(i); haptic("light"); update() } })))
+  }
+  return group(ms)
+}
+
+// ---- states -----------------------------------------------------------------------------------
+
+const emptyBox = css({ alignItems: "center", gap: space.sm, padding: space.xxl, pt: 64 })
+const emptyGlyph = themed(() => css({ fontSize: 44, color: t().muted }))
+const emptyText = themed(() => css({ fontSize: font.sub, color: t().muted, textAlign: "center", maxWidth: 280, lineHeight: 20 }))
+
+export fn empty(glyph: string, title: string, text: string): View {
+  return div(emptyBox, span(emptyGlyph, glyph), p(headline, title), p(emptyText, text))
+}
+
+export const badge = themed(() => css({
+  lineHeight: 20, minWidth: 20, height: 20, px: 6, borderRadius: 10, backgroundColor: t().danger, color: "#ffffff",
+  fontSize: 12, fontWeight: "bold", alignItems: "center", justifyContent: "center", textAlign: "center",
+}))
+export const verifiedBadge = themed(() => css({
+  lineHeight: 16, width: 16, height: 16, borderRadius: 8, backgroundColor: t().accent, color: "#ffffff", fontSize: 10,
+  fontWeight: "bold", alignItems: "center", justifyContent: "center", textAlign: "center",
+}))
+
+// ---- the overlay layer ---------------------------------------------------------------------------
+
+/**
+ * One thing of a menu, an action sheet, or an alert. `kind`:
+ *   "default", "destructive", "cancel", "checked" (a check mark), or "submenu" (opens `run`'s menu)
+ */
+export type Action = { label: string, glyph: string, kind: string, run: () => void }
+
+export fn act(label: string, glyph: string, run: () => void): Action => ({ label: label, glyph: glyph, kind: "default", run: run })
+export fn destructive(label: string, glyph: string, run: () => void): Action => ({ label: label, glyph: glyph, kind: "destructive", run: run })
+export fn checked(label: string, on: bool, run: () => void): Action => ({ label: label, glyph: on ? "✓" : "", kind: on ? "checked" : "default", run: run })
+export fn submenu(label: string, glyph: string, run: () => void): Action => ({ label: label, glyph: glyph, kind: "submenu", run: run })
+
+/** A layer: what it is ("toast", "actions", "menu", "sheet", "alert") and where (menus). */
+type Layer = { key: int, kind: string, title: string, message: string, x: number, y: number }
+
+let layers: Layer[] = []
+let nextKey = 1
+/** The layers on screen: a layer is added hidden, then shown, so it animates in; out the same way. */
+let shown: Set<int> = Set([])
+let actionsOf: Map<int, Action[]> = {}
+let contentOf: Map<int, () => View> = {}
+
+fn push(kind: string, title: string, message: string, x: number, y: number): int {
+  const key = nextKey
+  nextKey += 1
+  layers.push({ key: key, kind: kind, title: title, message: message, x: x, y: y })
+  update()
+  later(16, () => { shown.add(key); update() })
+  return key
+}
+
+fn isShown(key: int) => shown.has(key)
+
+/** Closes a layer: it animates out, then goes. */
+export fn close(key: int) {
+  if (!shown.has(key)) { return }
+  shown.delete(key)
+  update()
+  later(260, () => {
+    layers = layers.filter((l) => l.key != key)
+    actionsOf.delete(key)
+    contentOf.delete(key)
+    update()
+  })
+}
+
+/** Closes the top layer. Gives false when there is none. */
+export fn closeTop(): bool {
+  let i = layers.length - 1
+  while (i >= 0) {
+    const k = layers[i].key
+    if (shown.has(k) && layers[i].kind != "toast") {
+      close(k)
+      return true
+    }
+    i -= 1
+  }
+  return false
+}
+
+export fn hasLayer() => layers.filter((l) => l.kind != "toast").length > 0
+
+/** A short message at the bottom, for two seconds. */
+export fn toast(text: string) {
+  const key = push("toast", text, "", 0.0, 0.0)
+  later(2200, () => close(key))
+}
+
+/** The platform's action sheet: a list of actions from the bottom, and Cancel. */
+export fn actionSheet(title: string, actions: Action[]) {
+  haptic("light")
+  const key = nextKey
+  actionsOf.set(key, actions)
+  push("actions", title, "", 0.0, 0.0)
+}
+
+/** A popover menu at a point of the window (a long press, a "more" button). A submenu opens over it. */
+export fn menuAt(at: Point, title: string, actions: Action[]) {
+  haptic("medium")
+  const key = nextKey
+  actionsOf.set(key, actions)
+  push("menu", title, "", at.pageX, at.pageY)
+}
+
+/** A bottom sheet of `content`. `detent`: "medium" (half the window) or "large". */
+export fn sheet(title: string, detent: string, content: () => View) {
+  const key = nextKey
+  contentOf.set(key, content)
+  sheetY = 0.0
+  sheetDetent = detent
+  push("sheet", title, detent, 0.0, 0.0)
+}
+
+/** An alert: a title, a message, and its buttons (side by side when two). */
+export fn alert(title: string, message: string, actions: Action[]) {
+  haptic("medium")
+  const key = nextKey
+  actionsOf.set(key, actions)
+  push("alert", title, message, 0.0, 0.0)
+}
+
+// ---- the layers' views ----------------------------------------------------------------------------
+
+const layerRoot = css({ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 })
+const scrimOn = themed(() => css({ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: t().scrim, opacity: 1, transition: 240 }))
+const scrimOff = themed(() => css({ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: t().scrim, opacity: 0, transition: 240 }))
+const clearScrim = css({ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 })
+
+fn scrim(key: int) => div(() => isShown(key) ? scrimOn() : scrimOff(), { onClick: () => close(key) })
+
+// Toast
+const toastBox = css({ position: "absolute", left: 0, right: 0, bottom: 110, alignItems: "center", pointerEvents: "none" })
+const toastOn = css({
+  px: space.lg + 2, py: space.md, borderRadius: radius.pill, backgroundColor: "rgba(28,28,30,0.94)", color: "#ffffff",
+  fontSize: font.sub, fontWeight: "medium", opacity: 1, translateY: 0, scale: 1, transition: 320, easing: "spring",
+  shadowColor: "rgba(0,0,0,0.25)", shadowRadius: 18, shadowOffsetY: 6,
+})
+const toastOff = css({
+  px: space.lg + 2, py: space.md, borderRadius: radius.pill, backgroundColor: "rgba(28,28,30,0.94)", color: "#ffffff",
+  fontSize: font.sub, fontWeight: "medium", opacity: 0, translateY: 24, scale: 0.92, transition: 220,
+})
+
+fn toastView(l: Layer) => div(toastBox, span(() => isShown(l.key) ? toastOn : toastOff, l.title))
+
+// Action sheet
+const sheetBottom = css({ position: "absolute", left: 0, right: 0, bottom: 0, padding: space.sm, pb: space.xl, gap: space.sm, alignItems: "center" })
+const actionsIn = css({ widthPct: 100, maxWidth: 520, gap: space.sm, translateY: 0, transition: 380, easing: "spring" })
+const actionsOut = css({ widthPct: 100, maxWidth: 520, gap: space.sm, translateY: 520, transition: 260, easing: "ease-in" })
+const actionGroup = themed(() => css({ backgroundColor: t().elevated, borderRadius: 14, overflow: "hidden" }))
+const actionTitle = themed(() => css({ fontSize: font.footnote, color: t().muted, textAlign: "center", padding: space.md, fontWeight: "medium" }))
+const actionRow = themed(() => css({
+  height: 56, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: space.sm, padding: 0,
+  fontSize: 19, color: t().accent, borderTopWidth: 1, borderColor: t().line, pressed: { backgroundColor: t().surface2 },
+}))
+const actionRowDanger = themed(() => css({
+  height: 56, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: space.sm, padding: 0,
+  fontSize: 19, color: t().danger, borderTopWidth: 1, borderColor: t().line, pressed: { backgroundColor: t().surface2 },
+}))
+const cancelRow = themed(() => css({
+  height: 56, borderRadius: 14, backgroundColor: t().elevated, alignItems: "center", justifyContent: "center",
+  fontSize: 19, fontWeight: "semibold", color: t().accent, pressed: { backgroundColor: t().surface2 },
+}))
+
+fn run(key: int, a: Action) {
+  close(key)
+  later(a.kind == "submenu" ? 0 : 120, () => { a.run(); update() })
+}
+
+fn actionsView(l: Layer): View {
+  let ms: Mod[] = [Class(actionGroup())]
+  if (l.title != "") { ms.push(Part(p(actionTitle, l.title))) }
+  for (const a of actionsOf.get(l.key) ?? []) {
+    ms.push(Part(button(a.kind == "destructive" ? actionRowDanger() : actionRow(), a.glyph == "" ? a.label : `${a.glyph}  ${a.label}`, { onClick: () => run(l.key, a) })))
+  }
+  return div(
+    layerRoot,
+    scrim(l.key),
+    div(sheetBottom, div(
+      () => isShown(l.key) ? actionsIn : actionsOut,
+      { onPan: (e: Pan) => { if (e.state == "end" && e.dy > 60) { close(l.key) } } },
+      group(ms),
+      button(cancelRow, "Cancel", { onClick: () => close(l.key) }),
+    )),
+  )
+}
+
+// Popover menu
+const menuWidth = 250.0
+const menuItem = themed(() => css({
+  flexDirection: "row", alignItems: "center", justifyContent: "flex-start", gap: space.md, height: 44, px: space.lg, py: 0, textAlign: "left",
+  fontSize: font.body, color: t().text, pressed: { backgroundColor: t().surface2 }, hover: { backgroundColor: t().surface2 },
+}))
+const menuItemDanger = themed(() => css({
+  flexDirection: "row", alignItems: "center", justifyContent: "flex-start", gap: space.md, height: 44, px: space.lg, py: 0, textAlign: "left",
+  fontSize: font.body, color: t().danger, pressed: { backgroundColor: t().surface2 }, hover: { backgroundColor: t().surface2 },
+}))
+const menuLabel = css({ flex: 1, textAlign: "left" })
+const menuGlyph = css({ width: 22, fontSize: 17, textAlign: "center" })
+const menuHead = themed(() => css({ fontSize: font.footnote, color: t().muted, px: space.lg, py: space.sm, borderBottomWidth: 1, borderColor: t().line }))
+
+fn menuBox(x: number, y: number, open: bool, h: number): StyleResult {
+  const v = viewport()
+  const left = x + menuWidth + 12.0 > v.width ? v.width - menuWidth - 12.0 : x
+  const top = y + h + 12.0 > v.height ? y - h : y
+  return css({
+    position: "absolute", left: left < 12.0 ? 12.0 : left, top: top < 12.0 ? 12.0 : top, width: menuWidth,
+    backgroundColor: t().elevated, borderRadius: 14, overflow: "hidden", shadowColor: "rgba(0,0,0,0.28)", shadowRadius: 30, shadowOffsetY: 10,
+    opacity: open ? 1 : 0, scale: open ? 1 : 0.86, transition: open ? 260 : 160, easing: open ? "spring" : "ease-in",
+  })
+}
+
+fn menuView(l: Layer): View {
+  const actions = actionsOf.get(l.key) ?? []
+  let ms: Mod[] = []
+  if (l.title != "") { ms.push(Part(p(menuHead, l.title))) }
+  for (const a of actions) {
+    ms.push(Part(div(
+      a.kind == "destructive" ? menuItemDanger() : menuItem(),
+      span(menuGlyph, a.kind == "checked" ? "✓" : a.glyph),
+      span(menuLabel, a.label),
+      when(() => a.kind == "submenu", () => span(footnote, "›")),
+      { onClick: () => run(l.key, a) },
+    )))
+  }
+  const h = toFloat(actions.length) * 44.0 + (l.title != "" ? 36.0 : 0.0)
+  ms.push(ClassOf(() => menuBox(l.x, l.y, isShown(l.key), h)))
+  return div(layerRoot, div(clearScrim, { onClick: () => close(l.key) }), group(ms))
+}
+
+// Bottom sheet
+let sheetY = 0.0
+let sheetDetent = "medium"
+let dragging = false
+
+fn sheetHeight() => viewport().height - 54.0
+/** The sheet's offset from fully open, for its detent: a medium sheet shows a bit more than half. */
+fn detentY() => sheetDetent == "large" ? 0.0 : sheetHeight() * 0.42
+
+fn sheetStyle(key: int): StyleResult {
+  const open = isShown(key)
+  const y = open ? detentY() + sheetY : sheetHeight()
+  return css({
+    position: "absolute", left: 0, right: 0, bottom: 0, height: sheetHeight(), backgroundColor: t().elevated,
+    borderRadius: 18, overflow: "hidden", translateY: y < 0.0 ? y / 3.0 : y, transition: dragging ? 0 : 420, easing: "spring",
+    shadowColor: "rgba(0,0,0,0.2)", shadowRadius: 30, shadowOffsetY: -4, md: { maxWidth: 560 },
+  })
+}
+const sheetCenter = css({ position: "absolute", left: 0, right: 0, bottom: 0, top: 0, alignItems: "center" })
+const grabber = themed(() => css({ alignSelf: "center", width: 36, height: 5, borderRadius: 3, backgroundColor: t().line, mt: space.sm }))
+const sheetHead = css({ pb: space.sm, gap: space.sm })
+const sheetTitleRow = css({ flexDirection: "row", alignItems: "center", justifyContent: "space-between", px: space.lg })
+const sheetBody = css({ flex: 1, overflow: "scroll" })
+
+fn dragSheet(key: int, e: Pan) {
+  if (e.state == "start") { dragging = true }
+  sheetY = e.dy
+  if (e.state == "end" || e.state == "cancel") {
+    dragging = false
+    const y = detentY() + e.dy
+    const fast = e.vy > 900.0
+    if (fast || y > sheetHeight() * 0.7) {
+      sheetY = 0.0
+      close(key)
+      return
+    }
+    // The nearest detent, or the next one in the direction of a quick flick.
+    if (e.vy < -600.0 || y < sheetHeight() * 0.2) { sheetDetent = "large" } else { sheetDetent = "medium" }
+    sheetY = 0.0
+    haptic("light")
+  }
+  update()
+}
+
+fn sheetView(l: Layer): View {
+  const content = contentOf.get(l.key) ?? (() => div())
+  return div(
+    layerRoot,
+    scrim(l.key),
+    div(sheetCenter, div(
+      ClassOf(() => sheetStyle(l.key)),
+      div(sheetHead, { onPan: (e: Pan) => dragSheet(l.key, e) },
+        div(grabber),
+        div(sheetTitleRow, p(title3, l.title), button(roundBtn, "✕", { onClick: () => close(l.key), label: "Close" })),
+      ),
+      div(sheetBody, content()),
+    )),
+  )
+}
+
+// Alert
+const alertCenter = css({ position: "absolute", left: 0, right: 0, top: 0, bottom: 0, alignItems: "center", justifyContent: "center" })
+fn alertBox(open: bool) => css({
+  width: 280, borderRadius: 16, backgroundColor: t().elevated, overflow: "hidden",
+  opacity: open ? 1 : 0, scale: open ? 1 : 1.12, transition: open ? 280 : 160, easing: open ? "spring" : "ease-out",
+})
+const alertText = css({ padding: space.lg, pt: space.xl, gap: space.xs, alignItems: "center" })
+const alertTitle = themed(() => css({ fontSize: font.headline, fontWeight: "semibold", color: t().text, textAlign: "center" }))
+const alertMessage = themed(() => css({ fontSize: font.footnote, color: t().text2, textAlign: "center", lineHeight: 18 }))
+const alertButtons = themed(() => css({ flexDirection: "row", borderTopWidth: 1, borderColor: t().line }))
+const alertBtn = themed(() => css({ flex: 1, height: 46, padding: 0, fontSize: font.headline, color: t().accent, pressed: { backgroundColor: t().surface2 } }))
+const alertBtnBold = themed(() => css({ flex: 1, height: 46, padding: 0, fontSize: font.headline, fontWeight: "semibold", color: t().accent, pressed: { backgroundColor: t().surface2 } }))
+const alertBtnDanger = themed(() => css({ flex: 1, height: 46, padding: 0, fontSize: font.headline, color: t().danger, pressed: { backgroundColor: t().surface2 } }))
+
+fn alertView(l: Layer): View {
+  let ms: Mod[] = [Class(alertButtons())]
+  for (const a of actionsOf.get(l.key) ?? []) {
+    ms.push(Part(button(a.kind == "destructive" ? alertBtnDanger() : a.kind == "cancel" ? alertBtn() : alertBtnBold(), a.label, { onClick: () => run(l.key, a) })))
+  }
+  return div(
+    layerRoot,
+    scrim(l.key),
+    div(alertCenter, div(
+      ClassOf(() => alertBox(isShown(l.key))),
+      div(alertText, p(alertTitle, l.title), when(() => l.message != "", () => p(alertMessage, l.message))),
+      group(ms),
+    )),
+  )
+}
+
+fn layerView(l: Layer): View {
+  if (l.kind == "toast") { return toastView(l) }
+  if (l.kind == "actions") { return actionsView(l) }
+  if (l.kind == "menu") { return menuView(l) }
+  if (l.kind == "sheet") { return sheetView(l) }
+  return alertView(l)
+}
+
+const overlayRoot = css({ flex: 1 })
+
+/** The overlay layer: render it once, with `overlay(...)` of ui.ns. */
+export fn overlayView() => div(overlayRoot, list(() => layers, (l, i) => layerView(l)))

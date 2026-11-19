@@ -1,0 +1,19 @@
+{
+  "name": "nuclo-native-ns",
+  "private": true,
+  "type": "module",
+  "description": "A native social app written only in Nuclo Script: web (nuclo-core), Android, iOS, macOS, Linux (GTK 4) and Linux (GPUI).",
+  "scripts": {
+    "check": "bun ../../../nns-poc/vscode-extension/dist/nns.js check src/*.ns",
+    "web": "bun scripts/build.ts web && bun build/web/index.html --port 4340",
+    "web:build": "bun scripts/build.ts web && bun build build/web/index.html --outdir build/web/dist --minify",
+    "android": "bun scripts/build.ts android",
+    "linux": "bun scripts/build.ts linux && ./build/linux/target/release/nuclo-native-ns",
+    "linux-gpui": "bun scripts/build.ts linux-gpui && ./build/linux-gpui/target/release/nuclo-native-ns-gpui",
+    "ios": "bun scripts/build.ts ios",
+    "macos": "bun scripts/build.ts macos"
+  },
+  "dependencies": {
+    "nuclo": "file:../nuclo-core"
+  }
+}

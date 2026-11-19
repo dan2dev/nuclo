@@ -182,6 +182,12 @@
       "name": "@nuclo/native-kt",
       "version": "0.0.0",
     },
+    "packages/nuclo-native-ns": {
+      "name": "nuclo-native-ns",
+      "dependencies": {
+        "nuclo": "file:../nuclo-core",
+      },
+    },
     "packages/nuclo-native-ts": {
       "name": "@nuclo/native-ts",
       "version": "0.0.0",
@@ -895,6 +901,8 @@
     "nuclo-example-styling": ["nuclo-example-styling@workspace:examples/styling"],
 
     "nuclo-native": ["nuclo-native@workspace:packages/nuclo-native"],
+
+    "nuclo-native-ns": ["nuclo-native-ns@workspace:packages/nuclo-native-ns"],
 
     "nuclo-router": ["nuclo-router@workspace:packages/nuclo-router"],
 

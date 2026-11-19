@@ -1,0 +1,101 @@
+// The entry point: the state read from the device, the theme, the routes and tabs of the platform's
+// navigation, and the overlay layer (menus, sheets, toasts, alerts). Every platform's shell calls `main`.
+//
+// 51 screens, in five tabs. A route's kind: "push" under the navigation bar, "bare" with no bar (the
+// screen draws its own), "modal" in the platform's sheet. "/notes/new" comes before "/notes/:id": the
+// first pattern that matches wins.
+
+import { route, navigate, overlay, Route } from "./ui"
+import { load, applyTheme, note } from "./state"
+import { user, chat } from "./data"
+import { overlayView } from "./kit"
+import { feedScreen, postScreen, commentsScreen, likesScreen, photoScreen, storyScreen, composeScreen } from "./feed"
+import { userScreen, followersScreen, followingScreen, meScreen, savedScreen, editProfileScreen } from "./people"
+import { exploreScreen, searchScreen, tagScreen, trendingScreen, creatorsScreen } from "./explore"
+import { activityScreen, requestsScreen, messagesScreen, chatScreen } from "./inbox"
+import {
+  settingsScreen, accountScreen, privacyScreen, notificationsScreen, appearanceScreen, storageScreen,
+  aboutScreen,
+} from "./settings"
+import { notesScreen, noteScreen, newNoteScreen } from "./notes"
+import {
+  labScreen, dragScreen, swipeScreen, pinchScreen, longPressScreen, reorderScreen, slidersScreen,
+  carouselScreen, pullScreen, cardsScreen, drawScreen, menusScreen, sheetsScreen, nativeSheetScreen,
+  toastsScreen, collapsingScreen, formsScreen, onboardingScreen,
+} from "./lab"
+
+fn userTitle(id: string) => id == "me" ? "You" : user(id).handle
+
+fn routes(): Route[] {
+  return [
+    // Home
+    route("/", (_) => "Home", (_) => feedScreen(), "bare"),
+    route("/post/:id", (_) => "Post", (id) => postScreen(id), "push"),
+    route("/post/:id/comments", (_) => "Comments", (id) => commentsScreen(id), "push"),
+    route("/post/:id/likes", (_) => "Likes", (id) => likesScreen(id), "push"),
+    route("/photo/:id", (_) => "Photo", (id) => photoScreen(id), "bare"),
+    route("/story/:id", (_) => "Story", (id) => storyScreen(id), "bare"),
+    route("/compose", (_) => "New post", (_) => composeScreen(), "modal"),
+    route("/messages", (_) => "Messages", (_) => messagesScreen(), "push"),
+    route("/chat/:id", (id) => user((chat(id)?.user ?? "1")).name, (id) => chatScreen(id), "push"),
+    // People
+    route("/user/:id", (id) => userTitle(id), (id) => userScreen(id), "push"),
+    route("/user/:id/followers", (_) => "Followers", (id) => followersScreen(id), "push"),
+    route("/user/:id/following", (_) => "Following", (id) => followingScreen(id), "push"),
+    // Explore
+    route("/explore", (_) => "Explore", (_) => exploreScreen(), "push"),
+    route("/search", (_) => "Search", (_) => searchScreen(), "push"),
+    route("/tag/:id", (id) => `#${id}`, (id) => tagScreen(id), "push"),
+    route("/trending", (_) => "Trending", (_) => trendingScreen(), "push"),
+    route("/creators", (_) => "Creators", (_) => creatorsScreen(), "push"),
+    // Lab
+    route("/lab", (_) => "Lab", (_) => labScreen(), "push"),
+    route("/lab/drag", (_) => "Drag and fling", (_) => dragScreen(), "push"),
+    route("/lab/swipe", (_) => "Swipe actions", (_) => swipeScreen(), "push"),
+    route("/lab/pinch", (_) => "Pinch and zoom", (_) => pinchScreen(), "push"),
+    route("/lab/longpress", (_) => "Long press", (_) => longPressScreen(), "push"),
+    route("/lab/reorder", (_) => "Reorder", (_) => reorderScreen(), "push"),
+    route("/lab/sliders", (_) => "Sliders", (_) => slidersScreen(), "push"),
+    route("/lab/carousel", (_) => "Carousel", (_) => carouselScreen(), "push"),
+    route("/lab/pull", (_) => "Pull to refresh", (_) => pullScreen(), "push"),
+    route("/lab/cards", (_) => "Swipe cards", (_) => cardsScreen(), "push"),
+    route("/lab/draw", (_) => "Finger painting", (_) => drawScreen(), "push"),
+    route("/lab/menus", (_) => "Menus", (_) => menusScreen(), "push"),
+    route("/lab/sheets", (_) => "Bottom sheets", (_) => sheetsScreen(), "push"),
+    route("/lab/native-sheet", (_) => "Native sheet", (_) => nativeSheetScreen(), "modal"),
+    route("/lab/toasts", (_) => "Toasts and alerts", (_) => toastsScreen(), "push"),
+    route("/lab/collapsing", (_) => "Collapsing header", (_) => collapsingScreen(), "bare"),
+    route("/lab/forms", (_) => "Forms", (_) => formsScreen(), "push"),
+    route("/onboarding", (_) => "Welcome", (_) => onboardingScreen(), "modal"),
+    // Activity
+    route("/activity", (_) => "Activity", (_) => activityScreen(), "push"),
+    route("/requests", (_) => "Follow requests", (_) => requestsScreen(), "push"),
+    // Profile
+    route("/me", (_) => "Profile", (_) => meScreen(), "bare"),
+    route("/me/edit", (_) => "Edit profile", (_) => editProfileScreen(), "modal"),
+    route("/saved", (_) => "Saved", (_) => savedScreen(), "push"),
+    route("/settings", (_) => "Settings", (_) => settingsScreen(), "push"),
+    route("/settings/account", (_) => "Account", (_) => accountScreen(), "push"),
+    route("/settings/privacy", (_) => "Privacy", (_) => privacyScreen(), "push"),
+    route("/settings/notifications", (_) => "Notifications", (_) => notificationsScreen(), "push"),
+    route("/settings/appearance", (_) => "Appearance", (_) => appearanceScreen(), "push"),
+    route("/settings/storage", (_) => "Storage", (_) => storageScreen(), "push"),
+    route("/settings/about", (_) => "About", (_) => aboutScreen(), "push"),
+    route("/notes", (_) => "Notes", (_) => notesScreen(), "push"),
+    route("/notes/new", (_) => "New note", (_) => newNoteScreen(), "modal"),
+    route("/notes/:id", (id) => (note(id)?.title ?? "") == "" ? "Note" : note(id)?.title ?? "Note", (id) => noteScreen(id), "push"),
+  ]
+}
+
+export fn main() {
+  load()
+  applyTheme()
+  navigate(routes(), [
+    { path: "/", title: "Home", icon: "home" },
+    { path: "/explore", title: "Explore", icon: "search" },
+    { path: "/lab", title: "Lab", icon: "grid" },
+    { path: "/activity", title: "Activity", icon: "heart" },
+    { path: "/me", title: "Profile", icon: "person" },
+  ])
+  overlay(() => overlayView())
+}

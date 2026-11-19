@@ -1,0 +1,246 @@
+// Profiles: a person, the signed-in person (the Profile tab), followers and following, and the profile
+// editor (a modal sheet). The grid and saved tabs of a profile switch with a segmented control.
+
+import { css, div, p, span, button, img, input, textarea, list, when, update, go, back, later, haptic, View, Point } from "./ui"
+import { t, space, radius, font, themed } from "./theme"
+import { User, Post, users, user, postsBy, photoUrl, compact } from "./data"
+import { profile, saveProfile, isFollowing, toggleFollow, myPostList, savedIds, findAnyPost } from "./state"
+import {
+  page, column, row, gapSm, gapMd, title2, headline, sub, footnote, caption, body, smallBtn, primaryBtn,
+  secondaryBtn, iconBtn, avatar, verifiedBadge, segmented, empty, toast, actionSheet, menuAt, act, destructive,
+} from "./kit"
+import { personCell, photoGrid } from "./feed"
+
+// ---- styles -----------------------------------------------------------------------------------
+
+const cover = themed(() => css({ height: 140, backgroundColor: t().skeleton, overflow: "hidden" }))
+const coverImg = css({ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 })
+const headBox = css({ px: space.lg, gap: space.md, mt: -44 })
+const avatarRing = themed(() => css({ alignSelf: "flex-start", padding: 4, borderRadius: 999, backgroundColor: t().bg }))
+const nameRow = css({ flexDirection: "row", alignItems: "center", gap: space.xs })
+const stats = themed(() => css({ flexDirection: "row", borderRadius: radius.md, backgroundColor: t().surface2, py: space.md }))
+const stat = css({ flex: 1, alignItems: "center", gap: 2, pressed: { opacity: 0.6 } })
+const statNum = themed(() => css({ fontSize: font.headline, fontWeight: "bold", color: t().text }))
+const buttonsRow = css({ flexDirection: "row", gap: space.sm })
+const halfBtn = themed(() => css({ flex: 1, height: 40, borderRadius: radius.sm, backgroundColor: t().accent, color: t().accentText, fontSize: font.sub, fontWeight: "semibold", pressed: { opacity: 0.7 } }))
+const halfGhost = themed(() => css({ flex: 1, height: 40, borderRadius: radius.sm, backgroundColor: t().surface2, color: t().text, fontSize: font.sub, fontWeight: "semibold", pressed: { opacity: 0.7 } }))
+const squareGhost = themed(() => css({ width: 40, height: 40, padding: 0, borderRadius: radius.sm, backgroundColor: t().surface2, color: t().text, fontSize: 18, pressed: { opacity: 0.7 } }))
+const highlights = css({ flexDirection: "row", gap: space.lg, overflow: "scroll", py: space.xs })
+const highlight = css({ alignItems: "center", gap: space.xs, pressed: { scale: 0.94 }, transition: 120 })
+const highlightImg = themed(() => css({ width: 62, height: 62, borderRadius: 31, borderWidth: 2, borderColor: t().line, overflow: "hidden" }))
+const segBox = css({ px: space.lg, py: space.md })
+
+fn statCell(num: () => string, label: string, run: () => void): View {
+  return div(stat, { onClick: () => run() }, p(statNum, num), p(caption, label))
+}
+
+const highlightNames: string[] = ["Travel", "Food", "Studio", "Friends", "2026"]
+
+fn highlightsRow(seed: int): View {
+  return div(highlights, list(() => highlightNames, (name, i) => div(highlight,
+    { onClick: () => go(`/story/${(seed + i) % 10 + 1}`) },
+    div(highlightImg, img(coverImg, { src: photoUrl(40 + seed + i * 3, 62) })),
+    p(caption, name),
+  )))
+}
+
+// ---- a person's profile ---------------------------------------------------------------------------
+
+let profileTab = 0
+
+fn profileMenu(u: User, at: Point) {
+  menuAt(at, u.handle, [
+    act("Share profile", "➤", () => toast("Profile link copied")),
+    act(isFollowing(u.id) ? "Unfollow" : "Follow", "＋", () => { toast(toggleFollow(u.id) ? "Following" : "Unfollowed") }),
+    act("Mute", "🔇", () => toast(`${u.handle} muted`)),
+    destructive("Block", "⊘", () => toast(`${u.handle} blocked`)),
+    destructive("Report", "⚠", () => toast("Report sent")),
+  ])
+}
+
+export fn userScreen(id: string): View {
+  const u = user(id)
+  const ps = postsBy(id)
+  profileTab = 0
+  return div(
+    page,
+    div(column,
+      div(cover, img(coverImg, { src: u.cover })),
+      div(headBox,
+        div(avatarRing, avatar(u.avatar, 88)),
+        div(gapSm,
+          div(nameRow, p(title2, u.name), when(() => u.verified, () => span(verifiedBadge, "✓"))),
+          p(footnote, `@${u.handle} · ${u.city}`),
+          p(body, u.bio),
+        ),
+        div(stats,
+          statCell(() => `${ps.length}`, "Posts", () => {}),
+          statCell(() => compact(u.followers + (isFollowing(id) ? 1 : 0)), "Followers", () => go(`/user/${id}/followers`)),
+          statCell(() => compact(u.following), "Following", () => go(`/user/${id}/following`)),
+        ),
+        div(buttonsRow,
+          button(() => isFollowing(id) ? halfGhost() : halfBtn(), () => isFollowing(id) ? "Following ✓" : "Follow", {
+            onClick: () => { toggleFollow(id); haptic("light"); update() },
+          }),
+          button(halfGhost, "Message", { onClick: () => go(`/chat/${(toIntId(id) % 10) + 1}`) }),
+          button(squareGhost, "⋯", { label: "More", onClick: () => profileMenu(u, { x: 0.0, y: 0.0, pageX: 9999.0, pageY: 300.0 }) }),
+        ),
+        highlightsRow(toIntId(id)),
+      ),
+      div(segBox, segmented(["Posts", "Tagged"], () => profileTab, (i) => { profileTab = i })),
+      when(() => profileTab == 0, () => postsOrEmpty(ps)),
+      when(() => profileTab == 1, () => photoGrid(postsBy(`${(toIntId(id) % 17) + 1}`))),
+    ),
+  )
+}
+
+fn postsOrEmpty(ps: Post[]): View {
+  if (ps.length == 0) { return empty("▦", "No posts yet", "") }
+  return photoGrid(ps)
+}
+
+/** "12" -> 12, for the few places that need a number from an id. */
+export fn toIntId(id: string): int {
+  let n = 0
+  const digits: string[] = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
+  for (const c of id.split("")) {
+    for (const k of 0..9) { if (digits[k] == c) { n = n * 10 + k } }
+  }
+  return n
+}
+
+// ---- followers and following ----------------------------------------------------------------------
+
+let peopleQuery = ""
+
+const searchField = themed(() => css({ height: 38, px: space.md, mx: space.lg, my: space.sm, borderRadius: 10, backgroundColor: t().surface2, color: t().text, fontSize: font.sub }))
+
+fn peopleScreen(seed: int, following: bool): View {
+  peopleQuery = ""
+  const all = users.filter((u) => (toIntId(u.id) + seed) % (following ? 2 : 3) != 0)
+  return div(
+    page,
+    div(column,
+      input(searchField, { placeholder: "Search", value: () => peopleQuery, onInput: (v) => { peopleQuery = v; update() } }),
+      list(() => all.filter((u) => peopleQuery == "" || u.name.toLowerCase().includes(peopleQuery.toLowerCase()) || u.handle.includes(peopleQuery.toLowerCase())), (u, i) => personCell(u)),
+    ),
+  )
+}
+
+export fn followersScreen(id: string) => peopleScreen(toIntId(id), false)
+export fn followingScreen(id: string) => peopleScreen(toIntId(id), true)
+
+// ---- the Profile tab: me -------------------------------------------------------------------------
+
+let meTab = 0
+
+const meHead = css({ flexDirection: "row", alignItems: "center", gap: space.lg, px: space.lg, pt: space.lg })
+const meStats = css({ flex: 1, flexDirection: "row" })
+const meTop = themed(() => css({ flexDirection: "row", alignItems: "center", px: space.lg, pt: space.md, gap: space.sm, backgroundColor: t().bg }))
+const meHandle = themed(() => css({ flex: 1, fontSize: font.title3, fontWeight: "bold", color: t().text }))
+const meText = css({ px: space.lg, pt: space.md, gap: 2 })
+const meButtons = css({ flexDirection: "row", gap: space.sm, px: space.lg, pt: space.md })
+
+fn savedPosts(): Post[] {
+  let out: Post[] = []
+  for (const id of savedIds()) {
+    const p = findAnyPost(id) ?? continue
+    out.push(p)
+  }
+  return out
+}
+
+fn moreMenu(at: Point) {
+  menuAt(at, "", [
+    act("Settings", "⚙", () => go("/settings")),
+    act("Saved", "★", () => go("/saved")),
+    act("Notes", "✎", () => go("/notes")),
+    act("Your activity", "◷", () => go("/activity")),
+    act("Welcome tour", "✦", () => go("/onboarding")),
+  ])
+}
+
+export fn meScreen(): View {
+  return div(
+    page,
+    div(column,
+      div(meTop,
+        p(meHandle, () => profile().handle),
+        button(iconBtn, "＋", { label: "New post", onClick: () => go("/compose") }),
+        button(iconBtn, "☰", { label: "Menu", onClick: () => moreMenu({ x: 0.0, y: 0.0, pageX: 9999.0, pageY: 100.0 }) }),
+      ),
+      div(meHead,
+        avatar(profile().avatar, 88),
+        div(meStats,
+          statCell(() => `${myPostList().length}`, "Posts", () => { meTab = 0; update() }),
+          statCell(() => "1,240", "Followers", () => go("/user/me/followers")),
+          statCell(() => "312", "Following", () => go("/user/me/following")),
+        ),
+      ),
+      div(meText, p(headline, () => profile().name), p(sub, () => profile().bio)),
+      div(meButtons,
+        button(halfGhost, "Edit profile", { onClick: () => go("/me/edit") }),
+        button(halfGhost, "Share profile", { onClick: () => toast("Profile link copied") }),
+        button(squareGhost, "⚙", { label: "Settings", onClick: () => go("/settings") }),
+      ),
+      div(css({ px: space.lg, pt: space.md }), highlightsRow(3)),
+      div(segBox, segmented(["Posts", "Saved"], () => meTab, (i) => { meTab = i })),
+      when(() => meTab == 0 && myPostList().length == 0, () => div(gapMd, empty("◎", "Share your first photo", "Your posts show up here."), div(css({ alignItems: "center" }), button(smallBtn, "New post", { onClick: () => go("/compose") })))),
+      when(() => meTab == 0 && myPostList().length > 0, () => div(list(() => [myPostList().length], (n, i) => photoGrid(myPostList())))),
+      when(() => meTab == 1, () => div(list(() => [savedIds().length], (n, i) => savedIds().length == 0 ? empty("☆", "Nothing saved", "Tap ☆ on a post to keep it here.") : photoGrid(savedPosts())))),
+    ),
+  )
+}
+
+/** The Saved screen: the posts kept on the device. */
+export fn savedScreen(): View {
+  return div(page, div(column,
+    p(css({ px: space.lg, py: space.md, fontSize: font.footnote, color: t().muted }), "Only you can see what you've saved. Kept in this device's database."),
+    list(() => [savedIds().length], (n, i) => savedIds().length == 0 ? empty("☆", "Nothing saved", "Tap ☆ on a post to keep it here.") : photoGrid(savedPosts())),
+  ))
+}
+
+// ---- edit profile (modal) -------------------------------------------------------------------------
+
+let editName = ""
+let editHandle = ""
+let editBio = ""
+
+const form = css({ gap: space.lg, padding: space.lg })
+const fieldBox = css({ gap: space.xs })
+const label = themed(() => css({ fontSize: font.footnote, fontWeight: "semibold", color: t().muted }))
+const field = themed(() => css({ height: 46, px: space.md, borderRadius: radius.md, backgroundColor: t().surface2, color: t().text, fontSize: font.body }))
+const area = themed(() => css({ minHeight: 90, padding: space.md, borderRadius: radius.md, backgroundColor: t().surface2, color: t().text, fontSize: font.body }))
+const avatarEdit = css({ alignItems: "center", gap: space.sm })
+
+fn saveEdits() {
+  if (editName.trim() == "" || editHandle.trim() == "") {
+    toast("Name and username can't be empty")
+    return
+  }
+  saveProfile(editName.trim(), editHandle.trim().toLowerCase(), editBio.trim())
+  haptic("success")
+  back()
+  later(300, () => toast("Profile saved"))
+  update()
+}
+
+export fn editProfileScreen(): View {
+  const me = profile()
+  editName = me.name
+  editHandle = me.handle
+  editBio = me.bio
+  return div(
+    page,
+    div(form,
+      div(avatarEdit, avatar(me.avatar, 88), button(css({ color: t().accent, fontSize: font.sub, fontWeight: "semibold" }), "Change photo", {
+        onClick: () => actionSheet("Profile photo", [act("Take photo", "◉", () => toast("Camera is not available here")), act("Choose from library", "▦", () => toast("Library is not available here")), destructive("Remove photo", "", () => toast("Photo removed"))]),
+      })),
+      div(fieldBox, p(label, "NAME"), input(field, { value: () => editName, onInput: (v) => { editName = v } })),
+      div(fieldBox, p(label, "USERNAME"), input(field, { value: () => editHandle, onInput: (v) => { editHandle = v } })),
+      div(fieldBox, p(label, "BIO"), textarea(area, { value: () => editBio, onInput: (v) => { editBio = v; update() } }), p(caption, () => `${editBio.length}/150`)),
+      button(primaryBtn, "Save", { onClick: () => saveEdits() }),
+      button(secondaryBtn, "Cancel", { onClick: () => back() }),
+    ),
+  )
+}

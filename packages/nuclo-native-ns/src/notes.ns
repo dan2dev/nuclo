@@ -1,0 +1,163 @@
+// Notes: create, edit, color, pin, and delete, kept in the device's database (SQLite natively). A
+// two-column board on wide windows; long press a note for its menu, swipe it left to delete it.
+
+import { css, div, p, span, button, input, textarea, list, when, update, go, back, later, haptic, View, Pan, Point } from "./ui"
+import { t, space, radius, font, themed } from "./theme"
+import { Note, allNotes, note, createNote, updateNote, recolorNote, togglePin, deleteNote, noteColors } from "./state"
+import { page, column, headline, footnote, caption, empty, toast, menuAt, alert, act, destructive, submenu, Action } from "./kit"
+
+const board = css({ flexDirection: "row", flexWrap: "wrap", gap: space.md, padding: space.lg })
+fn noteCard(n: Note, dx: number) => css({
+  widthPct: 100, minHeight: 110, padding: space.lg, gap: space.xs, borderRadius: radius.lg, backgroundColor: noteColors[n.color % noteColors.length],
+  translateX: dx, opacity: dx < -80.0 ? 0.6 : 1.0, transition: dx == 0.0 ? 260 : 0, easing: "spring", pressed: { scale: 0.98 },
+  md: { width: 300 },
+})
+const noteTitle = css({ fontSize: font.headline, fontWeight: "bold", color: "#1c1c1e" })
+const noteBody = css({ fontSize: font.sub, color: "#3a3a3c", lineHeight: 20, numberOfLines: 4 })
+const pin = css({ position: "absolute", top: 10, right: 12, fontSize: 14 })
+const fab = themed(() => css({
+  position: "absolute", right: 20, bottom: 24, width: 58, height: 58, borderRadius: 29, padding: 0, backgroundColor: t().accent,
+  color: t().accentText, fontSize: 30, shadowColor: "rgba(0,0,0,0.3)", shadowRadius: 14, shadowOffsetY: 6, pressed: { scale: 0.9 }, transition: 160, easing: "spring",
+}))
+const host = css({ flex: 1 })
+const hint = themed(() => css({ px: space.lg, pt: space.md, fontSize: font.footnote, color: t().muted }))
+
+let dragging = ""
+let dragX = 0.0
+
+fn noteMenu(n: Note, at: Point) {
+  menuAt(at, n.title == "" ? "Note" : n.title, [
+    act("Open", "✎", () => go(`/notes/${n.id}`)),
+    act(n.pinned ? "Unpin" : "Pin to top", "📌", () => { togglePin(n.id); toast(n.pinned ? "Unpinned" : "Pinned") }),
+    submenu("Color", "◐", () => colorMenu(n, at)),
+    destructive("Delete", "✕", () => confirmDelete(n)),
+  ])
+}
+
+fn colorMenu(n: Note, at: Point) {
+  const names: string[] = ["Sun", "Mint", "Sky", "Pink", "Lilac", "Orange"]
+  let actions: Action[] = []
+  for (const i of 0..names.length - 1) {
+    actions.push({ label: names[i], glyph: i == n.color ? "✓" : "●", kind: i == n.color ? "checked" : "default", run: () => recolorNote(n.id, i) })
+  }
+  menuAt(at, "Color", actions)
+}
+
+fn confirmDelete(n: Note) {
+  alert("Delete note?", "This note is removed from the device.", [
+    { label: "Cancel", glyph: "", kind: "cancel", run: () => {} },
+    destructive("Delete", "", () => { deleteNote(n.id); toast("Note deleted") }),
+  ])
+}
+
+fn noteView(n: Note): View {
+  return div(
+    () => noteCard(n, dragging == n.id ? dragX : 0.0),
+    {
+      onClick: () => go(`/notes/${n.id}`),
+      onLongPress: (pt: Point) => noteMenu(n, pt),
+      onPan: (e: Pan) => {
+        dragging = n.id
+        dragX = e.dx < 0.0 ? e.dx : e.dx / 4.0
+        if (e.state == "end" || e.state == "cancel") {
+          dragging = ""
+          dragX = 0.0
+          if (e.dx < -140.0 || e.vx < -1000.0) {
+            deleteNote(n.id)
+            haptic("medium")
+            toast("Note deleted")
+          }
+        }
+        update()
+      },
+    },
+    when(() => n.pinned, () => span(pin, "📌")),
+    when(() => n.title != "", () => p(noteTitle, n.title)),
+    p(noteBody, n.body == "" ? "Empty note" : n.body),
+  )
+}
+
+export fn notesScreen(): View {
+  return div(
+    host,
+    div(page,
+      div(column,
+        p(hint, "Kept in this device's database. Long press a note for its menu, swipe left to delete."),
+        div(board, list(() => allNotes(), (n, i) => noteView(n))),
+        when(() => allNotes().length == 0, () => empty("✎", "No notes yet", "Tap + to write your first note.")),
+      ),
+    ),
+    button(fab, "+", { label: "New note", onClick: () => go("/notes/new") }),
+  )
+}
+
+// ---- the editor ------------------------------------------------------------------------------------
+
+let title = ""
+let bodyText = ""
+let color = 0
+
+const editor = css({ flex: 1, padding: space.lg, gap: space.md })
+fn editorBg() => css({ flex: 1, backgroundColor: noteColors[color % noteColors.length] })
+const titleField = css({ fontSize: font.title2, fontWeight: "bold", color: "#1c1c1e", padding: 0 })
+const bodyField = css({ flex: 1, minHeight: 240, fontSize: font.body, color: "#1c1c1e", lineHeight: 23, padding: 0 })
+const dots = css({ flexDirection: "row", gap: space.md, py: space.sm })
+fn dot(i: int) => css({
+  width: 30, height: 30, borderRadius: 15, padding: 0, backgroundColor: noteColors[i], borderWidth: 3,
+  borderColor: color == i ? "#1c1c1e" : "rgba(0,0,0,0.08)", scale: color == i ? 1.12 : 1.0, transition: 200, easing: "spring",
+})
+const actions = css({ flexDirection: "row", gap: space.sm })
+const darkBtn = css({ flex: 1, height: 46, borderRadius: radius.md, backgroundColor: "#1c1c1e", color: "#ffffff", fontWeight: "semibold", fontSize: font.headline, pressed: { opacity: 0.8 } })
+const lightBtn = css({ flex: 1, height: 46, borderRadius: radius.md, backgroundColor: "rgba(0,0,0,0.08)", color: "#1c1c1e", fontWeight: "semibold", fontSize: font.headline, pressed: { opacity: 0.6 } })
+
+fn colorDots(onPick: (int) => void): View {
+  return div(dots, list(() => [0, 1, 2, 3, 4, 5], (i, k) => button(() => dot(i), { label: "Color", onClick: () => { color = i; onPick(i); haptic("light"); update() } })))
+}
+
+export fn noteScreen(id: string): View {
+  const n = note(id) ?? return div(page, empty("✎", "Note not found", "It may have been deleted."))
+  title = n.title
+  bodyText = n.body
+  color = n.color
+  return div(
+    () => editorBg(),
+    div(editor,
+      input(titleField, { placeholder: "Title", value: () => title, onInput: (v) => { title = v; updateNote(id, title, bodyText) } }),
+      colorDots((i) => recolorNote(id, i)),
+      textarea(bodyField, { placeholder: "Start writing…", value: () => bodyText, onInput: (v) => { bodyText = v; updateNote(id, title, bodyText) } }),
+      p(css({ fontSize: font.caption, color: "#5a5a5e" }), () => `${bodyText.length} characters · saved`),
+      div(actions,
+        button(lightBtn, () => (note(id)?.pinned ?? false) ? "Unpin" : "Pin", { onClick: () => { togglePin(id); haptic("light"); update() } }),
+        button(darkBtn, "Done", { onClick: () => back() }),
+      ),
+    ),
+  )
+}
+
+/** A new note, in a sheet: saved when Save is pressed. */
+export fn newNoteScreen(): View {
+  title = ""
+  bodyText = ""
+  color = 0
+  return div(
+    () => editorBg(),
+    div(editor,
+      input(titleField, { placeholder: "Title", value: () => title, onInput: (v) => { title = v } }),
+      colorDots((i) => {}),
+      textarea(bodyField, { placeholder: "Start writing…", value: () => bodyText, onInput: (v) => { bodyText = v } }),
+      div(actions,
+        button(lightBtn, "Cancel", { onClick: () => back() }),
+        button(darkBtn, "Save", {
+          onClick: () => {
+            if (title.trim() == "" && bodyText.trim() == "") { toast("Write something first"); return }
+            createNote(title.trim(), bodyText, color)
+            haptic("success")
+            back()
+            later(300, () => toast("Note saved"))
+            update()
+          },
+        }),
+      ),
+    ),
+  )
+}

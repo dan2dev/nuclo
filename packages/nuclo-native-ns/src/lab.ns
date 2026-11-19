@@ -1,0 +1,1016 @@
+// The Lab tab: gestures (drag, swipe, pinch, long press, reorder, sliders, carousel, pull to refresh,
+// swipe cards, drawing), menus, sheets, a collapsing header, forms, toasts, and the welcome tour. Each
+// demo is a screen of its own, pushed on the Lab tab's stack.
+
+import {
+  css, div, p, span, button, img, input, textarea, toggle, list, when, update, go, back, later, haptic,
+  viewport, View, StyleResult, Pan, Pinch, Point, Scroll,
+} from "./ui"
+import { t, space, radius, font, themed } from "./theme"
+import { users, posts, user, photoUrl, photoUrlWH } from "./data"
+import { setFlag } from "./state"
+import {
+  page, groupedPage, fixedPage, column, row, rowGap, rowBetween, grow, spacer, padded, gapSm, gapMd, card,
+  title1, title2, title3, headline, body, sub, footnote, caption, strongText, accentText, primaryBtn,
+  secondaryBtn, dangerBtn, smallBtn, smallGhostBtn, avatar, section, navCell, switchCell, segmented, chip,
+  toast, actionSheet, menuAt, sheet, alert, act, destructive, checked, submenu, Action, divider,
+} from "./kit"
+
+fn abs(x: number): number => x < 0.0 ? 0.0 - x : x
+fn clamp(x: number, lo: number, hi: number): number => x < lo ? lo : x > hi ? hi : x
+
+const stage = themed(() => css({ flex: 1, backgroundColor: t().grouped, overflow: "hidden" }))
+const intro = themed(() => css({ px: space.lg, pt: space.lg, pb: space.sm, fontSize: font.sub, color: t().text2, lineHeight: 20 }))
+const readout = themed(() => css({ alignSelf: "center", px: space.md, py: space.xs, borderRadius: radius.pill, backgroundColor: t().surface, color: t().text2, fontSize: font.footnote, fontFamily: "monospace" }))
+
+// ---- the index ----------------------------------------------------------------------------------
+
+export fn labScreen(): View {
+  return div(groupedPage, div(column,
+    p(intro, "Gestures, menus, and sheets, written in Nuclo Script and recognized by each platform's own touch system."),
+    section("Gestures", [
+      navCell("✥", "#0a84ff", "Drag and fling", () => "", () => go("/lab/drag")),
+      navCell("⇆", "#34c759", "Swipe actions", () => "", () => go("/lab/swipe")),
+      navCell("⤢", "#ff9f0a", "Pinch and zoom", () => "", () => go("/lab/pinch")),
+      navCell("◉", "#ff2d55", "Long press", () => "", () => go("/lab/longpress")),
+      navCell("☰", "#5e5ce6", "Drag to reorder", () => "", () => go("/lab/reorder")),
+      navCell("◐", "#30b0c7", "Sliders and knobs", () => "", () => go("/lab/sliders")),
+      navCell("▭", "#af52de", "Carousel", () => "", () => go("/lab/carousel")),
+      navCell("↓", "#64d2ff", "Pull to refresh", () => "", () => go("/lab/pull")),
+      navCell("♥", "#ff375f", "Swipe cards", () => "", () => go("/lab/cards")),
+      navCell("✎", "#ffd60a", "Finger painting", () => "", () => go("/lab/draw")),
+    ]),
+    section("Menus and sheets", [
+      navCell("⋯", "#8e8e93", "Menus", () => "", () => go("/lab/menus")),
+      navCell("▤", "#0a84ff", "Bottom sheets", () => "", () => go("/lab/sheets")),
+      navCell("▣", "#34c759", "Native sheet", () => "", () => go("/lab/native-sheet")),
+      navCell("✉", "#ff9f0a", "Toasts and alerts", () => "", () => go("/lab/toasts")),
+    ]),
+    section("Layouts", [
+      navCell("▔", "#5e5ce6", "Collapsing header", () => "", () => go("/lab/collapsing")),
+      navCell("☑", "#ff2d55", "Forms", () => "", () => go("/lab/forms")),
+      navCell("✦", "#30b0c7", "Welcome tour", () => "", () => go("/onboarding")),
+    ]),
+  ))
+}
+
+// ---- drag and fling: a card that follows the finger and lands in the nearest corner ----------------
+
+let cardX = 0.0
+let cardY = 0.0
+let cardDragging = false
+let corner = 0
+let flings = 0
+
+fn cornerX(c: int) => c % 2 == 0 ? -1.0 : 1.0
+fn cornerY(c: int) => c < 2 ? -1.0 : 1.0
+
+fn dragCard(): StyleResult {
+  const v = viewport()
+  const ax = cornerX(corner) * (v.width / 2.0 - 90.0)
+  const ay = cornerY(corner) * (v.height / 2.0 - 220.0)
+  return css({
+    width: 140, height: 140, borderRadius: 32, backgroundColor: t().accent, alignItems: "center", justifyContent: "center",
+    translateX: (v.width > 0.0 ? ax : 0.0) + cardX, translateY: (v.height > 0.0 ? ay : 0.0) + cardY,
+    scale: cardDragging ? 1.08 : 1.0, rotate: cardX / 20.0,
+    shadowColor: "rgba(0,0,0,0.25)", shadowRadius: cardDragging ? 34 : 16, shadowOffsetY: cardDragging ? 18 : 8,
+    transition: cardDragging ? 0 : 520, easing: "spring",
+  })
+}
+const cardLabel = css({ color: "#ffffff", fontSize: 40 })
+const centered = css({ flex: 1, alignItems: "center", justifyContent: "center" })
+
+fn fling(e: Pan) {
+  if (e.state == "start") { cardDragging = true; haptic("light") }
+  cardX = e.dx
+  cardY = e.dy
+  if (e.state == "end" || e.state == "cancel") {
+    cardDragging = false
+    // Where the card would come to rest with its speed: then the corner nearest that point.
+    const v = viewport()
+    const x = cornerX(corner) * (v.width / 2.0 - 90.0) + e.dx + e.vx * 0.2
+    const y = cornerY(corner) * (v.height / 2.0 - 220.0) + e.dy + e.vy * 0.2
+    corner = (x < 0.0 ? 0 : 1) + (y < 0.0 ? 0 : 2)
+    cardX = 0.0
+    cardY = 0.0
+    flings += 1
+    haptic("medium")
+  }
+  update()
+}
+
+export fn dragScreen(): View {
+  return div(stage,
+    p(intro, "Drag the card and let go: it flies to the nearest corner with your speed, on a spring."),
+    p(readout, () => `corner ${corner + 1} · ${flings} flings · ${cardDragging ? "dragging" : "resting"}`),
+    div(centered, div(() => dragCard(), { onPan: (e: Pan) => fling(e) }, span(cardLabel, "✥"))),
+  )
+}
+
+// ---- swipe actions ---------------------------------------------------------------------------------
+
+type Mail = { id: int, src: string, subject: string, preview: string, read: bool, flagged: bool }
+
+fn makeMail(): Mail[] {
+  let out: Mail[] = []
+  const subjects: string[] = ["Weekend plans", "Your order shipped", "Photos from Lisbon", "Re: the new layout", "Invoice #2041", "Dinner on Friday?", "Design review notes", "Welcome aboard!"]
+  for (const i of 0..subjects.length - 1) {
+    out.push({ id: i, src: user(`${i + 2}`).name, subject: subjects[i], preview: "Hey! Just following up on what we talked about yesterday, let me know what you think.", read: i > 2, flagged: false })
+  }
+  return out
+}
+
+let mail: Mail[] = makeMail()
+let swipeId = -1
+let swipeX = 0.0
+
+const mailOuter = themed(() => css({ overflow: "hidden", backgroundColor: swipeX > 0.0 ? t().success : t().danger }))
+const mailBehind = css({ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, flexDirection: "row", alignItems: "center", justifyContent: "space-between", px: space.xl })
+const behindText = css({ color: "#ffffff", fontWeight: "bold", fontSize: font.sub })
+fn mailFront(m: Mail) => css({
+  flexDirection: "row", gap: space.md, px: space.lg, py: space.md, backgroundColor: t().bg,
+  translateX: swipeId == m.id ? swipeX : 0.0, transition: swipeId == m.id ? 0 : 300, easing: "spring",
+})
+const unreadDot = themed(() => css({ width: 10, height: 10, borderRadius: 5, mt: 6, backgroundColor: t().accent }))
+const readDot = css({ width: 10, height: 10 })
+const mailFrom = themed(() => css({ fontSize: font.body, fontWeight: "semibold", color: t().text }))
+const mailPreview = themed(() => css({ fontSize: font.sub, color: t().muted, numberOfLines: 2, lineHeight: 19 }))
+
+fn swipeMail(m: Mail, e: Pan) {
+  swipeId = m.id
+  swipeX = e.dx
+  if (e.state == "end" || e.state == "cancel") {
+    const v = viewport()
+    if (e.dx < 0.0 - v.width * 0.4 || e.vx < -1100.0) {
+      mail = mail.filter((x) => x.id != m.id)
+      haptic("medium")
+      toast("Deleted")
+    } else if (e.dx > v.width * 0.3 || e.vx > 1100.0) {
+      for (const i of 0..mail.length - 1) { if (mail[i].id == m.id) { mail[i].read = !mail[i].read } }
+      haptic("light")
+    }
+    swipeId = -1
+    swipeX = 0.0
+  }
+  update()
+}
+
+fn mailRow(m: Mail): View {
+  return div(
+    mailOuter,
+    div(mailBehind, p(behindText, m.read ? "● Unread" : "✓ Read"), p(behindText, "Delete ✕")),
+    div(() => mailFront(m), { onPan: (e: Pan) => swipeMail(m, e) },
+      span(m.read ? readDot : unreadDot()),
+      div(grow, gapSm, div(rowBetween, p(mailFrom, m.src), p(caption, "9:41")), p(strongText, m.subject), p(mailPreview, m.preview)),
+    ),
+  )
+}
+
+export fn swipeScreen(): View {
+  return div(page, div(column,
+    p(intro, "Swipe right to mark read or unread, left to delete. A quick flick is enough."),
+    list(() => mail, (m, i) => mailRow(m)),
+    when(() => mail.length == 0, () => div(padded, button(secondaryBtn, "Restore inbox", { onClick: () => { mail = makeMail(); update() } }))),
+  ))
+}
+
+// ---- pinch and zoom --------------------------------------------------------------------------------
+
+let pz = 1.0
+let pzStart = 1.0
+let px = 0.0
+let py = 0.0
+let pActive = false
+
+fn pinchImg() => css({
+  widthPct: 100, aspectRatio: 1, borderRadius: 16, translateX: px, translateY: py, scale: pz,
+  transition: pActive ? 0 : 380, easing: "spring",
+})
+const pinchStage = css({ flex: 1, alignItems: "center", justifyContent: "center", padding: space.xl, overflow: "hidden" })
+
+export fn pinchScreen(): View {
+  pz = 1.0
+  px = 0.0
+  py = 0.0
+  return div(stage,
+    p(intro, "Pinch with two fingers (ctrl + scroll on a desktop), drag to move, double tap to zoom in or reset."),
+    p(readout, () => `scale ${toInt(pz * 100.0)}% · x ${toInt(px)} · y ${toInt(py)}`),
+    div(pinchStage,
+      {
+        onPinch: (e: Pinch) => {
+          if (e.state == "start") { pzStart = pz; pActive = true }
+          pz = clamp(pzStart * e.scale, 0.5, 5.0)
+          if (e.state == "end" || e.state == "cancel") { pActive = false; if (pz < 1.0) { pz = 1.0 } }
+          update()
+        },
+        onPan: (e: Pan) => {
+          pActive = e.state != "end" && e.state != "cancel"
+          px = e.dx
+          py = e.dy
+          if (!pActive && pz <= 1.0) { px = 0.0; py = 0.0 }
+          update()
+        },
+        onDoubleClick: (pt: Point) => { pz = pz > 1.0 ? 1.0 : 2.5; px = 0.0; py = 0.0; haptic("light"); update() },
+      },
+      img(() => pinchImg(), { src: photoUrl(64, 360) }),
+    ),
+  )
+}
+
+// ---- long press --------------------------------------------------------------------------------------
+
+let holding = -1
+let holdAt = 0
+let holdChain = 0
+let confirmed = 0
+
+const tiles = css({ flexDirection: "row", flexWrap: "wrap", gap: space.md, padding: space.lg })
+fn tile(i: int) => css({
+  widthPct: 30, aspectRatio: 1, borderRadius: radius.lg, overflow: "hidden", backgroundColor: t().skeleton,
+  scale: holding == i ? 0.92 : 1.0, transition: 240, easing: "spring", md: { width: 140 },
+})
+const fill = css({ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 })
+const holdTrack = themed(() => css({ height: 56, mx: space.lg, borderRadius: radius.md, backgroundColor: t().dangerSoft, overflow: "hidden", justifyContent: "center" }))
+fn holdFill() => css({ position: "absolute", top: 0, left: 0, bottom: 0, widthPct: toFloat(holdAt), backgroundColor: t().danger, opacity: 0.35 })
+const holdLabel = themed(() => css({ textAlign: "center", fontSize: font.headline, fontWeight: "semibold", color: t().danger }))
+
+fn tileMenu(i: int, pt: Point) {
+  holding = -1
+  menuAt(pt, `Photo ${i + 1}`, [
+    act("Share", "➤", () => toast("Shared")),
+    act("Add to favorites", "♡", () => toast("Added to favorites")),
+    act("Copy", "⧉", () => toast("Copied")),
+    submenu("Move to album", "▦", () => menuAt(pt, "Albums", [act("Travel", "✈", () => toast("Moved to Travel")), act("Family", "⌂", () => toast("Moved to Family")), act("New album…", "+", () => toast("Album created"))])),
+    destructive("Delete", "✕", () => toast("Deleted")),
+  ])
+  update()
+}
+
+fn holdTick(chain: int) {
+  if (chain != holdChain) { return }
+  holdAt += 5
+  if (holdAt >= 100) {
+    holdAt = 0
+    confirmed += 1
+    haptic("success")
+    toast("Confirmed by holding")
+    holdChain += 1
+  } else {
+    later(50, () => holdTick(chain))
+  }
+  update()
+}
+
+export fn longPressScreen(): View {
+  return div(page, div(column,
+    p(intro, "Long press a photo for its context menu. Hold the button below until it fills to confirm."),
+    div(tiles, list(() => [0, 1, 2, 3, 4, 5, 6, 7, 8], (i, k) => div(() => tile(i),
+      {
+        onPointerDown: (pt: Point) => { holding = i; update() },
+        onPointerUp: (pt: Point) => { holding = -1; update() },
+        onLongPress: (pt: Point) => tileMenu(i, pt),
+        onClick: () => { holding = -1; go(`/photo/${(i * 5) % 40 + 1}`) },
+      },
+      img(fill, { src: photoUrl(20 + i * 3, 120) }),
+    ))),
+    div(holdTrack,
+      {
+        onPointerDown: (pt: Point) => { holdChain += 1; holdAt = 0; const c = holdChain; later(50, () => holdTick(c)); haptic("light") },
+        onPointerUp: (pt: Point) => { holdChain += 1; holdAt = 0; update() },
+      },
+      div(() => holdFill()),
+      p(holdLabel, () => confirmed == 0 ? "Hold to confirm" : `Hold to confirm · done ${confirmed}×`),
+    ),
+  ))
+}
+
+// ---- drag to reorder ----------------------------------------------------------------------------------
+
+type Item = { id: int, title: string, glyph: string }
+
+let items: Item[] = [
+  { id: 1, title: "Morning run", glyph: "🏃" }, { id: 2, title: "Read 20 pages", glyph: "📖" },
+  { id: 3, title: "Water the plants", glyph: "🪴" }, { id: 4, title: "Call grandma", glyph: "☎" },
+  { id: 5, title: "Inbox zero", glyph: "✉" }, { id: 6, title: "Stretch", glyph: "🧘" },
+  { id: 7, title: "Plan the trip", glyph: "✈" },
+]
+let moving = -1
+let moveY = 0.0
+const ROW_H = 64.0
+
+fn targetIndex(src: int): int {
+  let to = src + toInt((moveY + (moveY > 0.0 ? ROW_H / 2.0 : 0.0 - ROW_H / 2.0)) / ROW_H)
+  if (to < 0) { to = 0 }
+  if (to > items.length - 1) { to = items.length - 1 }
+  return to
+}
+
+fn indexOf(id: int): int {
+  for (const i of 0..items.length - 1) { if (items[i].id == id) { return i } }
+  return -1
+}
+
+/** Where a row sits while another moves: the rows between make room. */
+fn shift(i: int): number {
+  if (moving < 0) { return 0.0 }
+  const src = indexOf(moving)
+  const to = targetIndex(src)
+  if (items[i].id == moving) { return moveY }
+  if (src < to && i > src && i <= to) { return 0.0 - ROW_H }
+  if (src > to && i >= to && i < src) { return ROW_H }
+  return 0.0
+}
+
+/** A row's place is read on each update: rows are kept by item when the order changes. */
+fn reorderRow(it: Item) => css({
+  flexDirection: "row", alignItems: "center", gap: space.md, height: ROW_H, px: space.lg, backgroundColor: t().surface,
+  borderBottomWidth: 1, borderColor: t().line, translateY: shift(indexOf(it.id)), zIndex: it.id == moving ? 10 : 0,
+  scale: it.id == moving ? 1.03 : 1.0, shadowColor: "rgba(0,0,0,0.2)", shadowRadius: it.id == moving ? 18 : 0, shadowOffsetY: 6,
+  transition: it.id == moving ? 0 : 220, easing: "ease-out",
+})
+const handle = themed(() => css({ width: 44, height: 44, lineHeight: 44, textAlign: "center", color: t().muted, fontSize: 22 }))
+const rowGlyph = css({ fontSize: 22, width: 30, textAlign: "center" })
+
+fn dragRow(it: Item, e: Pan) {
+  if (e.state == "start") { moving = it.id; haptic("medium") }
+  moveY = e.dy
+  if (e.state == "end" || e.state == "cancel") {
+    const src = indexOf(it.id)
+    const to = targetIndex(src)
+    if (src != to) {
+      const x = items.removeAt(src)
+      items.insert(to, x)
+      haptic("light")
+    }
+    moving = -1
+    moveY = 0.0
+  }
+  update()
+}
+
+export fn reorderScreen(): View {
+  return div(page, div(column,
+    p(intro, "Drag a row by its handle to change the order. The other rows make room."),
+    div(css({ borderTopWidth: 1, borderColor: t().line }),
+      list(() => items, (it, i) => div(() => reorderRow(it),
+        span(rowGlyph, it.glyph),
+        p(css({ flex: 1, fontSize: font.body, color: t().text }), it.title),
+        span(handle, "≡", { onPan: (e: Pan) => dragRow(it, e) }),
+      )),
+    ),
+    p(css({ padding: space.lg, fontSize: font.footnote, color: t().muted }), () => `Order: ${items.map((x) => `${x.id}`).length} items, first is ${items[0].title}`),
+  ))
+}
+
+// ---- sliders and knobs -----------------------------------------------------------------------------------
+
+let red = 0.38
+let green = 0.62
+let blue = 0.95
+let volume = 0.5
+let volStart = 0.5
+let steps = 3
+let trackW = 300.0
+
+fn hex2(v: number): string {
+  const n = toInt(clamp(v, 0.0, 1.0) * 255.0)
+  const digits: string[] = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "a", "b", "c", "d", "e", "f"]
+  return `${digits[n / 16]}${digits[n % 16]}`
+}
+fn mixed() => `#${hex2(red)}${hex2(green)}${hex2(blue)}`
+
+const swatchBox = css({ height: 120, mx: space.lg, borderRadius: radius.lg, alignItems: "center", justifyContent: "center" })
+const swatchText = css({ color: "#ffffff", fontSize: font.title3, fontWeight: "bold", fontFamily: "monospace" })
+const sliderRow = css({ gap: space.xs, px: space.lg, py: space.sm })
+const trackStyle = themed(() => css({ height: 36, justifyContent: "center" }))
+const trackLine = themed(() => css({ height: 6, borderRadius: 3, backgroundColor: t().surface2, flexDirection: "row", overflow: "hidden" }))
+fn trackFill(v: number, color: string) => css({ widthPct: v * 100.0, backgroundColor: color })
+fn thumb(v: number) => css({ position: "absolute", top: 4, left: 0, width: 28, height: 28, borderRadius: 14, backgroundColor: "#ffffff", translateX: v * (trackW - 28.0), shadowColor: "rgba(0,0,0,0.3)", shadowRadius: 6, shadowOffsetY: 2 })
+
+/** A slider: drag anywhere on the track. `get` and `set` hold 0…1. */
+fn slider(name: string, color: string, get: () => number, set: (number) => void): View {
+  let start = 0.0
+  return div(sliderRow,
+    div(rowBetween, p(strongText, name), p(caption, () => `${toInt(get() * 100.0)}%`)),
+    div(trackStyle,
+      {
+        onPan: (e: Pan) => {
+          if (e.state == "start") { start = get() }
+          set(clamp(start + e.dx / (trackW - 28.0), 0.0, 1.0))
+          update()
+        },
+        onPointerDown: (pt: Point) => { set(clamp((pt.x - 14.0) / (trackW - 28.0), 0.0, 1.0)); update() },
+      },
+      div(trackLine, div(() => trackFill(get(), color))),
+      div(() => thumb(get())),
+    ),
+  )
+}
+
+fn knob() => css({
+  width: 140, height: 140, borderRadius: 70, alignSelf: "center", backgroundColor: t().surface, borderWidth: 1, borderColor: t().line,
+  rotate: -135.0 + volume * 270.0, shadowColor: "rgba(0,0,0,0.15)", shadowRadius: 20, shadowOffsetY: 8, alignItems: "center",
+})
+const knobMark = themed(() => css({ width: 6, height: 26, borderRadius: 3, mt: 10, backgroundColor: t().accent }))
+const stepper = themed(() => css({ flexDirection: "row", alignItems: "center", alignSelf: "center", borderRadius: radius.md, backgroundColor: t().surface2, overflow: "hidden" }))
+const stepBtn = themed(() => css({ width: 52, height: 40, padding: 0, color: t().text, fontSize: 22, pressed: { backgroundColor: t().line } }))
+const stepNum = themed(() => css({ width: 48, textAlign: "center", fontSize: font.headline, fontWeight: "semibold", color: t().text }))
+
+export fn slidersScreen(): View {
+  trackW = clamp(viewport().width, 0.0, 680.0) - 32.0
+  return div(page, div(column,
+    p(intro, "Sliders, a knob, and a stepper: each is a drag recognized on the view, mapped to a value."),
+    div(() => css({ height: 120, mx: space.lg, borderRadius: radius.lg, alignItems: "center", justifyContent: "center", backgroundColor: mixed() }), p(swatchText, () => mixed())),
+    slider("Red", "#ff3b30", () => red, (v) => { red = v }),
+    slider("Green", "#34c759", () => green, (v) => { green = v }),
+    slider("Blue", "#0a84ff", () => blue, (v) => { blue = v }),
+    p(css({ px: space.lg, pt: space.lg, fontSize: font.headline, fontWeight: "semibold", color: t().text }), "Knob"),
+    div(css({ py: space.md, gap: space.sm }),
+      div(() => knob(), {
+        onPan: (e: Pan) => {
+          if (e.state == "start") { volStart = volume }
+          volume = clamp(volStart + (e.dx - e.dy) / 300.0, 0.0, 1.0)
+          update()
+        },
+      }, div(knobMark)),
+      p(readout, () => `volume ${toInt(volume * 11.0)} / 11`),
+    ),
+    p(css({ px: space.lg, pt: space.lg, pb: space.sm, fontSize: font.headline, fontWeight: "semibold", color: t().text }), "Stepper"),
+    div(stepper,
+      button(stepBtn, "−", { onClick: () => { if (steps > 0) { steps -= 1 } haptic("light"); update() } }),
+      p(stepNum, () => `${steps}`),
+      button(stepBtn, "+", { onClick: () => { if (steps < 10) { steps += 1 } haptic("light"); update() } }),
+    ),
+  ))
+}
+
+// ---- carousel ------------------------------------------------------------------------------------------
+
+let pageAt = 0
+let pageDx = 0.0
+let pageDragging = false
+let autoplay = false
+let autoChain = 0
+const slides: int[] = [10, 11, 12, 13, 14]
+
+fn pageW() => clamp(viewport().width, 0.0, 680.0)
+
+fn strip() => css({
+  flexDirection: "row", width: pageW() * toFloat(slides.length), translateX: 0.0 - toFloat(pageAt) * pageW() + pageDx,
+  transition: pageDragging ? 0 : 420, easing: "spring",
+})
+fn slide() => css({ width: pageW(), height: 300, padding: space.lg })
+const slideCard = css({ flex: 1, borderRadius: radius.xl, overflow: "hidden" })
+const slideText = css({ position: "absolute", left: 0, right: 0, bottom: 0, padding: space.lg, backgroundColor: "rgba(0,0,0,0.35)", color: "#ffffff", fontSize: font.title3, fontWeight: "bold" })
+const dotsRow = css({ flexDirection: "row", gap: space.sm, alignSelf: "center", py: space.md })
+fn pageDot(i: int) => css({ width: i == pageAt ? 22 : 8, height: 8, borderRadius: 4, backgroundColor: i == pageAt ? t().accent : t().line, transition: 260, easing: "spring" })
+const carouselBox = css({ overflow: "hidden" })
+
+fn goPage(i: int) {
+  pageAt = toInt(clamp(toFloat(i), 0.0, toFloat(slides.length - 1)))
+  update()
+}
+
+fn autoTick(chain: int) {
+  if (chain != autoChain || !autoplay) { return }
+  goPage((pageAt + 1) % slides.length)
+  later(2600, () => autoTick(chain))
+}
+
+export fn carouselScreen(): View {
+  pageAt = 0
+  return div(page, div(column,
+    p(intro, "Swipe between pages: a page snaps into place, and a flick turns it even when the drag is short."),
+    div(carouselBox,
+      div(() => strip(),
+        {
+          onPan: (e: Pan) => {
+            pageDragging = e.state == "start" || e.state == "move"
+            pageDx = (pageAt == 0 && e.dx > 0.0) || (pageAt == slides.length - 1 && e.dx < 0.0) ? e.dx / 3.0 : e.dx
+            if (!pageDragging) {
+              pageDx = 0.0
+              if (e.dx < 0.0 - pageW() / 4.0 || e.vx < -500.0) { goPage(pageAt + 1); haptic("light") }
+              else if (e.dx > pageW() / 4.0 || e.vx > 500.0) { goPage(pageAt - 1); haptic("light") }
+            }
+            update()
+          },
+        },
+        list(() => slides, (n, i) => div(() => slide(), div(slideCard, img(fill, { src: photoUrlWH(n, 360, 280) }), p(slideText, `Page ${i + 1} of ${slides.length}`)))),
+      ),
+    ),
+    div(dotsRow, list(() => [0, 1, 2, 3, 4], (i, k) => div(() => pageDot(i), { onClick: () => goPage(i) }))),
+    div(padded,
+      switchCell("▶", "#af52de", "Autoplay", () => autoplay, (v) => { autoplay = v; autoChain += 1; if (v) { const c = autoChain; later(2600, () => autoTick(c)) } }),
+      div(rowGap, button(smallGhostBtn, "‹ Previous", { onClick: () => goPage(pageAt - 1) }), div(spacer), button(smallGhostBtn, "Next ›", { onClick: () => goPage(pageAt + 1) })),
+    ),
+  ))
+}
+
+// ---- pull to refresh -----------------------------------------------------------------------------------
+
+let pull = 0.0
+let refreshing = false
+let spin = 0
+let fresh = 0
+let pulled = false
+
+fn pullHead() => css({ height: refreshing ? 64.0 : clamp(pull, 0.0, 120.0), alignItems: "center", justifyContent: "center", overflow: "hidden", transition: pulled ? 0 : 320, easing: "spring" })
+fn spinner() => css({ fontSize: 26, color: t().accent, rotate: refreshing ? toFloat(spin) * 45.0 : pull * 3.0, opacity: refreshing ? 1.0 : clamp(pull / 70.0, 0.0, 1.0), transition: refreshing ? 120 : 0 })
+const feedRow = css({ flexDirection: "row", alignItems: "center", gap: space.md, px: space.lg, py: space.md })
+const newBadge = themed(() => css({ px: space.sm, py: 2, borderRadius: radius.pill, backgroundColor: t().accentSoft, color: t().accent, fontSize: font.caption, fontWeight: "bold" }))
+
+fn spinTick() {
+  if (!refreshing) { return }
+  spin += 1
+  update()
+  later(120, () => spinTick())
+}
+
+fn refresh() {
+  refreshing = true
+  haptic("medium")
+  spinTick()
+  later(1500, () => { refreshing = false; fresh += 2; pull = 0.0; haptic("success"); toast("2 new posts"); update() })
+}
+
+export fn pullScreen(): View {
+  return div(fixedPage,
+    p(intro, "Drag the list down and let go past the line to refresh."),
+    div(css({ flex: 1, overflow: "hidden" }),
+      {
+        onPan: (e: Pan) => {
+          if (refreshing) { return }
+          pulled = e.state == "start" || e.state == "move"
+          pull = e.dy > 0.0 ? e.dy / 1.6 : 0.0
+          if (!pulled) {
+            if (pull > 70.0) { refresh() } else { pull = 0.0 }
+          }
+          update()
+        },
+      },
+      div(() => pullHead(), span(() => spinner(), "↻"), p(caption, () => refreshing ? "Refreshing…" : pull > 70.0 ? "Release to refresh" : "Pull to refresh")),
+      list(() => feedItems(), (n, i) => div(feedRow, avatar(user(`${n % 17 + 1}`).avatar, 40), div(grow, p(strongText, user(`${n % 17 + 1}`).name), p(footnote, "Shared a new photo")), when(() => i < fresh, () => span(newBadge, "NEW")))),
+    ),
+  )
+}
+
+fn feedItems(): int[] {
+  let out: int[] = []
+  for (const i of 0..9 + fresh) { out.push(fresh + 40 - i) }
+  return out
+}
+
+// ---- swipe cards --------------------------------------------------------------------------------------
+
+let deck: int[] = [0, 1, 2, 3, 4, 5, 6, 7]
+let topDx = 0.0
+let topDy = 0.0
+let topDragging = false
+let liked = 0
+let noped = 0
+
+const deckBox = css({ flex: 1, alignItems: "center", justifyContent: "center", padding: space.lg })
+/** The cards' place: a box of their size, so the cards (absolute, from its corner) are centered on every platform. */
+const deckStack = css({ width: 300, height: 420 })
+fn swipeCard(depth: int) => css({
+  position: "absolute", top: 0, left: 0, width: 300, height: 420, borderRadius: radius.xl, overflow: "hidden", backgroundColor: t().surface,
+  translateX: depth == 0 ? topDx : 0.0, translateY: depth == 0 ? topDy : toFloat(depth) * 10.0,
+  rotate: depth == 0 ? topDx / 18.0 : 0.0, scale: depth == 0 ? 1.0 : 1.0 - toFloat(depth) * 0.04,
+  zIndex: toFloat(10 - depth), shadowColor: "rgba(0,0,0,0.2)", shadowRadius: 20, shadowOffsetY: 8,
+  transition: depth == 0 && topDragging ? 0 : 360, easing: "spring",
+})
+const cardInfo = css({ position: "absolute", left: 0, right: 0, bottom: 0, padding: space.lg, gap: 2, backgroundColor: "rgba(0,0,0,0.38)" })
+const cardName = css({ color: "#ffffff", fontSize: font.title2, fontWeight: "bold" })
+const cardSub = css({ color: "rgba(255,255,255,0.85)", fontSize: font.sub })
+fn stamp(likeIt: bool) => css({
+  position: "absolute", top: 28, left: likeIt ? 20 : 170, px: space.md, py: space.xs, borderRadius: 8, borderWidth: 3,
+  borderColor: likeIt ? "#34c759" : "#ff3b30", color: likeIt ? "#34c759" : "#ff3b30", fontSize: 26, fontWeight: "bold",
+  rotate: likeIt ? -12.0 : 12.0, opacity: likeIt ? clamp(topDx / 100.0, 0.0, 1.0) : clamp(0.0 - topDx / 100.0, 0.0, 1.0),
+})
+const deckButtons = css({ flexDirection: "row", gap: space.xl, justifyContent: "center", pb: space.xl })
+const bigRound = themed(() => css({ width: 64, height: 64, borderRadius: 32, padding: 0, backgroundColor: t().surface, fontSize: 28, shadowColor: "rgba(0,0,0,0.15)", shadowRadius: 12, shadowOffsetY: 4, pressed: { scale: 0.9 }, transition: 160, easing: "spring" }))
+
+fn dismissTop(right: bool) {
+  topDx = right ? 600.0 : -600.0
+  if (right) { liked += 1 } else { noped += 1 }
+  haptic(right ? "success" : "light")
+  update()
+  later(260, () => {
+    if (deck.length > 0) { deck.removeAt(0) }
+    topDx = 0.0
+    topDy = 0.0
+    update()
+  })
+}
+
+/** A card of the deck. Its depth is read on each update: a row stays when the cards above it go. */
+fn deckCard(n: int): View {
+  const u = user(`${n + 3}`)
+  return div(() => swipeCard(depthOf(n)),
+    { onPan: (e: Pan) => {
+      if (depthOf(n) != 0) { return }
+      topDragging = e.state == "start" || e.state == "move"
+      topDx = e.dx
+      topDy = e.dy
+      if (!topDragging) {
+        if (e.dx > 120.0 || e.vx > 800.0) { dismissTop(true); return }
+        if (e.dx < -120.0 || e.vx < -800.0) { dismissTop(false); return }
+        topDx = 0.0
+        topDy = 0.0
+      }
+      update()
+    } },
+    img(fill, { src: photoUrlWH(50 + n * 3, 300, 420) }),
+    div(cardInfo, p(cardName, u.name), p(cardSub, `${u.city} · ${u.bio}`)),
+    when(() => depthOf(n) == 0, () => span(() => stamp(true), "LIKE")),
+    when(() => depthOf(n) == 0, () => span(() => stamp(false), "NOPE")),
+  )
+}
+
+export fn cardsScreen(): View {
+  return div(stage,
+    p(readout, () => `♥ ${liked}   ✕ ${noped}   ${deck.length} left`),
+    div(deckBox,
+      when(() => deck.length > 0, () => div(deckStack,
+        // The top card last, so it is drawn above the others.
+        list(() => reversedTop(), (n, i) => deckCard(n)),
+      )),
+      when(() => deck.length == 0, () => div(gapMd, p(title3, "That's everyone"), button(smallBtn, "Start over", { onClick: () => { deck = [0, 1, 2, 3, 4, 5, 6, 7]; update() } }))),
+    ),
+    div(deckButtons,
+      button(bigRound, "✕", { label: "Nope", onClick: () => { if (deck.length > 0) { dismissTop(false) } } }),
+      button(bigRound, "♥", { label: "Like", onClick: () => { if (deck.length > 0) { dismissTop(true) } } }),
+    ),
+  )
+}
+
+fn depthOf(n: int): int {
+  for (const i of 0..deck.length - 1) { if (deck[i] == n) { return i } }
+  return 0
+}
+
+/** The top three cards, the top one last. */
+fn reversedTop(): int[] {
+  let out: int[] = []
+  let i = deck.length < 3 ? deck.length - 1 : 2
+  while (i >= 0) {
+    out.push(deck[i])
+    i -= 1
+  }
+  return out
+}
+
+// ---- finger painting ------------------------------------------------------------------------------------
+
+type Dot = { x: number, y: number, color: int }
+
+let dots: Dot[] = []
+let ink = 0
+let lastX = 0.0
+let lastY = 0.0
+const inks: string[] = ["#0a84ff", "#ff375f", "#34c759", "#ff9f0a", "#5e5ce6", "#1c1c1e"]
+
+const canvas = themed(() => css({ flex: 1, mx: space.lg, mb: space.lg, borderRadius: radius.lg, backgroundColor: t().surface, overflow: "hidden", borderWidth: 1, borderColor: t().line }))
+fn dotStyle(d: Dot) => css({ position: "absolute", left: d.x - 5.0, top: d.y - 5.0, width: 10, height: 10, borderRadius: 5, backgroundColor: inks[d.color], pointerEvents: "none" })
+const palette = css({ flexDirection: "row", gap: space.sm, px: space.lg, py: space.md, alignItems: "center" })
+fn inkDot(i: int) => css({ width: 30, height: 30, borderRadius: 15, padding: 0, backgroundColor: inks[i], borderWidth: 3, borderColor: ink == i ? t().text : t().bg, transition: 160 })
+
+fn paint(e: Pan) {
+  // Points between two events, so a quick stroke stays a line.
+  const steps = toInt(clamp(abs(e.x - lastX) / 4.0 + abs(e.y - lastY) / 4.0, 1.0, 12.0))
+  for (const s of 1..steps) {
+    const f = toFloat(s) / toFloat(steps)
+    if (e.state != "start") { dots.push({ x: lastX + (e.x - lastX) * f, y: lastY + (e.y - lastY) * f, color: ink }) }
+  }
+  if (e.state == "start") { dots.push({ x: e.x, y: e.y, color: ink }) }
+  lastX = e.x
+  lastY = e.y
+  // The newest points only: the canvas stays fast.
+  if (dots.length > 900) { dots = tail(dots, 900) }
+  update()
+}
+
+fn tail(xs: Dot[], n: int): Dot[] {
+  let out: Dot[] = []
+  let i = xs.length - n
+  while (i < xs.length) {
+    out.push(xs[i])
+    i += 1
+  }
+  return out
+}
+
+export fn drawScreen(): View {
+  return div(stage,
+    div(palette,
+      list(() => [0, 1, 2, 3, 4, 5], (i, k) => button(() => inkDot(i), { label: "Ink", onClick: () => { ink = i; haptic("light"); update() } })),
+      div(spacer),
+      button(smallGhostBtn, "Clear", { onClick: () => { dots = []; update() } }),
+    ),
+    div(canvas, { onPan: (e: Pan) => paint(e) }, list(() => dots, (d, i) => div(dotStyle(d)))),
+  )
+}
+
+// ---- menus ------------------------------------------------------------------------------------------------
+
+let sortBy = "Newest"
+let showRead = true
+let showFlagged = false
+let density = "Comfortable"
+let fontPick = "System"
+
+const menuBtn = themed(() => css({ flexDirection: "row", alignItems: "center", gap: space.sm, height: 44, px: space.lg, borderRadius: radius.md, backgroundColor: t().surface, color: t().text, fontSize: font.body, pressed: { opacity: 0.6 }, borderWidth: 1, borderColor: t().line }))
+const menuGrid = css({ gap: space.md, padding: space.lg })
+
+fn sortMenu(at: Point) {
+  menuAt(at, "Sort by", [
+    checked("Newest", sortBy == "Newest", () => { sortBy = "Newest" }),
+    checked("Oldest", sortBy == "Oldest", () => { sortBy = "Oldest" }),
+    checked("Most liked", sortBy == "Most liked", () => { sortBy = "Most liked" }),
+    checked("Alphabetical", sortBy == "Alphabetical", () => { sortBy = "Alphabetical" }),
+  ])
+}
+
+fn viewMenu(at: Point) {
+  menuAt(at, "View options", [
+    checked("Show read", showRead, () => { showRead = !showRead }),
+    checked("Only flagged", showFlagged, () => { showFlagged = !showFlagged }),
+    submenu("Density", "☰", () => densityMenu(at)),
+    submenu("Font", "Aa", () => fontMenu(at)),
+    act("Reset", "↺", () => { showRead = true; showFlagged = false; density = "Comfortable"; fontPick = "System"; toast("View reset") }),
+  ])
+}
+
+fn densityMenu(at: Point) {
+  menuAt(at, "Density", [
+    checked("Compact", density == "Compact", () => { density = "Compact" }),
+    checked("Comfortable", density == "Comfortable", () => { density = "Comfortable" }),
+    checked("Spacious", density == "Spacious", () => { density = "Spacious" }),
+    submenu("Back to view options", "‹", () => viewMenu(at)),
+  ])
+}
+
+fn fontMenu(at: Point) {
+  menuAt(at, "Font", [
+    checked("System", fontPick == "System", () => { fontPick = "System" }),
+    checked("Serif", fontPick == "Serif", () => { fontPick = "Serif" }),
+    checked("Monospace", fontPick == "Monospace", () => { fontPick = "Monospace" }),
+    submenu("Back to view options", "‹", () => viewMenu(at)),
+  ])
+}
+
+fn fileMenu(at: Point) {
+  menuAt(at, "", [
+    act("New", "＋", () => toast("New file")),
+    act("Duplicate", "⧉", () => toast("Duplicated")),
+    submenu("Share", "➤", () => menuAt(at, "Share", [act("Messages", "✉", () => toast("Shared to Messages")), act("Mail", "@", () => toast("Shared by mail")), submenu("More apps", "⋯", () => menuAt(at, "More apps", [act("Notes", "✎", () => toast("Saved to Notes")), act("Files", "▤", () => toast("Saved to Files"))]))])),
+    submenu("Export as", "⇪", () => menuAt(at, "Export as", [act("PDF", "", () => toast("Exported as PDF")), act("PNG", "", () => toast("Exported as PNG")), act("Markdown", "", () => toast("Exported as Markdown"))])),
+    destructive("Delete", "✕", () => alert("Delete file?", "This cannot be undone.", [{ label: "Cancel", glyph: "", kind: "cancel", run: () => {} }, destructive("Delete", "", () => toast("Deleted"))])),
+  ])
+}
+
+export fn menusScreen(): View {
+  return div(groupedPage, div(column,
+    p(intro, "Popover menus with check marks and submenus, an action sheet, and a context menu. Each one remembers its choice."),
+    div(menuGrid,
+      div(menuBtn, span(grow, () => `Sort: ${sortBy}`), span(footnote, "⌄"), { onPointerUp: (pt: Point) => sortMenu(pt) }),
+      div(menuBtn, span(grow, () => `View: ${density} · ${fontPick}`), span(footnote, "⌄"), { onPointerUp: (pt: Point) => viewMenu(pt) }),
+      div(menuBtn, span(grow, "File menu with nested submenus"), span(footnote, "⋯"), { onPointerUp: (pt: Point) => fileMenu(pt) }),
+      div(menuBtn, span(grow, "Action sheet"), span(footnote, "↑"), { onClick: () => actionSheet("Photo", [
+        act("Take photo", "◉", () => toast("Camera")), act("Choose from library", "▦", () => toast("Library")),
+        act("Browse files", "▤", () => toast("Files")), destructive("Remove current photo", "", () => toast("Removed")),
+      ]) }),
+      div(css({ height: 120, borderRadius: radius.lg, alignItems: "center", justifyContent: "center", backgroundColor: t().accentSoft, pressed: { scale: 0.97 }, transition: 200, easing: "spring" }),
+        { onLongPress: (pt: Point) => fileMenu(pt) },
+        p(accentText, "Long press here for a context menu"),
+      ),
+    ),
+    section("Current choices", [
+      navCell("", "", "Sort", () => sortBy, () => {}),
+      navCell("", "", "Show read", () => showRead ? "Yes" : "No", () => {}),
+      navCell("", "", "Only flagged", () => showFlagged ? "Yes" : "No", () => {}),
+      navCell("", "", "Density", () => density, () => {}),
+    ]),
+  ))
+}
+
+// ---- bottom sheets -------------------------------------------------------------------------------------------
+
+let priceMax = 0.6
+let kinds: Set<string> = Set(["Photos"])
+
+fn filterContent(): View {
+  const all: string[] = ["Photos", "Videos", "People", "Places", "Tags"]
+  return div(padded,
+    p(headline, "Show"),
+    div(css({ flexDirection: "row", flexWrap: "wrap", gap: space.sm }), list(() => all, (k, i) => chip(k, () => kinds.has(k), () => { if (kinds.has(k)) { kinds.delete(k) } else { kinds.add(k) } }))),
+    p(headline, "Distance"),
+    slider("Within", t().accent, () => priceMax, (v) => { priceMax = v }),
+    switchCell("", "", "Only people I follow", () => showFlagged, (v) => { showFlagged = v }),
+    button(primaryBtn, "Apply", { onClick: () => toast("Filters applied") }),
+  )
+}
+
+fn shareContent(): View {
+  return div(
+    div(css({ flexDirection: "row", gap: space.lg, overflow: "scroll", padding: space.lg }), list(() => [2, 3, 4, 5, 6, 7, 8, 9], (n, i) => div(css({ alignItems: "center", gap: space.xs, width: 64, pressed: { scale: 0.92 } }), { onClick: () => toast(`Sent to ${user(`${n}`).name}`) }, avatar(user(`${n}`).avatar, 56), p(css({ fontSize: font.caption, color: t().text, numberOfLines: 1 }), user(`${n}`).name)))),
+    div(divider),
+    list(() => ["Copy link", "Add to story", "Share to…", "Save image"], (s, i) => div(css({ px: space.lg, py: space.md, pressed: { backgroundColor: t().surface2 } }), { onClick: () => toast(s) }, p(body, s))),
+  )
+}
+
+fn longContent(): View {
+  return div(list(() => users, (u, i) => div(css({ flexDirection: "row", alignItems: "center", gap: space.md, px: space.lg, py: space.sm }), avatar(u.avatar, 40), div(grow, p(strongText, u.name), p(footnote, u.bio)))))
+}
+
+fn nestedContent(): View {
+  return div(padded,
+    p(body, "A sheet can open another sheet over itself. Drag the grabber down to close it, or up to make it large."),
+    button(secondaryBtn, "Open another sheet", { onClick: () => sheet("Second sheet", "medium", () => div(padded, p(body, "This one is on top. Close it to get back to the first."), button(primaryBtn, "Open a third", { onClick: () => sheet("Third sheet", "large", () => longContent()) }))) }),
+  )
+}
+
+export fn sheetsScreen(): View {
+  return div(groupedPage, div(column,
+    p(intro, "Sheets come up from the bottom and follow the finger: drag the grabber to move between half and full height, or down to close."),
+    div(menuGrid,
+      button(secondaryBtn, "Filters (medium)", { onClick: () => sheet("Filters", "medium", () => filterContent()) }),
+      button(secondaryBtn, "Share (medium)", { onClick: () => sheet("Share", "medium", () => shareContent()) }),
+      button(secondaryBtn, "People (large, scrolls)", { onClick: () => sheet("People", "large", () => longContent()) }),
+      button(secondaryBtn, "Sheet over sheet", { onClick: () => sheet("First sheet", "medium", () => nestedContent()) }),
+      button(primaryBtn, "The platform's own sheet", { onClick: () => go("/lab/native-sheet") }),
+    ),
+  ))
+}
+
+/** A modal route: each platform presents it with its own sheet (UIKit, GTK, Android, the web). */
+export fn nativeSheetScreen(): View {
+  return div(page, div(padded,
+    p(title2, "The platform's sheet"),
+    p(body, "This screen is a modal route. iOS shows it as a page sheet, GTK as a libadwaita bottom sheet, Android over the tabs, and the web as a sheet you can drag down."),
+    button(primaryBtn, "Done", { onClick: () => back() }),
+  ))
+}
+
+// ---- toasts and alerts ----------------------------------------------------------------------------------------
+
+export fn toastsScreen(): View {
+  return div(groupedPage, div(column,
+    p(intro, "Toasts, alerts with two or three buttons, and the device's haptics."),
+    div(menuGrid,
+      button(secondaryBtn, "Show a toast", { onClick: () => toast("Saved to your collection") }),
+      button(secondaryBtn, "Three toasts in a row", { onClick: () => { toast("One"); later(500, () => toast("Two")); later(1000, () => toast("Three")) } }),
+      button(secondaryBtn, "Alert with two buttons", { onClick: () => alert("Turn on notifications?", "Get told when people like and comment on your posts.", [
+        { label: "Not now", glyph: "", kind: "cancel", run: () => toast("Maybe later") },
+        act("Turn on", "", () => { setFlag("push", true); toast("Notifications on") }),
+      ]) }),
+      button(secondaryBtn, "Alert with three buttons", { onClick: () => alert("Unsaved changes", "Save your changes before leaving?", [
+        { label: "Cancel", glyph: "", kind: "cancel", run: () => {} },
+        destructive("Discard", "", () => toast("Discarded")),
+        act("Save", "", () => toast("Saved")),
+      ]) }),
+      button(dangerBtn, "Destructive confirmation", { onClick: () => alert("Delete everything?", "This removes all items in the demo.", [
+        { label: "Cancel", glyph: "", kind: "cancel", run: () => {} },
+        destructive("Delete", "", () => toast("Deleted")),
+      ]) }),
+    ),
+    section("Haptics", [
+      navCell("", "", "Light tap", () => "", () => haptic("light")),
+      navCell("", "", "Medium tap", () => "", () => haptic("medium")),
+      navCell("", "", "Success", () => "", () => haptic("success")),
+    ]),
+  ))
+}
+
+// ---- collapsing header -----------------------------------------------------------------------------------------
+
+let scrollTop = 0.0
+
+fn heroH() => clamp(260.0 - scrollTop, 64.0, 260.0)
+fn heroBox() => css({ position: "absolute", top: 0, left: 0, right: 0, height: heroH(), overflow: "hidden", zIndex: 5, backgroundColor: t().surface })
+fn heroImg() => css({ position: "absolute", top: 0, left: 0, right: 0, height: 260, opacity: clamp((heroH() - 64.0) / 140.0, 0.0, 1.0), scale: 1.0 + clamp(0.0 - scrollTop, 0.0, 200.0) / 400.0 })
+fn heroTitle() => css({
+  position: "absolute", left: space.lg, bottom: space.md, color: heroH() > 120.0 ? "#ffffff" : t().text,
+  fontSize: 17.0 + clamp((heroH() - 64.0) / 196.0, 0.0, 1.0) * 17.0, fontWeight: "bold",
+})
+const collapseScroll = css({ flex: 1, overflow: "scroll" })
+const collapseBody = css({ pt: 260, gap: 0 })
+
+export fn collapsingScreen(): View {
+  scrollTop = 0.0
+  return div(fixedPage,
+    div(() => heroBox(), img(() => heroImg(), { src: photoUrlWH(29, 420, 260) }), p(() => heroTitle(), "Kyoto in autumn")),
+    div(collapseScroll, { onScroll: (e: Scroll) => { scrollTop = e.top; update() } },
+      div(collapseBody,
+        list(() => posts, (x, i) => div(css({ flexDirection: "row", gap: space.md, padding: space.lg, borderBottomWidth: 1, borderColor: t().line }),
+          img(css({ width: 64, height: 64, borderRadius: radius.sm }), { src: photoUrl(x.photo, 64) }),
+          div(grow, p(strongText, x.place), p(footnote, x.caption)),
+        )),
+      ),
+    ),
+  )
+}
+
+// ---- forms ------------------------------------------------------------------------------------------------------
+
+let fName = ""
+let fEmail = ""
+let fPass = ""
+let fAbout = ""
+let fTerms = false
+let fNews = true
+let fPlan = 1
+let fSize = 2
+let submitted = false
+
+const formBox = css({ gap: space.lg, padding: space.lg })
+const fieldWrap = css({ gap: space.xs })
+const fieldLabel = themed(() => css({ fontSize: font.footnote, fontWeight: "semibold", color: t().muted }))
+fn fieldStyle(bad: bool) => css({ height: 48, px: space.md, borderRadius: radius.md, backgroundColor: t().surface2, color: t().text, fontSize: font.body, borderWidth: 2, borderColor: bad ? t().danger : t().surface2 })
+const error = themed(() => css({ fontSize: font.caption, color: t().danger }))
+const areaStyle = themed(() => css({ minHeight: 90, padding: space.md, borderRadius: radius.md, backgroundColor: t().surface2, color: t().text, fontSize: font.body }))
+
+fn validEmail() => fEmail.includes("@") && fEmail.includes(".")
+fn nameBad() => submitted && fName.trim() == ""
+fn emailBad() => submitted && !validEmail()
+fn passBad() => submitted && fPass.length < 8
+
+fn submitForm() {
+  submitted = true
+  if (fName.trim() != "" && validEmail() && fPass.length >= 8 && fTerms) {
+    haptic("success")
+    alert("Welcome, " + fName.trim() + "!", `Plan: ${["Free", "Plus", "Pro"][fPlan]}. Check ${fEmail} to confirm.`, [act("OK", "", () => {})])
+  } else {
+    haptic("medium")
+    toast(fTerms ? "Check the fields in red" : "Accept the terms to continue")
+  }
+  update()
+}
+
+export fn formsScreen(): View {
+  return div(page, div(column, div(formBox,
+    p(title2, "Create an account"),
+    div(fieldWrap, p(fieldLabel, "NAME"), input(() => fieldStyle(nameBad()), { placeholder: "Your name", value: () => fName, onInput: (v) => { fName = v; update() } }), when(() => nameBad(), () => p(error, "Enter your name."))),
+    div(fieldWrap, p(fieldLabel, "EMAIL"), input(() => fieldStyle(emailBad()), { placeholder: "you@example.com", inputType: "email", value: () => fEmail, onInput: (v) => { fEmail = v; update() } }), when(() => emailBad(), () => p(error, "Enter a valid email."))),
+    div(fieldWrap, p(fieldLabel, "PASSWORD"), input(() => fieldStyle(passBad()), { placeholder: "At least 8 characters", inputType: "password", value: () => fPass, onInput: (v) => { fPass = v; update() } }),
+      div(css({ flexDirection: "row", gap: 4 }), list(() => [0, 1, 2, 3], (i, k) => div(() => css({ flex: 1, height: 4, borderRadius: 2, backgroundColor: fPass.length > i * 3 + 2 ? (fPass.length >= 12 ? t().success : t().warning) : t().line })))),
+      when(() => passBad(), () => p(error, "Use at least 8 characters.")),
+    ),
+    div(fieldWrap, p(fieldLabel, "PLAN"), segmented(["Free", "Plus", "Pro"], () => fPlan, (i) => { fPlan = i })),
+    div(fieldWrap, p(fieldLabel, "T-SHIRT SIZE"), div(css({ flexDirection: "row", gap: space.sm, flexWrap: "wrap" }), list(() => ["XS", "S", "M", "L", "XL"], (s, i) => chip(s, () => fSize == i, () => { fSize = i })))),
+    div(fieldWrap, p(fieldLabel, "ABOUT YOU"), textarea(areaStyle, { placeholder: "Optional", value: () => fAbout, onInput: (v) => { fAbout = v; update() } }), p(caption, () => `${fAbout.length}/200`)),
+    div(css({ flexDirection: "row", alignItems: "center", gap: space.md }), p(css({ flex: 1, fontSize: font.body, color: t().text }), "Send me the newsletter"), toggle({ checked: () => fNews, onChange: (v) => { fNews = v; update() } })),
+    div(css({ flexDirection: "row", alignItems: "center", gap: space.md }), p(css({ flex: 1, fontSize: font.body, color: t().text }), "I accept the terms"), toggle({ checked: () => fTerms, onChange: (v) => { fTerms = v; update() } })),
+    button(primaryBtn, "Create account", { onClick: () => submitForm() }),
+  )))
+}
+
+// ---- the welcome tour (a modal pager) ------------------------------------------------------------------------
+
+let tourAt = 0
+let tourDx = 0.0
+let tourDragging = false
+
+type TourPage = { glyph: string, title: string, text: string, photo: int }
+
+const tour: TourPage[] = [
+  { glyph: "◎", title: "Share what you see", text: "Post photos and stories, and keep the ones you love.", photo: 15 },
+  { glyph: "✥", title: "Feels at home", text: "Each platform's own navigation, sheets, and gestures.", photo: 28 },
+  { glyph: "▤", title: "Yours, on the device", text: "Likes, saves, notes, and settings stay in a local database.", photo: 42 },
+  { glyph: "✦", title: "One script", text: "Written once in Nuclo Script, native on every device.", photo: 57 },
+]
+
+fn tourStrip() => css({ flexDirection: "row", width: pageW() * 4.0, translateX: 0.0 - toFloat(tourAt) * pageW() + tourDx, transition: tourDragging ? 0 : 420, easing: "spring" })
+fn tourPage() => css({ width: pageW(), padding: space.xl, gap: space.lg, alignItems: "center" })
+const tourImg = css({ width: 240, height: 240, borderRadius: 120, overflow: "hidden" })
+const tourGlyph = themed(() => css({ fontSize: 34, color: t().accent }))
+const tourText = themed(() => css({ fontSize: font.body, color: t().text2, textAlign: "center", lineHeight: 22, maxWidth: 300 }))
+fn tourDot(i: int) => css({ width: i == tourAt ? 22 : 8, height: 8, borderRadius: 4, backgroundColor: i == tourAt ? t().accent : t().line, transition: 260, easing: "spring" })
+
+export fn onboardingScreen(): View {
+  tourAt = 0
+  return div(page,
+    div(css({ overflow: "hidden", pt: space.lg }),
+      div(() => tourStrip(),
+        {
+          onPan: (e: Pan) => {
+            tourDragging = e.state == "start" || e.state == "move"
+            tourDx = e.dx
+            if (!tourDragging) {
+              tourDx = 0.0
+              if ((e.dx < -60.0 || e.vx < -500.0) && tourAt < 3) { tourAt += 1; haptic("light") }
+              if ((e.dx > 60.0 || e.vx > 500.0) && tourAt > 0) { tourAt -= 1; haptic("light") }
+            }
+            update()
+          },
+        },
+        list(() => tour, (pg, i) => div(() => tourPage(), div(tourImg, img(fill, { src: photoUrl(pg.photo, 240) })), span(tourGlyph, pg.glyph), p(title1, pg.title), p(tourText, pg.text))),
+      ),
+    ),
+    div(dotsRow, list(() => [0, 1, 2, 3], (i, k) => div(() => tourDot(i), { onClick: () => { tourAt = i; update() } }))),
+    div(padded,
+      button(primaryBtn, () => tourAt == 3 ? "Get started" : "Next", { onClick: () => { if (tourAt < 3) { tourAt += 1; update() } else { back() } } }),
+      when(() => tourAt < 3, () => button(css({ color: t().muted, fontSize: font.sub, padding: space.sm }), "Skip", { onClick: () => back() })),
+    ),
+  )
+}

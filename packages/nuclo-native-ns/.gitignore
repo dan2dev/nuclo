@@ -1,0 +1,7 @@
+build/
+node_modules/
+hosts/android/.gradle/
+hosts/android/.kotlin/
+hosts/android/build/
+hosts/android/app/build/
+hosts/android/local.properties

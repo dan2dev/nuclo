@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content" />
+    <meta name="theme-color" content="#ffffff" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <title>Nuclo NS</title>
+    <style>
+      /* The navigation chrome of the web runtime: an app bar, the tab bar (a side rail from 720 px), and sheets.
+         Colours come from the app's theme (theme() in ui.ns sets the variables). */
+      :root { --nn-bg: #ffffff; --nn-bar: rgba(249, 249, 251, 0.86); --nn-text: #000000; --nn-muted: #8e8e93; --nn-line: rgba(60, 60, 67, 0.18); --nn-accent: #0a84ff; --nn-sheet: #ffffff; color-scheme: light; }
+      :root.dark { --nn-bg: #000000; --nn-bar: rgba(22, 22, 24, 0.86); --nn-text: #ffffff; --nn-muted: #8e8e93; --nn-line: rgba(84, 84, 88, 0.6); --nn-sheet: #1c1c1e; color-scheme: dark; }
+      body { background: var(--nn-bg); color: var(--nn-text); }
+      .nn-shell { flex: 1 1 0%; flex-direction: column-reverse !important; height: 100dvh; }
+      .nn-content { flex: 1 1 0%; overflow: hidden; }
+      .nn-screen { position: absolute !important; inset: 0; background: var(--nn-bg); box-shadow: -8px 0 24px rgba(0, 0, 0, 0.06); }
+      .nn-body { flex: 1 1 0%; overflow: hidden; }
+      .nn-body > * { flex: 1 1 0%; }
+      .nn-bar { flex-direction: row !important; align-items: center; height: calc(52px + env(safe-area-inset-top)); padding: env(safe-area-inset-top) 4px 0; background: var(--nn-bar); backdrop-filter: saturate(180%) blur(20px); -webkit-backdrop-filter: saturate(180%) blur(20px); border-bottom: 0.5px solid var(--nn-line); z-index: 3; }
+      .nn-bar > button, .nn-bar > span { width: 52px; height: 44px; padding: 0 !important; color: var(--nn-accent) !important; }
+      .nn-bar > button[hidden] { visibility: hidden; display: flex !important; }
+      .nn-title { flex: 1 1 0%; align-items: center; font-size: 17px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block !important; text-align: center; }
+      .nn-tabs { flex-direction: row !important; height: calc(56px + env(safe-area-inset-bottom)); padding-bottom: env(safe-area-inset-bottom); background: var(--nn-bar); backdrop-filter: saturate(180%) blur(20px); -webkit-backdrop-filter: saturate(180%) blur(20px); border-top: 0.5px solid var(--nn-line); z-index: 4; }
+      .nn-tab { flex: 1 1 0%; gap: 2px; padding: 6px 0 0 !important; color: var(--nn-muted) !important; font-size: 10px; font-weight: 500; justify-content: flex-start !important; }
+      .nn-tab.on { color: var(--nn-accent) !important; }
+      .nn-tab svg { transition: transform 160ms; }
+      .nn-tab:active svg { transform: scale(0.88); }
+      .nn-sheets { position: fixed !important; inset: 0; display: none; z-index: 50; justify-content: flex-end; }
+      .nn-backdrop { position: absolute !important; inset: 0; background: rgba(0, 0, 0, 0.38); }
+      .nn-sheet { position: relative; max-height: calc(100dvh - 44px); min-height: 55dvh; background: var(--nn-sheet); border-radius: 14px 14px 0 0; overflow: hidden; padding-bottom: env(safe-area-inset-bottom); box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.2); }
+      .nn-sheet > .nn-screen { position: relative !important; inset: auto; flex: 1 1 0%; box-shadow: none; background: transparent; }
+      .nn-grab { height: 22px; align-items: center; justify-content: center; cursor: grab; touch-action: none; }
+      .nn-grab::after { content: ""; width: 36px; height: 5px; border-radius: 3px; background: var(--nn-line); }
+      .nn-overlay { position: fixed !important; inset: 0; z-index: 40; pointer-events: none; }
+      .nn-overlay > div { flex: 1 1 0%; pointer-events: none; }
+      .nn-overlay > div > * { pointer-events: auto; }
+      @media (min-width: 720px) {
+        .nn-shell { flex-direction: row !important; }
+        .nn-tabs { flex-direction: column !important; width: 84px; height: auto; padding: 12px 0; border-top: none; border-right: 0.5px solid var(--nn-line); gap: 6px; }
+        .nn-tab { flex: none; height: 64px; justify-content: center !important; font-size: 11px; }
+        .nn-sheets { align-items: center; justify-content: center; }
+        .nn-sheet { width: 560px; max-height: 86dvh; min-height: 60dvh; border-radius: 16px; }
+      }
+    </style>
+  </head>
+  <body>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>

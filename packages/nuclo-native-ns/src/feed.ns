@@ -1,0 +1,633 @@
+// The Home tab: the feed, a post, its comments and likes, the photo viewer, the story viewer, and the
+// composer. Double tap a photo to like it, long press it for its menu, pinch it in the viewer.
+
+import {
+  css, div, p, span, small, button, img, input, textarea, list, when, update, go, back, later, haptic, View,
+  Pan, Pinch, Point, Scroll,
+} from "./ui"
+import { t, space, radius, font, themed } from "./theme"
+import { Post, User, Story, Comment, users, stories, user, story, commentsOf, photoUrl, photoUrlWH, compact, ago } from "./data"
+import {
+  feed, findAnyPost, isLiked, isSaved, toggleLike, like, toggleSave, likeCount, commentsAdded, addComment,
+  addPost, profile, isFollowing, toggleFollow, deletePost,
+} from "./state"
+import {
+  page, fixedPage, column, row, rowGap, grow, spacer, padded, gapSm, iconBtn, smallBtn, smallGhostBtn,
+  primaryBtn, headline, body, sub, footnote, caption, strongText, divider, avatar, ringed, verifiedBadge,
+  badge, empty, toast, actionSheet, menuAt, alert, act, destructive, submenu, Action,
+} from "./kit"
+
+// ---- seen stories, the heart burst ------------------------------------------------------------
+
+let seenStories: Set<string> = Set([])
+/** The post whose photo shows the heart of a double tap. */
+let burst = ""
+/** How many posts the feed shows: it grows as the feed is scrolled near its end. */
+let shownCount = 8
+
+// ---- styles -----------------------------------------------------------------------------------
+
+const header = themed(() => css({ flexDirection: "row", alignItems: "center", gap: space.xs, px: space.lg, pt: space.md, pb: space.sm, backgroundColor: t().bg }))
+const wordmark = themed(() => css({ fontSize: 26, fontWeight: "bold", color: t().text, letterSpacing: -1 }))
+const wordDot = themed(() => css({ fontSize: 26, fontWeight: "bold", color: t().accent }))
+const badgeAt = css({ position: "absolute", top: 2, right: 0 })
+const storyRow = themed(() => css({ flexDirection: "row", gap: space.md, px: space.lg, py: space.md, overflow: "scroll", borderBottomWidth: 1, borderColor: t().line }))
+const storyItem = css({ alignItems: "center", gap: space.xs, width: 72, pressed: { scale: 0.94 }, transition: 140 })
+const storyName = themed(() => css({ fontSize: font.caption, color: t().text, numberOfLines: 1, textAlign: "center", width: 72 }))
+const addStory = themed(() => css({ position: "absolute", right: 0, bottom: 0, lineHeight: 18, width: 22, height: 22, borderRadius: 11, backgroundColor: t().accent, color: "#ffffff", borderWidth: 2, borderColor: t().bg, fontSize: 14, fontWeight: "bold", alignItems: "center", justifyContent: "center", textAlign: "center" }))
+
+const postBox = css({ pb: space.md, gap: 0 })
+const postHead = css({ flexDirection: "row", alignItems: "center", gap: space.sm, px: space.md, py: space.sm })
+const nameRow = css({ flexDirection: "row", alignItems: "center", gap: space.xs })
+const photoBox = themed(() => css({ aspectRatio: 1, backgroundColor: t().skeleton, overflow: "hidden" }))
+const photo = css({ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 })
+const heartOn = css({ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, alignItems: "center", justifyContent: "center", fontSize: 110, color: "#ffffff", opacity: 0.95, scale: 1, transition: 300, easing: "spring", pointerEvents: "none" })
+const heartOff = css({ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, alignItems: "center", justifyContent: "center", fontSize: 110, color: "#ffffff", opacity: 0, scale: 0.4, transition: 220, pointerEvents: "none" })
+const actionsRow = css({ flexDirection: "row", alignItems: "center", px: space.xs, pt: space.xs })
+const likeOn = themed(() => css({ width: 44, height: 44, padding: 0, fontSize: 26, color: t().danger, scale: 1.0, transition: 260, easing: "spring", pressed: { scale: 0.8 } }))
+const likeOff = themed(() => css({ width: 44, height: 44, padding: 0, fontSize: 26, color: t().text, transition: 260, pressed: { scale: 0.8 } }))
+const postIcon = themed(() => css({ width: 44, height: 44, padding: 0, fontSize: 22, color: t().text, pressed: { opacity: 0.5, scale: 0.88 }, transition: 120 }))
+const saveOn = themed(() => css({ width: 44, height: 44, padding: 0, fontSize: 24, color: t().warning, pressed: { scale: 0.85 }, transition: 200, easing: "spring" }))
+const textBlock = css({ px: space.md + space.xs, gap: space.xs })
+const likesText = themed(() => css({ fontSize: font.sub, fontWeight: "semibold", color: t().text, pressed: { opacity: 0.5 } }))
+const captionText = themed(() => css({ fontSize: font.sub, color: t().text, lineHeight: 20 }))
+const moreLink = themed(() => css({ fontSize: font.sub, color: t().muted, pressed: { opacity: 0.5 } }))
+const loadingRow = themed(() => css({ alignItems: "center", padding: space.xl, color: t().muted, fontSize: font.footnote }))
+
+// ---- the feed --------------------------------------------------------------------------------
+
+fn openStory(s: Story) {
+  seenStories.add(s.id)
+  go(`/story/${s.id}`)
+}
+
+fn storyBubble(s: Story): View {
+  const u = user(s.user)
+  return div(
+    storyItem,
+    { onClick: () => openStory(s) },
+    ringed(u.avatar, 64, () => seenStories.has(s.id)),
+    p(storyName, u.handle),
+  )
+}
+
+fn storiesStrip(): View {
+  const me = profile()
+  return div(
+    storyRow,
+    div(storyItem, { onClick: () => go("/compose") },
+      div(ringed(me.avatar, 64, () => true), span(addStory, "+")),
+      p(storyName, "Your story"),
+    ),
+    list(() => stories, (s, i) => storyBubble(s)),
+  )
+}
+
+/** The menu of a post: from its ⋯ button or a long press on its photo. */
+export fn postMenu(post: Post, at: Point) {
+  const mine = post.author == "me"
+  let actions: Action[] = [
+    act(isSaved(post.id) ? "Remove from saved" : "Save", isSaved(post.id) ? "★" : "☆", () => { toast(toggleSave(post.id) ? "Saved" : "Removed from saved") }),
+    submenu("Share to…", "➤", () => shareMenu(post, at)),
+    act("Copy link", "⧉", () => toast("Link copied")),
+    act("Go to profile", "◉", () => go(mine ? "/me" : `/user/${post.author}`)),
+  ]
+  if (mine) {
+    actions.push(destructive("Delete post", "✕", () => confirmDelete(post)))
+  } else {
+    actions.push(act(isFollowing(post.author) ? "Unfollow" : "Follow", "＋", () => { toast(toggleFollow(post.author) ? "Following" : "Unfollowed") }))
+    actions.push(destructive("Report", "⚠", () => reportSheet(post)))
+  }
+  menuAt(at, user(post.author).handle, actions)
+}
+
+fn shareMenu(post: Post, at: Point) {
+  menuAt(at, "Share to", [
+    act("Messages", "✉", () => go("/messages")),
+    act("Story", "◎", () => toast("Added to your story")),
+    act("Copy link", "⧉", () => toast("Link copied")),
+    act("More…", "⋯", () => shareSheet(post)),
+  ])
+}
+
+export fn shareSheet(post: Post) {
+  actionSheet("Share this post", [
+    act("Send in a message", "✉", () => go("/messages")),
+    act("Add to your story", "◎", () => toast("Added to your story")),
+    act("Copy link", "⧉", () => toast("Link copied")),
+    act(isSaved(post.id) ? "Remove from saved" : "Save", "☆", () => { toast(toggleSave(post.id) ? "Saved" : "Removed from saved") }),
+  ])
+}
+
+fn confirmDelete(post: Post) {
+  alert("Delete post?", "It will be removed from your profile and from this device.", [
+    { label: "Cancel", glyph: "", kind: "cancel", run: () => {} },
+    destructive("Delete", "", () => { deletePost(post.id); toast("Post deleted") }),
+  ])
+}
+
+fn reportSheet(post: Post) {
+  actionSheet("Why are you reporting this post?", [
+    act("It's spam", "", () => toast("Thanks for letting us know")),
+    act("I just don't like it", "", () => toast("We'll show you fewer posts like this")),
+    destructive("Hate speech or symbols", "", () => toast("Report sent")),
+    destructive("False information", "", () => toast("Report sent")),
+  ])
+}
+
+fn doubleTapLike(post: Post) {
+  like(post.id)
+  burst = post.id
+  haptic("success")
+  update()
+  later(650, () => { if (burst == post.id) { burst = ""; update() } })
+}
+
+/** A post: author, photo, actions, likes, caption, and comments link. */
+export fn postCard(post: Post, inFeed: bool): View {
+  const u = post.author == "me" ? meAsUser() : user(post.author)
+  const id = post.id
+  return div(
+    postBox,
+    div(postHead,
+      div({ onClick: () => go(post.author == "me" ? "/me" : `/user/${u.id}`) }, avatar(u.avatar, 32)),
+      div(grow, { onClick: () => go(post.author == "me" ? "/me" : `/user/${u.id}`) },
+        div(nameRow, p(strongText, u.handle), when(() => u.verified, () => span(verifiedBadge, "✓"))),
+        p(caption, post.place),
+      ),
+      button(iconBtn, "⋯", { label: "More", onClick: () => postMenu(post, { x: 0.0, y: 0.0, pageX: 9999.0, pageY: 120.0 }) }),
+    ),
+    div(photoBox,
+      {
+        onDoubleClick: (pt: Point) => doubleTapLike(post),
+        onLongPress: (pt: Point) => postMenu(post, pt),
+        onClick: () => { if (inFeed) { go(`/post/${id}`) } else { go(`/photo/${id}`) } },
+      },
+      img(photo, { src: photoUrl(post.photo, 390), label: post.caption }),
+      span(() => burst == id ? heartOn : heartOff, "♥"),
+    ),
+    div(actionsRow,
+      button(() => isLiked(id) ? likeOn() : likeOff(), () => isLiked(id) ? "♥" : "♡", { label: "Like", onClick: () => { toggleLike(id); haptic("light"); update() } }),
+      button(postIcon, "💬", { label: "Comments", onClick: () => go(`/post/${id}/comments`) }),
+      button(postIcon, "➤", { label: "Share", onClick: () => shareSheet(post) }),
+      div(spacer),
+      button(() => isSaved(id) ? saveOn() : postIcon(), () => isSaved(id) ? "★" : "☆", { label: "Save", onClick: () => { toggleSave(id); haptic("light"); update() } }),
+    ),
+    div(textBlock,
+      p(likesText, () => `${compact(likeCount(post))} likes`, { onClick: () => go(`/post/${id}/likes`) }),
+      p(captionText, `${u.handle}  ${post.caption} #${post.tag}`, { onClick: () => go(`/tag/${post.tag}`) }),
+      when(() => post.comments > 0, () => p(moreLink, `View all ${post.comments + commentsAdded(id).length} comments`, { onClick: () => go(`/post/${id}/comments`) })),
+      small(caption, post.minutes == 0 ? "Just now" : `${ago(post.minutes)} ago`),
+    ),
+  )
+}
+
+export fn meAsUser(): User {
+  const m = profile()
+  return { id: "me", name: m.name, handle: m.handle, avatar: m.avatar, cover: photoUrlWH(25, 400, 160), bio: m.bio, city: "Lisbon", followers: 1240, following: 312, verified: true }
+}
+
+fn feedScroll(e: Scroll) {
+  // Near the end: show the next page, as an endless feed does.
+  if (e.top + e.viewport > e.height - 900.0 && shownCount < feed().length) {
+    shownCount += 6
+    update()
+  }
+}
+
+export fn feedScreen(): View {
+  return div(
+    page,
+    { onScroll: (e: Scroll) => feedScroll(e) },
+    div(column,
+      div(header,
+        p(wordmark, "nuclo"), p(wordDot, "."), div(spacer),
+        button(iconBtn, "＋", { label: "New post", onClick: () => go("/compose") }),
+        button(iconBtn, "♡", { label: "Activity", onClick: () => go("/activity") }),
+        div(button(iconBtn, "✉", { label: "Messages", onClick: () => go("/messages") }), span(badgeAt, badge, "3")),
+      ),
+      storiesStrip(),
+      list(() => feed().filter((x) => true).length > shownCount ? first(feed(), shownCount) : feed(), (post, i) => postCard(post, true)),
+      when(() => shownCount < feed().length, () => p(loadingRow, "Loading more…")),
+      when(() => shownCount >= feed().length, () => p(loadingRow, "You're all caught up ✓")),
+    ),
+  )
+}
+
+fn first(xs: Post[], n: int): Post[] {
+  let out: Post[] = []
+  for (const x of xs) {
+    if (out.length < n) { out.push(x) }
+  }
+  return out
+}
+
+// ---- a post ------------------------------------------------------------------------------------
+
+const related = css({ flexDirection: "row", flexWrap: "wrap", gap: 2 })
+const tile = themed(() => css({ widthPct: 33, aspectRatio: 1, backgroundColor: t().skeleton, pressed: { opacity: 0.7 } }))
+
+export fn photoGrid(xs: Post[]): View {
+  return div(related, list(() => xs, (x, i) => img(tile, { src: photoUrl(x.photo, 130), onClick: () => go(`/post/${x.id}`) })))
+}
+
+export fn postScreen(id: string): View {
+  const post = findAnyPost(id) ?? return div(page, empty("⌀", "Post not found", "It may have been deleted."))
+  const more = feed().filter((x) => x.author == post.author && x.id != post.id)
+  return div(
+    page,
+    div(column,
+      postCard(post, false),
+      div(divider),
+      div(padded,
+        p(headline, "Comments"),
+        list(() => first2(commentsOf(post)), (c, i) => commentRow(c)),
+        button(smallGhostBtn, "View all comments", { onClick: () => go(`/post/${id}/comments`) }),
+      ),
+      when(() => more.length > 0, () => div(gapSm, p(css({ px: space.lg, pt: space.md, fontSize: font.headline, fontWeight: "semibold", color: t().text }), `More from ${user(post.author).handle}`), photoGrid(more))),
+    ),
+  )
+}
+
+fn first2(xs: Comment[]): Comment[] {
+  let out: Comment[] = []
+  for (const x of xs) {
+    if (out.length < 2) { out.push(x) }
+  }
+  return out
+}
+
+// ---- comments ------------------------------------------------------------------------------------
+
+let draft = ""
+let likedComments: Set<string> = Set([])
+
+const commentBox = css({ flexDirection: "row", gap: space.md, px: space.lg, py: space.sm, alignItems: "flex-start" })
+const commentBody = css({ flex: 1, gap: 3 })
+const commentHeart = themed(() => css({ width: 32, height: 32, padding: 0, fontSize: 15, color: t().muted, pressed: { scale: 0.8 } }))
+const commentHeartOn = themed(() => css({ width: 32, height: 32, padding: 0, fontSize: 15, color: t().danger, pressed: { scale: 0.8 } }))
+const composer = themed(() => css({ flexDirection: "row", alignItems: "center", gap: space.sm, px: space.md, py: space.sm, borderTopWidth: 1, borderColor: t().line, backgroundColor: t().bg }))
+const field = themed(() => css({ flex: 1, height: 40, px: space.lg, borderRadius: 20, backgroundColor: t().surface2, color: t().text, fontSize: font.sub }))
+const sendBtn = themed(() => css({ height: 40, px: space.md, py: 0, color: t().accent, fontSize: font.sub, fontWeight: "semibold", pressed: { opacity: 0.5 } }))
+const scrollArea = css({ flex: 1, overflow: "scroll" })
+
+fn commentRow(c: Comment): View {
+  const u = c.author == "me" ? meAsUser() : user(c.author)
+  return div(
+    commentBox,
+    avatar(u.avatar, 32),
+    div(commentBody,
+      p(captionText, `${u.handle}  ${c.text}`),
+      div(rowGap, small(caption, c.minutes == 0 ? "now" : ago(c.minutes)), small(caption, () => likedComments.has(c.id) ? `${c.likes + 1} likes` : `${c.likes} likes`), small(caption, "Reply")),
+    ),
+    button(() => likedComments.has(c.id) ? commentHeartOn() : commentHeart(), () => likedComments.has(c.id) ? "♥" : "♡", {
+      onClick: () => {
+        if (likedComments.has(c.id)) { likedComments.delete(c.id) } else { likedComments.add(c.id) }
+        haptic("light")
+        update()
+      },
+    }),
+  )
+}
+
+fn postComment(id: string) {
+  if (addComment(id, draft)) {
+    draft = ""
+    haptic("success")
+    update()
+  }
+}
+
+export fn commentsScreen(id: string): View {
+  const post = findAnyPost(id) ?? return div(page, empty("⌀", "Post not found", ""))
+  const seed = commentsOf(post)
+  draft = ""
+  return div(
+    fixedPage,
+    div(scrollArea,
+      div(column,
+        div(commentBox, avatar((post.author == "me" ? meAsUser() : user(post.author)).avatar, 32), div(commentBody, p(captionText, post.caption), small(caption, ago(post.minutes)))),
+        div(divider),
+        list(() => seed, (c, i) => commentRow(c)),
+        list(() => commentsAdded(id), (c, i) => commentRow(c)),
+      ),
+    ),
+    div(composer,
+      avatar(profile().avatar, 32),
+      input(field, {
+        placeholder: "Add a comment…",
+        value: () => draft,
+        onInput: (v) => { draft = v; update() },
+        onKeyDown: (k) => { if (k == "Enter") { postComment(id) } },
+      }),
+      button(sendBtn, "Post", { onClick: () => postComment(id) }),
+    ),
+  )
+}
+
+// ---- likes -----------------------------------------------------------------------------------------
+
+const personRow = css({ flexDirection: "row", alignItems: "center", gap: space.md, px: space.lg, py: space.sm, pressed: { opacity: 0.6 } })
+
+/** A person with a Follow button. */
+export fn personCell(u: User): View {
+  return div(
+    personRow,
+    div({ onClick: () => go(`/user/${u.id}`) }, avatar(u.avatar, 48)),
+    div(grow, { onClick: () => go(`/user/${u.id}`) },
+      div(nameRow, p(strongText, u.handle), when(() => u.verified, () => span(verifiedBadge, "✓"))),
+      p(footnote, u.name),
+    ),
+    button(() => isFollowing(u.id) ? smallGhostBtn() : smallBtn(), () => isFollowing(u.id) ? "Following" : "Follow", {
+      onClick: () => { toggleFollow(u.id); haptic("light"); update() },
+    }),
+  )
+}
+
+export fn likesScreen(id: string): View {
+  const post = findAnyPost(id) ?? return div(page, empty("⌀", "Post not found", ""))
+  const likers = users.filter((u) => (post.photo + u.followers) % 3 != 0)
+  return div(page, div(column, p(css({ px: space.lg, py: space.md, fontSize: font.footnote, color: t().muted }), () => `${compact(likeCount(post))} people liked this`), list(() => likers, (u, i) => personCell(u))))
+}
+
+// ---- the photo viewer: pinch, double tap, drag down to close ---------------------------------------
+
+let zoom = 1.0
+let zoomStart = 1.0
+let panX = 0.0
+let panY = 0.0
+let dragY = 0.0
+let viewerDragging = false
+
+const viewer = css({ flex: 1, backgroundColor: "#000000", overflow: "hidden" })
+fn viewerBg() => css({ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "#000000", opacity: 1.0 - abs(dragY) / 600.0 })
+const viewerStage = css({ flex: 1, alignItems: "center", justifyContent: "center" })
+fn viewerPhoto() => css({
+  widthPct: 100, aspectRatio: 1, objectFit: "contain",
+  translateX: panX, translateY: panY + dragY, scale: zoom * (1.0 - abs(dragY) / 1600.0),
+  transition: viewerDragging ? 0 : 320, easing: "spring",
+})
+const viewerTop = css({ position: "absolute", top: 0, left: 0, right: 0, flexDirection: "row", alignItems: "center", gap: space.sm, padding: space.md, pt: 44 })
+const viewerBtn = css({ width: 40, height: 40, borderRadius: 20, padding: 0, backgroundColor: "rgba(255,255,255,0.16)", color: "#ffffff", fontSize: 18, pressed: { opacity: 0.6 } })
+const viewerText = css({ flex: 1, color: "#ffffff", fontSize: font.sub, fontWeight: "semibold" })
+const viewerHint = css({ position: "absolute", bottom: 36, left: 0, right: 0, textAlign: "center", color: "rgba(255,255,255,0.7)", fontSize: font.footnote })
+
+fn abs(x: number): number => x < 0.0 ? 0.0 - x : x
+
+fn viewerPan(e: Pan) {
+  if (e.state == "start") { viewerDragging = true }
+  if (zoom > 1.01) {
+    panX = e.dx
+    panY = e.dy
+  } else {
+    dragY = e.dy
+  }
+  if (e.state == "end" || e.state == "cancel") {
+    viewerDragging = false
+    if (zoom <= 1.01 && (abs(dragY) > 140.0 || abs(e.vy) > 1000.0)) {
+      back()
+    } else {
+      dragY = 0.0
+      if (zoom <= 1.01) { panX = 0.0; panY = 0.0 }
+    }
+  }
+  update()
+}
+
+fn viewerPinch(e: Pinch) {
+  if (e.state == "start") { zoomStart = zoom; viewerDragging = true }
+  zoom = zoomStart * e.scale
+  if (e.state == "end" || e.state == "cancel") {
+    viewerDragging = false
+    if (zoom < 1.0) { zoom = 1.0; panX = 0.0; panY = 0.0 }
+    if (zoom > 4.0) { zoom = 4.0 }
+  }
+  update()
+}
+
+export fn photoScreen(id: string): View {
+  const post = findAnyPost(id) ?? return div(viewer, p(viewerText, "Photo not found"))
+  zoom = 1.0
+  panX = 0.0
+  panY = 0.0
+  dragY = 0.0
+  return div(
+    viewer,
+    div(() => viewerBg()),
+    div(viewerStage,
+      {
+        onPan: (e: Pan) => viewerPan(e),
+        onPinch: (e: Pinch) => viewerPinch(e),
+        onDoubleClick: (pt: Point) => { zoom = zoom > 1.01 ? 1.0 : 2.5; panX = 0.0; panY = 0.0; haptic("light"); update() },
+      },
+      img(() => viewerPhoto(), { src: photoUrl(post.photo, 600), label: post.caption }),
+    ),
+    div(viewerTop,
+      button(viewerBtn, "✕", { label: "Close", onClick: () => back() }),
+      p(viewerText, user(post.author).handle),
+      button(viewerBtn, () => isLiked(id) ? "♥" : "♡", { onClick: () => { toggleLike(id); haptic("light"); update() } }),
+    ),
+    p(viewerHint, "Pinch or double tap to zoom · drag down to close"),
+  )
+}
+
+// ---- the story viewer: tap, hold, swipe -----------------------------------------------------------
+
+let storyAt = 0
+let storyPhoto = 0
+let storyPaused = false
+let storyTick = 0
+let storyReply = ""
+let storyDrag = 0.0
+
+const storyScreenStyle = css({ flex: 1, backgroundColor: "#000000" })
+fn storyFrame() => css({ flex: 1, borderRadius: storyDrag > 0.0 ? 24 : 0, overflow: "hidden", translateY: storyDrag, scale: 1.0 - storyDrag / 2000.0, transition: storyDrag == 0.0 ? 300 : 0, easing: "spring" })
+const storyImage = css({ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 })
+const storyShade = css({ position: "absolute", top: 0, left: 0, right: 0, height: 140, backgroundColor: "rgba(0,0,0,0.25)" })
+const storyTop = css({ position: "absolute", top: 0, left: 0, right: 0, padding: space.md, pt: 44, gap: space.md })
+const bars = css({ flexDirection: "row", gap: 4 })
+const barTrack = css({ flex: 1, height: 3, borderRadius: 2, backgroundColor: "rgba(255,255,255,0.35)", flexDirection: "row", overflow: "hidden" })
+const barFull = css({ flex: 1, backgroundColor: "#ffffff" })
+fn barFill(pct: int) => css({ widthPct: toFloat(pct), backgroundColor: "#ffffff" })
+const storyUser = css({ flexDirection: "row", alignItems: "center", gap: space.sm })
+const storyName2 = css({ color: "#ffffff", fontSize: font.sub, fontWeight: "semibold" })
+const storyTime = css({ color: "rgba(255,255,255,0.7)", fontSize: font.footnote })
+const tapZones = css({ position: "absolute", top: 120, left: 0, right: 0, bottom: 90, flexDirection: "row" })
+const tapLeft = css({ widthPct: 33 })
+const tapRight = css({ flex: 1 })
+const storyBottom = css({ position: "absolute", left: 0, right: 0, bottom: 0, flexDirection: "row", gap: space.sm, padding: space.md, pb: space.xl, alignItems: "center" })
+const replyField = css({ flex: 1, height: 44, px: space.lg, borderRadius: 22, borderWidth: 1, borderColor: "rgba(255,255,255,0.6)", color: "#ffffff", fontSize: font.sub })
+const pausedRow = css({ position: "absolute", top: 120, left: 0, right: 0, alignItems: "center" })
+const pausedBadge = css({ px: space.md, py: space.xs, borderRadius: 999, backgroundColor: "rgba(0,0,0,0.5)", color: "#ffffff", fontSize: font.footnote })
+
+/** A tick every 100 ms: 50 ticks per photo. A new story or photo starts a new chain of ticks. */
+fn tick(chain: int) {
+  if (chain != storyTick) { return }
+  if (!storyPaused) {
+    storyAt += 2
+    if (storyAt >= 100) {
+      nextPhoto()
+      return
+    }
+    update()
+  }
+  later(100, () => tick(chain))
+}
+
+fn startTicks() {
+  storyTick += 1
+  storyAt = 0
+  const chain = storyTick
+  later(100, () => tick(chain))
+}
+
+let currentStory = ""
+
+fn nextPhoto() {
+  const s = story(currentStory) ?? return
+  if (storyPhoto < s.photos.length - 1) {
+    storyPhoto += 1
+    startTicks()
+  } else {
+    // The next person's story, or close.
+    const n = nextStoryId(currentStory)
+    if (n == "") {
+      storyTick += 1
+      back()
+    } else {
+      currentStory = n
+      seenStories.add(n)
+      storyPhoto = 0
+      startTicks()
+    }
+  }
+  update()
+}
+
+fn prevPhoto() {
+  if (storyPhoto > 0) { storyPhoto -= 1 }
+  startTicks()
+  update()
+}
+
+fn nextStoryId(id: string): string {
+  let found = false
+  for (const s of stories) {
+    if (found) { return s.id }
+    if (s.id == id) { found = true }
+  }
+  return ""
+}
+
+fn storyBar(i: int): View {
+  return div(barTrack, div(() => i < storyPhoto ? barFull : i == storyPhoto ? barFill(storyAt) : barFill(0)))
+}
+
+export fn storyScreen(id: string): View {
+  currentStory = id
+  storyPhoto = 0
+  storyPaused = false
+  storyReply = ""
+  storyDrag = 0.0
+  startTicks()
+  return div(
+    storyScreenStyle,
+    {
+      onDestroy: () => { storyTick += 1 },
+    },
+    div(() => storyFrame(),
+      {
+        onPan: (e: Pan) => {
+          storyPaused = e.state == "start" || e.state == "move"
+          storyDrag = e.dy > 0.0 ? e.dy : 0.0
+          if (e.state == "end" || e.state == "cancel") {
+            if (e.dy > 120.0 || e.vy > 900.0) { storyTick += 1; back() } else { storyDrag = 0.0 }
+          }
+          update()
+        },
+      },
+      img(storyImage, { src: storyImageUrl(id, 0) }),
+      when(() => storyPhoto == 1, () => img(storyImage, { src: storyImageUrl(currentStory, 1) })),
+      when(() => storyPhoto == 2, () => img(storyImage, { src: storyImageUrl(currentStory, 2) })),
+      when(() => currentStory != id && storyPhoto == 0, () => img(storyImage, { src: storyImageUrl(currentStory, 0) })),
+      div(storyShade),
+      div(storyTop,
+        div(bars, storyBar(0), storyBar(1), storyBar(2)),
+        div(storyUser,
+          avatar(user((story(currentStory) ?? stories[0]).user).avatar, 32),
+          p(storyName2, () => user((story(currentStory) ?? stories[0]).user).handle),
+          p(storyTime, () => `${3 + storyPhoto * 2}h`),
+          div(spacer),
+          button(viewerBtn, "✕", { label: "Close", onClick: () => { storyTick += 1; back() } }),
+        ),
+      ),
+      div(tapZones,
+        div(tapLeft, { onClick: () => prevPhoto(), onLongPress: (pt: Point) => { storyPaused = true; update() }, onPointerUp: (pt: Point) => { if (storyPaused) { storyPaused = false; update() } } }),
+        div(tapRight, { onClick: () => nextPhoto(), onLongPress: (pt: Point) => { storyPaused = true; update() }, onPointerUp: (pt: Point) => { if (storyPaused) { storyPaused = false; update() } } }),
+      ),
+      when(() => storyPaused && storyDrag == 0.0, () => div(pausedRow, span(pausedBadge, "Paused"))),
+      div(storyBottom,
+        input(replyField, {
+          placeholder: "Send message",
+          value: () => storyReply,
+          onInput: (v) => { storyReply = v; storyPaused = v != ""; update() },
+          onKeyDown: (k) => { if (k == "Enter" && storyReply != "") { storyReply = ""; storyPaused = false; toast("Reply sent"); update() } },
+        }),
+        button(viewerBtn, "♡", { onClick: () => { haptic("success"); toast("Liked the story") } }),
+      ),
+    ),
+  )
+}
+
+fn storyImageUrl(id: string, i: int): string {
+  const s = story(id) ?? stories[0]
+  return photoUrlWH(s.photos.get(i) ?? 30, 400, 720)
+}
+
+// ---- the composer (a modal sheet) -------------------------------------------------------------------
+
+let pickPhoto = 15
+let caption2 = ""
+let place = ""
+
+const pickerRow = css({ flexDirection: "row", gap: space.sm, overflow: "scroll", px: space.lg })
+fn pickTile(on: bool) => css({ width: 88, height: 88, borderRadius: radius.md, overflow: "hidden", borderWidth: 3, borderColor: on ? t().accent : "rgba(0,0,0,0)", transition: 160, pressed: { scale: 0.94 } })
+const preview = themed(() => css({ alignSelf: "center", width: 240, height: 240, borderRadius: radius.lg, backgroundColor: t().skeleton, overflow: "hidden" }))
+const fill = css({ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 })
+const composeField = themed(() => css({ minHeight: 96, padding: space.md, borderRadius: radius.md, backgroundColor: t().surface2, color: t().text, fontSize: font.body }))
+const lineField = themed(() => css({ height: 46, px: space.md, borderRadius: radius.md, backgroundColor: t().surface2, color: t().text, fontSize: font.body }))
+const composeBody = css({ gap: space.lg, py: space.md })
+const composeForm = css({ gap: space.md, px: space.lg })
+const counterStyle = themed(() => css({ alignSelf: "flex-end", fontSize: font.caption, color: t().muted }))
+
+const choices: int[] = [15, 16, 17, 18, 19, 22, 24, 25, 27, 28, 29, 33]
+
+fn share() {
+  if (caption2.trim() == "") {
+    toast("Write a caption first")
+    return
+  }
+  addPost(pickPhoto, caption2.trim(), place.trim() == "" ? "Somewhere nice" : place.trim())
+  caption2 = ""
+  place = ""
+  haptic("success")
+  back()
+  later(350, () => toast("Posted to your feed"))
+  update()
+}
+
+export fn composeScreen(): View {
+  return div(
+    page,
+    div(composeBody,
+      div(preview, img(fill, { src: photoUrl(pickPhoto, 240) }), list(() => [pickPhoto], (n, i) => img(fill, { src: photoUrl(n, 240) }))),
+      div(pickerRow, list(() => choices, (n, i) => div(() => pickTile(pickPhoto == n), { onClick: () => { pickPhoto = n; haptic("light"); update() } }, img(fill, { src: photoUrl(n, 88) })))),
+      div(composeForm,
+        textarea(composeField, { placeholder: "Write a caption…", value: () => caption2, onInput: (v) => { caption2 = v; update() } }),
+        p(counterStyle, () => `${caption2.length}/220`),
+        input(lineField, { placeholder: "Add a place", value: () => place, onInput: (v) => { place = v } }),
+        button(primaryBtn, "Share", { onClick: () => share() }),
+      ),
+    ),
+  )
+}

@@ -1,0 +1,282 @@
+// The social network's content: people, posts, stories, conversations, and notifications. Built once
+// from fixed tables, so every platform shows the same feed. Photos are loaded from the web: Lorem Picsum
+// for the posts, pravatar for the faces, each at the size it is shown (2x for sharp screens).
+
+export type User = {
+  id: string,
+  name: string,
+  handle: string,
+  avatar: string,
+  cover: string,
+  bio: string,
+  city: string,
+  followers: int,
+  following: int,
+  verified: bool,
+}
+
+export type Post = {
+  id: string,
+  author: string,
+  photo: int,
+  caption: string,
+  tag: string,
+  place: string,
+  likes: int,
+  comments: int,
+  minutes: int,
+}
+
+export type Comment = { id: string, post: string, author: string, text: string, minutes: int, likes: int }
+export type Story = { id: string, user: string, photos: int[] }
+export type Message = { id: string, chat: string, mine: bool, text: string, minutes: int }
+export type Chat = { id: string, user: string, unread: int }
+/** kind: "like", "comment", "follow", or "mention" */
+export type Notice = { id: string, kind: string, user: string, post: string, text: string, minutes: int }
+export type Tag = { id: string, name: string, posts: int, photo: int }
+
+/** A photo of Lorem Picsum, `size` points square (loaded at twice the size). */
+export fn photoUrl(photo: int, size: int): string {
+  return `https://picsum.photos/id/${photo}/${size * 2}/${size * 2}`
+}
+
+/** A photo `w` by `h` points. */
+export fn photoUrlWH(photo: int, w: int, h: int): string {
+  return `https://picsum.photos/id/${photo}/${w * 2}/${h * 2}`
+}
+
+fn face(n: int) => `https://i.pravatar.cc/240?img=${n}`
+
+const names: string[] = [
+  "Ava Moreira", "Leo Tanaka", "Maya Okafor", "Noah Lindqvist", "Isla Romero", "Kai Nakamura",
+  "Zoe Laurent", "Theo Bauer", "Luna Costa", "Ezra Kim", "Nora Haddad", "Milo Rossi",
+  "Iris Novak", "Felix Duarte", "Ruby Chen", "Owen Patel", "Clara Silva", "Jonah Weiss",
+]
+const handles: string[] = [
+  "ava.lens", "leo.trails", "mayamakes", "noah.north", "isla.sun", "kai.frames",
+  "zoe.atelier", "theo.builds", "luna.coast", "ezra.codes", "nora.reads", "milo.eats",
+  "iris.paints", "felix.rides", "ruby.brews", "owen.climbs", "clara.sketch", "jonah.sound",
+]
+const faces: int[] = [47, 12, 45, 13, 44, 15, 49, 51, 41, 52, 43, 53, 40, 54, 48, 57, 38, 59]
+const cities: string[] = ["Lisbon", "Kyoto", "Lagos", "Oslo", "Seville", "Osaka", "Lyon", "Berlin", "Porto", "Seoul", "Beirut", "Milan"]
+const bios: string[] = [
+  "Chasing soft light and long shadows.",
+  "Trail runner. Coffee person. Maps nerd.",
+  "Ceramics, plants, and slow mornings.",
+  "Somewhere north of the weather.",
+  "Sun first, everything else later.",
+  "Frames from the in-between moments.",
+  "Design studio for small, honest things.",
+  "Building furniture and fixing bikes.",
+]
+
+const captions: string[] = [
+  "Golden hour never misses.",
+  "Found a quiet corner of the city today.",
+  "Weekend plans: absolutely none.",
+  "The ocean was loud and I loved it.",
+  "New desk setup, who dis.",
+  "Fog rolling in like a slow song.",
+  "Coffee first. Adventures second.",
+  "Tried something new with the colors here.",
+  "Back to the mountains, back to myself.",
+  "Little details make the whole thing.",
+  "Morning light through the old windows.",
+  "Some places stay with you.",
+  "Road trip, day four. Still smiling.",
+  "Can't stop shooting this street.",
+  "Textures, everywhere I look.",
+  "Saved this view for a rainy day.",
+]
+const tagNames: string[] = ["travel", "architecture", "nature", "street", "coffee", "design", "mountains", "ocean", "minimal", "film"]
+const places: string[] = ["Alfama, Lisbon", "Arashiyama, Kyoto", "Lekki, Lagos", "Aker Brygge, Oslo", "Triana, Seville", "Dotonbori, Osaka", "Vieux Lyon", "Kreuzberg, Berlin", "Ribeira, Porto", "Bukchon, Seoul"]
+
+const commentTexts: string[] = [
+  "This is unreal 😍", "The colors!!", "Where is this?", "Need to go here asap", "Frame-worthy.",
+  "Okay this is my new wallpaper", "So calm.", "Teach me your ways", "Incredible light", "Love this one",
+  "Saving for later", "That composition though", "Dreamy ✨", "Take me with you next time", "Perfect timing",
+]
+const lines: string[] = [
+  "Hey! Are you around this weekend?", "Loved your last post", "Haha yes, totally", "Send me the location?",
+  "On my way 🚲", "That coffee place was amazing", "Let's shoot at sunrise", "Did you edit that one?",
+  "Just a bit of grain", "See you there!", "Thanks for the tip", "Can't wait",
+]
+
+// ---- the tables ---------------------------------------------------------------------
+
+fn makeUsers(): User[] {
+  let out: User[] = []
+  for (const i of 0..names.length - 1) {
+    out.push({
+      id: `${i + 1}`,
+      name: names[i],
+      handle: handles[i],
+      avatar: face(faces[i]),
+      cover: photoUrlWH(20 + i * 3, 400, 160),
+      bio: bios[i % bios.length],
+      city: cities[i % cities.length],
+      followers: 1200 + ((i * 7919) % 48000),
+      following: 180 + ((i * 131) % 700),
+      verified: i % 4 == 0,
+    })
+  }
+  return out
+}
+
+fn makePosts(): Post[] {
+  let out: Post[] = []
+  for (const i of 0..47) {
+    out.push({
+      id: `${i + 1}`,
+      author: `${(i * 5) % names.length + 1}`,
+      photo: 10 + (i * 7) % 76,
+      caption: captions[i % captions.length],
+      tag: tagNames[(i * 3) % tagNames.length],
+      place: places[i % places.length],
+      likes: 40 + (i * 2731) % 9000,
+      comments: 3 + (i * 37) % 180,
+      minutes: 4 + i * 47,
+    })
+  }
+  return out
+}
+
+fn makeStories(): Story[] {
+  let out: Story[] = []
+  for (const i of 0..9) {
+    out.push({ id: `${i + 1}`, user: `${i + 2}`, photos: [30 + i * 4, 31 + i * 4, 32 + i * 4] })
+  }
+  return out
+}
+
+fn makeChats(): Chat[] {
+  let out: Chat[] = []
+  for (const i of 0..9) {
+    out.push({ id: `${i + 1}`, user: `${(i * 3) % names.length + 2}`, unread: i < 3 ? 3 - i : 0 })
+  }
+  return out
+}
+
+fn makeNotices(): Notice[] {
+  const kinds: string[] = ["like", "comment", "follow", "mention", "like", "like", "follow", "comment"]
+  let out: Notice[] = []
+  for (const i of 0..29) {
+    const kind = kinds[i % kinds.length]
+    out.push({
+      id: `${i + 1}`,
+      kind: kind,
+      user: `${(i * 7) % names.length + 1}`,
+      post: `${(i * 3) % 48 + 1}`,
+      text: kind == "comment" || kind == "mention" ? commentTexts[i % commentTexts.length] : "",
+      minutes: 2 + i * 53,
+    })
+  }
+  return out
+}
+
+export const users: User[] = makeUsers()
+export const posts: Post[] = makePosts()
+export const stories: Story[] = makeStories()
+export const chats: Chat[] = makeChats()
+export const notices: Notice[] = makeNotices()
+
+export fn tags(): Tag[] {
+  let out: Tag[] = []
+  for (const i of 0..tagNames.length - 1) {
+    out.push({ id: tagNames[i], name: tagNames[i], posts: 1200 + i * 3371, photo: 60 + i * 2 })
+  }
+  return out
+}
+
+// ---- lookups ------------------------------------------------------------------------
+
+const nobody: User = { id: "0", name: "Unknown", handle: "unknown", avatar: face(1), cover: photoUrlWH(10, 400, 160), bio: "", city: "", followers: 0, following: 0, verified: false }
+
+export fn user(id: string): User {
+  for (const u of users) {
+    if (u.id == id) { return u }
+  }
+  return nobody
+}
+
+export fn findPost(id: string): Post? {
+  for (const p of posts) {
+    if (p.id == id) { return p }
+  }
+  return null
+}
+
+export fn postsBy(userId: string): Post[] => posts.filter((p) => p.author == userId)
+export fn postsTagged(tag: string): Post[] => posts.filter((p) => p.tag == tag)
+
+export fn story(id: string): Story? {
+  for (const s of stories) {
+    if (s.id == id) { return s }
+  }
+  return null
+}
+
+export fn chat(id: string): Chat? {
+  for (const c of chats) {
+    if (c.id == id) { return c }
+  }
+  return null
+}
+
+/** The comments of a post: made from its id, so each post has its own thread. */
+export fn commentsOf(post: Post): Comment[] {
+  let out: Comment[] = []
+  const n = 4 + post.comments % 9
+  for (const i of 0..n - 1) {
+    out.push({
+      id: `${post.id}-${i}`,
+      post: post.id,
+      author: `${(post.photo + i * 5) % names.length + 1}`,
+      text: commentTexts[(post.photo + i) % commentTexts.length],
+      minutes: 3 + i * 17,
+      likes: (post.photo * (i + 3)) % 140,
+    })
+  }
+  return out
+}
+
+/** The messages of a chat: made from its id. */
+export fn messagesOf(chatId: string, seed: int): Message[] {
+  let out: Message[] = []
+  for (const i of 0..9) {
+    out.push({ id: `${chatId}-${i}`, chat: chatId, mine: (i + seed) % 3 == 0, text: lines[(i + seed) % lines.length], minutes: 600 - i * 50 })
+  }
+  return out
+}
+
+/** The users whose names match `q`, ignoring case. */
+export fn searchUsers(q: string): User[] {
+  const k = q.trim().toLowerCase()
+  if (k == "") { return [] }
+  return users.filter((u) => u.name.toLowerCase().includes(k) || u.handle.includes(k))
+}
+
+export fn searchTags(q: string): Tag[] {
+  const k = q.trim().toLowerCase()
+  if (k == "") { return [] }
+  return tags().filter((t) => t.name.includes(k))
+}
+
+// ---- formatting ---------------------------------------------------------------------
+
+/** 1234 -> "1.2K", 1234567 -> "1.2M" */
+export fn compact(n: int): string {
+  if (n >= 1000000) { return `${n / 1000000}.${(n % 1000000) / 100000}M` }
+  if (n >= 10000) { return `${n / 1000}K` }
+  if (n >= 1000) { return `${n / 1000}.${(n % 1000) / 100}K` }
+  return `${n}`
+}
+
+/** Minutes ago -> "now", "5m", "3h", "2d", "4w" */
+export fn ago(minutes: int): string {
+  if (minutes < 1) { return "now" }
+  if (minutes < 60) { return `${minutes}m` }
+  if (minutes < 1440) { return `${minutes / 60}h` }
+  if (minutes < 10080) { return `${minutes / 1440}d` }
+  return `${minutes / 10080}w`
+}

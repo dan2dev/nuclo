@@ -1,0 +1,238 @@
+// Settings: grouped lists of cells, as on each platform. Every switch and choice is kept in the device's
+// database (the `settings` table), so it is still there after a restart. Appearance switches the mode
+// and the accent of the whole app, the platform's chrome included.
+
+import { css, div, p, span, button, list, when, update, go, back, haptic, platform, View } from "./ui"
+import { t, space, radius, font, themed, accents, isDark, accentIndex } from "./theme"
+import { profile, flag, setFlag, setting, setSetting, applyTheme, accentSetting, tableInfo, eraseContent, load } from "./state"
+import { dbInfo } from "./store"
+import {
+  groupedPage, column, row, grow, title2, headline, sub, footnote, avatar, section, noteText, navCell, switchCell,
+  checkCell, valueCell, actionCell, toast, alert, actionSheet, act, destructive,
+} from "./kit"
+
+const top = css({ flexDirection: "row", alignItems: "center", gap: space.md, padding: space.lg, pressed: { opacity: 0.6 } })
+const profileCard = themed(() => css({ flexDirection: "row", alignItems: "center", gap: space.md, padding: space.lg, mx: space.lg, mt: space.lg, borderRadius: radius.md, backgroundColor: t().surface, pressed: { backgroundColor: t().surface2 } }))
+const spaceEnd = css({ height: 40 })
+
+// ---- the index -----------------------------------------------------------------------------------
+
+export fn settingsScreen(): View {
+  return div(
+    groupedPage,
+    div(column,
+      div(profileCard, { onClick: () => go("/me/edit") },
+        avatar(profile().avatar, 64),
+        div(grow, p(headline, () => profile().name), p(footnote, () => `@${profile().handle} · Edit profile`)),
+        span(css({ fontSize: 20, color: t().muted }), "›"),
+      ),
+      section("", [
+        navCell("👤", "#0a84ff", "Account", () => "", () => go("/settings/account")),
+        navCell("🔒", "#34c759", "Privacy", () => flag("private", false) ? "Private" : "Public", () => go("/settings/privacy")),
+        navCell("🔔", "#ff3b30", "Notifications", () => flag("push", true) ? "On" : "Off", () => go("/settings/notifications")),
+      ]),
+      section("", [
+        navCell("◐", "#5e5ce6", "Appearance", () => isDark() ? "Dark" : "Light", () => go("/settings/appearance")),
+        navCell("▤", "#ff9f0a", "Storage", () => "", () => go("/settings/storage")),
+        navCell("✎", "#ffcc00", "Notes", () => "", () => go("/notes")),
+        navCell("★", "#ff2d55", "Saved", () => "", () => go("/saved")),
+      ]),
+      section("", [
+        navCell("✦", "#30b0c7", "Welcome tour", () => "", () => go("/onboarding")),
+        navCell("ⓘ", "#8e8e93", "About", () => "", () => go("/settings/about")),
+      ]),
+      section("", [
+        actionCell("Log out", true, () => alert("Log out?", "You can log back in at any time. What's on this device stays.", [
+          { label: "Cancel", glyph: "", kind: "cancel", run: () => {} },
+          destructive("Log out", "", () => toast("This is a demo: you stay signed in")),
+        ])),
+      ]),
+      div(spaceEnd),
+    ),
+  )
+}
+
+// ---- account -----------------------------------------------------------------------------------------
+
+export fn accountScreen(): View {
+  return div(groupedPage, div(column,
+    section("Profile", [
+      valueCell("Name", () => profile().name),
+      valueCell("Username", () => `@${profile().handle}`),
+      navCell("", "", "Edit profile", () => "", () => go("/me/edit")),
+    ]),
+    section("Sign-in", [
+      valueCell("Email", () => "dani@nuclo.dev"),
+      navCell("", "", "Password", () => "Changed 3 months ago", () => toast("Password change is not part of the demo")),
+      switchCell("", "", "Two-factor authentication", () => flag("2fa", true), (v) => setFlag("2fa", v)),
+    ]),
+    noteText("Two-factor authentication asks for a code when you sign in on a new device."),
+    section("", [
+      actionCell("Download your data", false, () => toast("We'll email you a link")),
+      actionCell("Deactivate account", true, () => alert("Deactivate account?", "Your profile and posts will be hidden until you sign in again.", [
+        { label: "Cancel", glyph: "", kind: "cancel", run: () => {} },
+        destructive("Deactivate", "", () => toast("Not in the demo")),
+      ])),
+    ]),
+  ))
+}
+
+// ---- privacy -------------------------------------------------------------------------------------------
+
+let audience = 0
+
+fn audiencePick() => setting("audience", "Everyone")
+
+export fn privacyScreen(): View {
+  return div(groupedPage, div(column,
+    section("Account privacy", [
+      switchCell("🔒", "#34c759", "Private account", () => flag("private", false), (v) => { setFlag("private", v); toast(v ? "Your account is private" : "Your account is public") }),
+    ]),
+    noteText("When your account is private, only people you approve can see your photos."),
+    section("Interactions", [
+      navCell("", "", "Comments", () => audiencePick(), () => actionSheet("Who can comment", [
+        act("Everyone", audiencePick() == "Everyone" ? "✓" : "", () => setSetting("audience", "Everyone")),
+        act("People you follow", audiencePick() == "People you follow" ? "✓" : "", () => setSetting("audience", "People you follow")),
+        act("Your followers", audiencePick() == "Your followers" ? "✓" : "", () => setSetting("audience", "Your followers")),
+        act("Off", audiencePick() == "Off" ? "✓" : "", () => setSetting("audience", "Off")),
+      ])),
+      switchCell("", "", "Allow mentions", () => flag("mentions", true), (v) => setFlag("mentions", v)),
+      switchCell("", "", "Show activity status", () => flag("status", true), (v) => setFlag("status", v)),
+      switchCell("", "", "Allow sharing to stories", () => flag("reshare", true), (v) => setFlag("reshare", v)),
+    ]),
+    section("Connections", [
+      navCell("", "", "Blocked accounts", () => "0", () => toast("No blocked accounts")),
+      navCell("", "", "Muted accounts", () => "2", () => toast("2 muted accounts")),
+    ]),
+  ))
+}
+
+// ---- notifications -------------------------------------------------------------------------------------
+
+export fn notificationsScreen(): View {
+  return div(groupedPage, div(column,
+    section("", [
+      switchCell("🔔", "#ff3b30", "Push notifications", () => flag("push", true), (v) => setFlag("push", v)),
+    ]),
+    noteText("Turn off to pause every notification of this app."),
+    when(() => flag("push", true), () => div(
+      section("Posts and stories", [
+        switchCell("", "", "Likes", () => flag("n.likes", true), (v) => setFlag("n.likes", v)),
+        switchCell("", "", "Comments", () => flag("n.comments", true), (v) => setFlag("n.comments", v)),
+        switchCell("", "", "Mentions", () => flag("n.mentions", true), (v) => setFlag("n.mentions", v)),
+        switchCell("", "", "First posts and stories", () => flag("n.first", false), (v) => setFlag("n.first", v)),
+      ]),
+      section("People", [
+        switchCell("", "", "New followers", () => flag("n.followers", true), (v) => setFlag("n.followers", v)),
+        switchCell("", "", "Follow requests", () => flag("n.requests", true), (v) => setFlag("n.requests", v)),
+        switchCell("", "", "Messages", () => flag("n.messages", true), (v) => setFlag("n.messages", v)),
+      ]),
+      section("Quiet hours", [
+        switchCell("☾", "#5e5ce6", "Quiet hours", () => flag("quiet", false), (v) => setFlag("quiet", v)),
+        when(() => flag("quiet", false), () => valueCell("From", () => "22:00 to 07:00")),
+      ]),
+    )),
+  ))
+}
+
+// ---- appearance ----------------------------------------------------------------------------------------
+
+const swatches = css({ flexDirection: "row", gap: space.md, padding: space.lg, justifyContent: "space-between" })
+fn swatch(i: int) => css({
+  width: 44, height: 44, borderRadius: 22, backgroundColor: isDark() ? accents[i].dark : accents[i].light,
+  borderWidth: 3, borderColor: accentIndex() == i ? t().text : t().surface, scale: accentIndex() == i ? 1.08 : 1.0,
+  transition: 220, easing: "spring", alignItems: "center", justifyContent: "center", color: "#ffffff", fontWeight: "bold",
+})
+const swatchCard = themed(() => css({ mx: space.lg, borderRadius: radius.md, backgroundColor: t().surface }))
+const previewCard = themed(() => css({ mx: space.lg, padding: space.lg, gap: space.sm, borderRadius: radius.md, backgroundColor: t().surface }))
+const previewBtn = themed(() => css({ alignSelf: "flex-start", px: space.lg, py: space.sm, borderRadius: radius.pill, backgroundColor: t().accent, color: t().accentText, fontWeight: "semibold", fontSize: font.sub }))
+
+fn setMode(dark: bool) {
+  setFlag("dark", dark)
+  applyTheme()
+  haptic("light")
+}
+
+fn setAccent(i: int) {
+  setSetting("accent", `${i}`)
+  applyTheme()
+  haptic("light")
+  update()
+}
+
+export fn appearanceScreen(): View {
+  return div(groupedPage, div(column,
+    section("Mode", [
+      checkCell("Light", () => !isDark(), () => setMode(false)),
+      checkCell("Dark", () => isDark(), () => setMode(true)),
+    ]),
+    p(css({ fontSize: font.footnote, fontWeight: "semibold", color: t().muted, px: space.xl, pt: space.xl, pb: space.sm }), "ACCENT"),
+    div(swatchCard, div(swatches, list(() => [0, 1, 2, 3, 4], (i, k) => button(() => swatch(i), () => accentIndex() == i ? "✓" : "", { label: accents[i].name, onClick: () => setAccent(i) })))),
+    noteText(`The accent colors buttons, links, and the selected tab. Now: ${accents[accentSetting()].name}.`),
+    p(css({ fontSize: font.footnote, fontWeight: "semibold", color: t().muted, px: space.xl, pt: space.xl, pb: space.sm }), "PREVIEW"),
+    div(previewCard, p(headline, "Golden hour never misses."), p(sub, "Your feed, posts, and menus use these colors."), p(previewBtn, "Follow")),
+    section("Text", [
+      switchCell("", "", "Bold text", () => flag("bold", false), (v) => setFlag("bold", v)),
+      switchCell("", "", "Reduce motion", () => flag("reduceMotion", false), (v) => setFlag("reduceMotion", v)),
+    ]),
+  ))
+}
+
+// ---- storage ---------------------------------------------------------------------------------------------
+
+let info = ""
+
+export fn storageScreen(): View {
+  info = dbInfo()
+  return div(groupedPage, div(column,
+    section("Database", [valueCell("Engine", () => platform() == "web" ? "localStorage" : "SQLite")]),
+    noteText(`${info}. Everything you do is written to the device at once: likes, saves, follows, comments, posts, notes, messages, and settings.`),
+    section("Tables", tableInfo().map((ti) => valueCell(ti.name, () => `${tableRows(ti.name)} rows`))),
+    section("", [
+      actionCell("Reload from the database", false, () => { load(); toast("Reloaded"); update() }),
+      actionCell("Erase my content", true, () => alert("Erase your content?", "Likes, saves, follows, comments, posts, notes, and messages are deleted from this device. Settings stay.", [
+        { label: "Cancel", glyph: "", kind: "cancel", run: () => {} },
+        destructive("Erase", "", () => { eraseContent(); toast("Content erased") }),
+      ])),
+    ]),
+  ))
+}
+
+fn tableRows(name: string): int {
+  for (const ti of tableInfo()) {
+    if (ti.name == name) { return ti.rows }
+  }
+  return 0
+}
+
+// ---- about ---------------------------------------------------------------------------------------------
+
+const hero = css({ alignItems: "center", gap: space.sm, padding: space.xxl })
+const logo = themed(() => css({ width: 88, height: 88, borderRadius: 22, backgroundColor: t().accent, alignItems: "center", justifyContent: "center", color: "#ffffff", fontSize: 44, fontWeight: "bold", shadowColor: "rgba(0,0,0,0.2)", shadowRadius: 16, shadowOffsetY: 6 }))
+
+export fn aboutScreen(): View {
+  return div(groupedPage, div(column,
+    div(hero, span(logo, "n."), p(title2, "nuclo"), p(footnote, "Version 0.1 · Nuclo Script")),
+    section("This build", [
+      valueCell("Platform", () => platform()),
+      valueCell("Language", () => "Nuclo Script"),
+      valueCell("Runtime", () => runtimeName()),
+      valueCell("Storage", () => platform() == "web" ? "localStorage" : "SQLite"),
+    ]),
+    noteText("One source in Nuclo Script, compiled to TypeScript (web, over nuclo-core), Kotlin (Android Views), Swift (UIKit on iOS, AppKit on macOS), and Rust (GTK 4 and GPUI on Linux). Each platform runs its own nuclo runtime."),
+    section("Credits", [
+      valueCell("Photos", () => "Lorem Picsum"),
+      valueCell("Portraits", () => "pravatar.cc"),
+    ]),
+  ))
+}
+
+fn runtimeName(): string {
+  const pl = platform()
+  if (pl == "web") { return "nuclo-core (DOM)" }
+  if (pl == "android") { return "nuclo · Android Views" }
+  if (pl == "ios") { return "nuclo · UIKit" }
+  if (pl == "macos") { return "nuclo · AppKit" }
+  if (pl == "linux") { return "nuclo · GTK 4" }
+  return "nuclo · GPUI"
+}

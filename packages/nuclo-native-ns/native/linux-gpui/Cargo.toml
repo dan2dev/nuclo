@@ -1,0 +1,20 @@
+# The Cargo project of the Linux (GPUI) build. scripts/build.ts writes build/linux-gpui/src: the generated
+# modules, native.rs, nns_rt.rs, and the Rust runtime of nuclo with its GPUI backend. Every view is drawn by GPUI.
+[package]
+name = "nuclo-native-ns-gpui"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# The `wayland` and `x11` features are needed on the core crate too: gpui::guess_compositor()
+# reads them there, and without them it picks the headless client and no window opens.
+gpui = { package = "gpui-pre", version = "=0.3.6", default-features = false, features = ["wayland", "x11"] }
+gpui_platform = { package = "gpui-pre-platform", version = "=0.3.6", features = ["font-kit", "wayland", "x11"] }
+ureq = "3.5"
+serde_json = "1"
+unicode-normalization = "0.1"
+rusqlite = { version = "0.40", features = ["bundled"] }
+
+[profile.release]
+strip = true
+lto = "thin"

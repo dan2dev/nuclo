@@ -1,0 +1,270 @@
+// The UI API of nuclo-native-ns, in Nuclo Script: builders, styles, attributes, gestures, list, when,
+// update, navigation, overlays, timers, and a few platform services.
+//
+// The types follow nuclo-core (packages/nuclo-core/types) through the subset that every platform renders
+// the same way: the one of nuclo-native-ts (packages/nuclo-native-ts/src/index.ts). The `extern` part is
+// the renderer, which each target supplies over its own nuclo runtime (runtime/<platform>):
+//   native/web/extern.ts        TypeScript over nuclo-core itself (the DOM, the History API)
+//   native/android/native.kt    Kotlin over the Android runtime (Android Views, system back)
+//   native/ios/native.swift     Swift over the UIKit runtime (UINavigationController, UITabBarController)
+//                               the same file builds for macOS over the AppKit shim (runtime/macos)
+//   native/rust/native.rs       Rust over the Rust core: GTK 4 / libadwaita (linux) and GPUI (linux-gpui)
+
+/** What the renderer makes: an element, a list, or a `when`. */
+export extern type View
+/** A style class, made by `css`. */
+export extern type StyleResult
+/** A screen of the router, made by `route`. */
+export extern type Route
+
+// ---- styling ---------------------------------------------------------------------
+
+/** A length in points: px on the web and Linux, dp on Android, pt on iOS and macOS. */
+export type Size = number
+
+/**
+ * What a state (`pressed`, `hover`) or a breakpoint (`md`, `lg`) changes. A part of `Style`, since a
+ * record type cannot hold itself.
+ */
+export interface Look {
+  backgroundColor?: string;
+  color?: string;
+  borderColor?: string;
+  opacity?: number;
+  scale?: number;
+  flexDirection?: string;
+  flex?: number;
+  gap?: Size;
+  padding?: Size;
+  px?: Size;
+  py?: Size;
+  width?: Size;
+  maxWidth?: Size;
+  height?: Size;
+  fontSize?: Size;
+  /** "flex" or "none" */
+  display?: string;
+}
+
+/** nuclo-core's style object: the keys every renderer supports. Colors are "#rrggbb" or "rgba(r,g,b,a)". */
+export interface Style {
+  /** "row" or "column" (the default) */
+  flexDirection?: string;
+  /** "flex-start", "center", "flex-end", or "stretch" */
+  alignItems?: string;
+  alignSelf?: string;
+  /** "flex-start", "center", "flex-end", "space-between", "space-around", or "space-evenly" */
+  justifyContent?: string;
+  /** "nowrap" or "wrap" */
+  flexWrap?: string;
+  flex?: number;
+  gap?: Size;
+  padding?: Size;
+  /** paddingLeft and paddingRight */
+  px?: Size;
+  /** paddingTop and paddingBottom */
+  py?: Size;
+  pt?: Size;
+  pb?: Size;
+  pl?: Size;
+  pr?: Size;
+  margin?: Size;
+  /** marginLeft and marginRight */
+  mx?: Size;
+  /** marginTop and marginBottom */
+  my?: Size;
+  mt?: Size;
+  mb?: Size;
+  ml?: Size;
+  mr?: Size;
+  width?: Size;
+  /** A share of the parent's width, 0 to 100. */
+  widthPct?: number;
+  height?: Size;
+  minWidth?: Size;
+  maxWidth?: Size;
+  minHeight?: Size;
+  maxHeight?: Size;
+  aspectRatio?: number;
+  /** "visible", "hidden", or "scroll" */
+  overflow?: string;
+  /** "relative" or "absolute" */
+  position?: string;
+  top?: Size;
+  right?: Size;
+  bottom?: Size;
+  left?: Size;
+  zIndex?: number;
+  /** "flex" or "none" */
+  display?: string;
+  backgroundColor?: string;
+  color?: string;
+  opacity?: number;
+  borderRadius?: Size;
+  borderWidth?: Size;
+  borderColor?: string;
+  borderTopWidth?: Size;
+  borderBottomWidth?: Size;
+  shadowColor?: string;
+  shadowRadius?: number;
+  shadowOffsetY?: number;
+  fontSize?: Size;
+  /** "light", "normal", "medium", "semibold", or "bold" */
+  fontWeight?: string;
+  /** "normal" or "italic" */
+  fontStyle?: string;
+  /** "monospace", "serif", or "sans-serif" */
+  fontFamily?: string;
+  lineHeight?: Size;
+  letterSpacing?: Size;
+  /** "left", "center", or "right" */
+  textAlign?: string;
+  /** "none", "underline", or "line-through" */
+  textDecoration?: string;
+  /** "none", "uppercase", "lowercase", or "capitalize" */
+  textTransform?: string;
+  /** Text is cut with an ellipsis after this many lines. */
+  numberOfLines?: number;
+  /** An image's fit: "cover" (the default) or "contain". */
+  objectFit?: string;
+  /** "auto" or "none": the box and its children take no touches. */
+  pointerEvents?: string;
+  translateX?: number;
+  translateY?: number;
+  scale?: number;
+  /** Degrees, clockwise. */
+  rotate?: number;
+  /** Milliseconds: a change of opacity, transform, colors, radius, width, or height is animated. */
+  transition?: number;
+  /** "linear", "ease", "ease-in", "ease-out", "ease-in-out", or "spring" */
+  easing?: string;
+  /** While a pointer is down on the box. */
+  pressed?: Look;
+  /** While a pointer is over the box, where the platform has one. */
+  hover?: Look;
+  /** From a window width of 720: tablets, desktop windows. */
+  md?: Look;
+  /** From a window width of 1080. */
+  lg?: Look;
+}
+
+export extern fn css(style: Style): StyleResult
+
+// ---- events ----------------------------------------------------------------------
+
+/** A pointer: `x`, `y` from the box's top-left corner, `pageX`, `pageY` from the window's. */
+export type Point = { x: number, y: number, pageX: number, pageY: number }
+/** A drag: "start", "move", "end", or "cancel". `dx`, `dy` from where it started; `vx`, `vy` in points per second. */
+export type Pan = { state: string, dx: number, dy: number, vx: number, vy: number, x: number, y: number }
+/** Two fingers (ctrl + wheel on a desktop). `scale` is 1 when the gesture starts. */
+export type Pinch = { state: string, scale: number }
+/** The scroll position of an `overflow: "scroll"` box. */
+export type Scroll = { top: number, height: number, viewport: number }
+
+/**
+ * nuclo-core's attributes object: the keys the renderers support. nuclo-core takes a value or a
+ * function for many keys; Nuclo Script has no `T | (() => T)`, so each key takes the form shown.
+ */
+export type Attributes = {
+  className?: () => StyleResult,
+  value?: () => string,
+  checked?: () => bool,
+  src?: string,
+  placeholder?: string,
+  /** What assistive technology reads. */
+  label?: string,
+  /** "text", "password", "email", or "number" */
+  inputType?: string,
+  onClick?: () => void,
+  onInput?: (string) => void,
+  onChange?: (bool) => void,
+  onKeyDown?: (string) => void,
+  onPan?: (Pan) => void,
+  onPinch?: (Pinch) => void,
+  onLongPress?: (Point) => void,
+  onDoubleClick?: (Point) => void,
+  onPointerDown?: (Point) => void,
+  onPointerUp?: (Point) => void,
+  onScroll?: (Scroll) => void,
+  /** Runs when the view goes: a list row is removed, a `when` closes, a screen is popped. */
+  onDestroy?: () => void,
+}
+
+// ---- builders --------------------------------------------------------------------
+
+/**
+ * What a builder takes, as in nuclo-core. The compiler picks the variant from the type of each
+ * argument: a view, a string, a `() => string`, a style class, a `() => StyleResult`, or attributes.
+ */
+export type Mod = Part(View) | Text(string) | TextOf(() => string) | Class(StyleResult) | ClassOf(() => StyleResult) | Attrs(Attributes)
+
+extern fn el(tag: string, mods: Mod[]): View
+
+export fn div(...mods: Mod[]) => el("div", mods)
+export fn h1(...mods: Mod[]) => el("h1", mods)
+export fn h2(...mods: Mod[]) => el("h2", mods)
+export fn h3(...mods: Mod[]) => el("h3", mods)
+export fn p(...mods: Mod[]) => el("p", mods)
+export fn span(...mods: Mod[]) => el("span", mods)
+export fn small(...mods: Mod[]) => el("small", mods)
+export fn strong(...mods: Mod[]) => el("strong", mods)
+export fn button(...mods: Mod[]) => el("button", mods)
+export fn input(...mods: Mod[]) => el("input", mods)
+export fn textarea(...mods: Mod[]) => el("textarea", mods)
+/** An image: `src` is a URL, loaded and cached by the platform. */
+export fn img(...mods: Mod[]) => el("img", mods)
+/** The platform's switch. */
+export fn toggle(...mods: Mod[]) => el("checkbox", mods)
+/** A box from a list of mods made at run time (a loop's rows). */
+export fn group(mods: Mod[]) => el("div", mods)
+
+// ---- dynamic parts ---------------------------------------------------------------
+
+/** One row for each item, made by `render(item, index)`. A row is made again when its item changed. */
+export extern fn list<T extends Equatable>(items: () => T[], render: (T, int) => View): View
+/** The view of `show` while `cond` is true. `show` makes it again each time `cond` turns true. */
+export extern fn when(cond: () => bool, show: () => View): View
+/** Runs each dynamic value again and writes the changed ones to the views. */
+export extern fn update()
+
+// ---- navigation ------------------------------------------------------------------
+
+/** A tab of the router: its root path, its title, and an icon (home, search, plus, heart, person, grid, settings). */
+export type Tab = { path: string, title: string, icon: string }
+
+/**
+ * A screen at `pattern`, such as "/post/:id". `title` and `view` get the value of `:id` ("" when the
+ * pattern has none). `kind`:
+ *   "push"   pushed onto the tab's stack, under the platform's navigation bar
+ *   "bare"   pushed with no navigation bar (the screen draws its own)
+ *   "modal"  the platform's sheet over everything (a page sheet on iOS, a bottom sheet on GTK)
+ */
+export extern fn route(pattern: string, title: (string) => string, view: (string) => View, kind: string): Route
+
+/** Shows the routes with the platform's navigation: one stack per tab, its bar, back, and the tab bar. */
+export extern fn navigate(routes: Route[], tabs: Tab[])
+/** Pushes the screen of `path` onto the current tab's stack (or presents it, for a modal). */
+export extern fn go(path: string)
+/** Pops the current screen, or dismisses the modal. */
+export extern fn back()
+/** Selects the tab that owns `path` and makes it the only screen there. */
+export extern fn reset(path: string)
+/** A layer over the navigation, the size of the window. Touches go through where it has no view. */
+export extern fn overlay(view: () => View)
+
+// ---- platform --------------------------------------------------------------------
+
+/** Runs `f` once, after `ms` milliseconds, on the UI thread. */
+export extern fn later(ms: int, f: () => void)
+/** A short haptic tap: "light", "medium", or "success". Nothing where the device has no motor. */
+export extern fn haptic(kind: string)
+/**
+ * The colours of the platform's own chrome (navigation bar, tab bar, status bar, window): dark or light,
+ * the accent of the selected tab and of the back button, and the screens' background.
+ */
+export extern fn theme(dark: bool, accent: string, background: string)
+/** The window's size, in points. */
+export type Viewport = { width: number, height: number }
+export extern fn viewport(): Viewport
+/** "web", "android", "ios", "macos", "linux", or "linux-gpui". */
+export extern fn platform(): string

@@ -1,0 +1,196 @@
+// The Explore tab: a mosaic of photos, topics, search (people and tags as you type), a tag's posts,
+// what is trending, and creators to follow.
+
+import { css, div, p, span, button, img, input, list, when, update, go, haptic, View } from "./ui"
+import { t, space, radius, font, themed } from "./theme"
+import { Post, Tag, User, posts, users, tags, postsTagged, searchUsers, searchTags, photoUrl, compact, user } from "./data"
+import { isFollowing, toggleFollow } from "./state"
+import {
+  page, column, row, grow, gapSm, title2, title3, headline, sub, footnote, caption, strongText, smallBtn,
+  smallGhostBtn, chip, avatar, empty,
+} from "./kit"
+import { personCell, photoGrid } from "./feed"
+
+// ---- styles -------------------------------------------------------------------------------------
+
+const searchBar = themed(() => css({
+  flexDirection: "row", alignItems: "center", gap: space.sm, height: 40, px: space.md, mx: space.lg, my: space.sm,
+  borderRadius: 12, backgroundColor: t().surface2, pressed: { opacity: 0.7 },
+}))
+const searchGlyph = themed(() => css({ fontSize: 16, color: t().muted }))
+const searchHint = themed(() => css({ fontSize: font.body, color: t().muted }))
+const chips = css({ flexDirection: "row", gap: space.sm, overflow: "scroll", px: space.lg, py: space.sm })
+const mosaic = css({ flexDirection: "row", gap: 2 })
+const mosaicCol = css({ flex: 1, gap: 2 })
+const tall = themed(() => css({ aspectRatio: 0.5, backgroundColor: t().skeleton, pressed: { opacity: 0.75 } }))
+const square = themed(() => css({ aspectRatio: 1, backgroundColor: t().skeleton, pressed: { opacity: 0.75 } }))
+const sectionHead = css({ flexDirection: "row", alignItems: "center", justifyContent: "space-between", px: space.lg, pt: space.lg, pb: space.sm })
+const seeAll = themed(() => css({ fontSize: font.sub, color: t().accent, fontWeight: "semibold", pressed: { opacity: 0.5 } }))
+const topicRow = css({ flexDirection: "row", gap: space.md, overflow: "scroll", px: space.lg })
+const topic = themed(() => css({ width: 140, height: 90, borderRadius: radius.md, overflow: "hidden", backgroundColor: t().skeleton, pressed: { scale: 0.96 }, transition: 140 }))
+const topicImg = css({ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 })
+const topicShade = css({ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(0,0,0,0.3)", justifyContent: "flex-end", padding: space.sm })
+const topicName = css({ color: "#ffffff", fontSize: font.sub, fontWeight: "bold" })
+
+// ---- the tab -----------------------------------------------------------------------------------------
+
+let topicPick = 0
+const topicNames: string[] = ["For you", "travel", "architecture", "nature", "street", "coffee", "design", "film"]
+
+fn picks(): Post[] {
+  if (topicPick == 0) { return posts }
+  return posts.filter((x) => x.tag == topicNames[topicPick])
+}
+
+/** Three columns: a tall photo in the middle of every other block, as a mosaic. */
+fn mosaicView(xs: Post[]): View {
+  let a: Post[] = []
+  let b: Post[] = []
+  let c: Post[] = []
+  let i = 0
+  for (const x of xs) {
+    if (i % 3 == 0) { a.push(x) } else if (i % 3 == 1) { b.push(x) } else { c.push(x) }
+    i += 1
+  }
+  return div(mosaic,
+    div(mosaicCol, list(() => a, (x, k) => img(square, { src: photoUrl(x.photo, 130), onClick: () => go(`/post/${x.id}`) }))),
+    div(mosaicCol, list(() => b, (x, k) => img(k % 2 == 0 ? tall() : square(), { src: photoUrl(x.photo, 130), onClick: () => go(`/post/${x.id}`) }))),
+    div(mosaicCol, list(() => c, (x, k) => img(square, { src: photoUrl(x.photo, 130), onClick: () => go(`/post/${x.id}`) }))),
+  )
+}
+
+fn topicTile(tg: Tag): View {
+  return div(topic, { onClick: () => go(`/tag/${tg.id}`) }, img(topicImg, { src: photoUrl(tg.photo, 140) }), div(topicShade, p(topicName, `#${tg.name}`)))
+}
+
+export fn exploreScreen(): View {
+  return div(
+    page,
+    div(column,
+      div(searchBar, { onClick: () => go("/search") }, span(searchGlyph, "⌕"), p(searchHint, "Search people and tags")),
+      div(chips, list(() => topicNames, (name, i) => chip(i == 0 ? name : `#${name}`, () => topicPick == i, () => { topicPick = i }))),
+      div(sectionHead, p(headline, "Topics"), button(seeAll, "Trending", { onClick: () => go("/trending") })),
+      div(topicRow, list(() => tags(), (tg, i) => topicTile(tg))),
+      div(sectionHead, p(headline, "Creators for you"), button(seeAll, "See all", { onClick: () => go("/creators") })),
+      list(() => first(users.filter((u) => !isFollowing(u.id)), 3), (u, i) => personCell(u)),
+      div(sectionHead, p(headline, () => topicPick == 0 ? "Discover" : `#${topicNames[topicPick]}`)),
+      list(() => [topicPick], (n, i) => mosaicView(picks())),
+    ),
+  )
+}
+
+fn first(xs: User[], n: int): User[] {
+  let out: User[] = []
+  for (const x of xs) { if (out.length < n) { out.push(x) } }
+  return out
+}
+
+// ---- search ----------------------------------------------------------------------------------------
+
+let query = ""
+let recent: string[] = ["mountains", "ava.lens", "coffee"]
+
+const searchInput = themed(() => css({ flex: 1, height: 40, px: space.md, borderRadius: 12, backgroundColor: t().surface2, color: t().text, fontSize: font.body }))
+const searchTop = css({ flexDirection: "row", alignItems: "center", gap: space.sm, px: space.lg, py: space.sm })
+const tagRow = css({ flexDirection: "row", alignItems: "center", gap: space.md, px: space.lg, py: space.sm, pressed: { opacity: 0.6 } })
+const tagIcon = themed(() => css({ lineHeight: 48, width: 48, height: 48, borderRadius: 24, backgroundColor: t().surface2, color: t().text, fontSize: 22, alignItems: "center", justifyContent: "center", textAlign: "center" }))
+const recentRow = css({ flexDirection: "row", alignItems: "center", gap: space.md, px: space.lg, py: space.sm, pressed: { opacity: 0.6 } })
+const clearBtn = themed(() => css({ color: t().muted, fontSize: 16, padding: space.sm, pressed: { opacity: 0.5 } }))
+
+fn tagCell(tg: Tag): View {
+  return div(tagRow, { onClick: () => { remember(tg.name); go(`/tag/${tg.id}`) } }, span(tagIcon, "#"), div(grow, p(strongText, `#${tg.name}`), p(footnote, `${compact(tg.posts)} posts`)))
+}
+
+fn remember(q: string) {
+  let next: string[] = [q]
+  for (const r of recent) { if (r != q) { next.push(r) } }
+  recent = next
+}
+
+export fn searchScreen(): View {
+  query = ""
+  return div(
+    page,
+    div(column,
+      div(searchTop, input(searchInput, {
+        placeholder: "Search",
+        value: () => query,
+        onInput: (v) => { query = v; update() },
+        onKeyDown: (k) => { if (k == "Enter" && query.trim() != "") { remember(query.trim()); update() } },
+      })),
+      when(() => query.trim() == "", () => div(
+        div(sectionHead, p(headline, "Recent"), button(seeAll, "Clear", { onClick: () => { recent = []; update() } })),
+        list(() => recent, (r, i) => div(recentRow, { onClick: () => { query = r; update() } }, span(searchGlyph, "◷"), p(css({ flex: 1, fontSize: font.body, color: t().text }), r), button(clearBtn, "✕", { onClick: () => { recent = recent.filter((x) => x != r); update() } }))),
+        when(() => recent.length == 0, () => p(css({ px: space.lg, fontSize: font.sub, color: t().muted }), "No recent searches.")),
+      )),
+      when(() => query.trim() != "", () => div(
+        list(() => searchTags(query), (tg, i) => tagCell(tg)),
+        list(() => searchUsers(query), (u, i) => personCell(u)),
+        when(() => searchTags(query).length == 0 && searchUsers(query).length == 0, () => empty("⌕", "No results", "Try another name or tag.")),
+      )),
+    ),
+  )
+}
+
+// ---- a tag -------------------------------------------------------------------------------------------
+
+const tagHead = css({ flexDirection: "row", alignItems: "center", gap: space.lg, padding: space.lg })
+const bigTag = themed(() => css({ width: 76, height: 76, borderRadius: 38, overflow: "hidden", backgroundColor: t().skeleton }))
+let followedTags: Set<string> = Set([])
+
+export fn tagScreen(id: string): View {
+  const xs = postsTagged(id)
+  return div(
+    page,
+    div(column,
+      div(tagHead,
+        div(bigTag, img(topicImg, { src: photoUrl(xs.length > 0 ? xs[0].photo : 50, 76) })),
+        div(grow, gapSm,
+          p(title2, `#${id}`),
+          p(footnote, `${compact(1200 + xs.length * 977)} posts`),
+          button(() => followedTags.has(id) ? smallGhostBtn() : smallBtn(), () => followedTags.has(id) ? "Following" : "Follow", {
+            onClick: () => { if (followedTags.has(id)) { followedTags.delete(id) } else { followedTags.add(id) } haptic("light"); update() },
+          }),
+        ),
+      ),
+      xs.length == 0 ? empty("#", "No posts yet", "Be the first to post with this tag.") : photoGrid(xs),
+    ),
+  )
+}
+
+// ---- trending ------------------------------------------------------------------------------------------
+
+const rankRow = css({ flexDirection: "row", alignItems: "center", gap: space.md, px: space.lg, py: space.md, pressed: { opacity: 0.6 } })
+const rankNum = themed(() => css({ width: 28, fontSize: font.title3, fontWeight: "bold", color: t().muted }))
+const rankImg = themed(() => css({ width: 56, height: 56, borderRadius: radius.sm, overflow: "hidden", backgroundColor: t().skeleton }))
+const up = themed(() => css({ fontSize: font.footnote, color: t().success, fontWeight: "semibold" }))
+
+export fn trendingScreen(): View {
+  const ts = tags()
+  return div(page, div(column,
+    p(css({ px: space.lg, pt: space.md, fontSize: font.footnote, color: t().muted }), "What people are posting about this week."),
+    list(() => ts, (tg, i) => div(rankRow, { onClick: () => go(`/tag/${tg.id}`) },
+      p(rankNum, `${i + 1}`),
+      div(rankImg, img(topicImg, { src: photoUrl(tg.photo, 56) })),
+      div(grow, p(strongText, `#${tg.name}`), p(footnote, `${compact(tg.posts)} posts`)),
+      p(up, `▲ ${12 + i * 7}%`),
+    )),
+  ))
+}
+
+// ---- creators ------------------------------------------------------------------------------------------
+
+const creatorGrid = css({ flexDirection: "row", flexWrap: "wrap", gap: space.md, padding: space.lg })
+const creatorCard = themed(() => css({ widthPct: 47, alignItems: "center", gap: space.sm, padding: space.lg, borderRadius: radius.lg, backgroundColor: t().surface2, md: { width: 200 } }))
+const creatorName = themed(() => css({ fontSize: font.sub, fontWeight: "semibold", color: t().text, numberOfLines: 1 }))
+
+export fn creatorsScreen(): View {
+  return div(page, div(column, div(creatorGrid, list(() => users, (u, i) => div(creatorCard,
+    div({ onClick: () => go(`/user/${u.id}`) }, avatar(u.avatar, 64)),
+    p(creatorName, u.name),
+    p(caption, `${compact(u.followers)} followers`),
+    button(() => isFollowing(u.id) ? smallGhostBtn() : smallBtn(), () => isFollowing(u.id) ? "Following" : "Follow", {
+      onClick: () => { toggleFollow(u.id); haptic("light"); update() },
+    }),
+  )))))
+}

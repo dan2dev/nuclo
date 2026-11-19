@@ -1,0 +1,324 @@
+// The app's state, kept on the device through store.ns (SQLite natively, localStorage on the web).
+// Each change writes its row at once; `load()` reads every table when the app starts.
+//
+//   likes     id = post id
+//   saved     id = post id
+//   follows   id = user id
+//   comments  id = comment id      fields: post, text
+//   posts     id = post id         fields: photo, caption, place
+//   notes     id = note id         fields: title, body, color, pinned ("1" or "0")
+//   messages  id = message id      fields: chat, text
+//   settings  id = setting name    fields: value
+//   profile   id = "me"            fields: name, handle, bio
+
+import { Row, dbPut, dbAll, dbDelete, dbClear } from "./store"
+import { Post, Comment, Message, posts, users } from "./data"
+import { setTheme } from "./theme"
+
+// ---- the signed-in person --------------------------------------------------------------
+
+export type Me = { name: string, handle: string, bio: string, avatar: string }
+
+let me: Me = { name: "Dani Castro", handle: "dani.nuclo", bio: "Making native apps from one script.", avatar: "https://i.pravatar.cc/240?img=33" }
+
+export fn profile() => me
+
+export fn saveProfile(name: string, handle: string, bio: string) {
+  me = { name: name, handle: handle, bio: bio, avatar: me.avatar }
+  dbPut("profile", "me", [name, handle, bio])
+}
+
+// ---- likes, saves, follows ---------------------------------------------------------------
+
+let liked: Set<string> = Set([])
+let saved: Set<string> = Set([])
+let follows: Set<string> = Set([])
+/** The saved post ids, newest first: the Saved screen's order. */
+let savedOrder: string[] = []
+
+export fn isLiked(post: string) => liked.has(post)
+export fn isSaved(post: string) => saved.has(post)
+export fn isFollowing(user: string) => follows.has(user)
+export fn savedIds() => savedOrder
+
+/** Likes or unlikes. Gives the new state. */
+export fn toggleLike(post: string): bool {
+  if (liked.has(post)) {
+    liked.delete(post)
+    dbDelete("likes", post)
+    return false
+  }
+  liked.add(post)
+  dbPut("likes", post, [])
+  return true
+}
+
+/** Likes, and stays liked (a double tap). */
+export fn like(post: string) {
+  if (!liked.has(post)) {
+    liked.add(post)
+    dbPut("likes", post, [])
+  }
+}
+
+export fn toggleSave(post: string): bool {
+  if (saved.has(post)) {
+    saved.delete(post)
+    dbDelete("saved", post)
+    savedOrder = savedOrder.filter((id) => id != post)
+    return false
+  }
+  saved.add(post)
+  dbPut("saved", post, [])
+  savedOrder.insert(0, post)
+  return true
+}
+
+export fn toggleFollow(user: string): bool {
+  if (follows.has(user)) {
+    follows.delete(user)
+    dbDelete("follows", user)
+    return false
+  }
+  follows.add(user)
+  dbPut("follows", user, [])
+  return true
+}
+
+/** The like count shown: the post's own, plus one when the viewer likes it. */
+export fn likeCount(p: Post) => p.likes + (liked.has(p.id) ? 1 : 0)
+
+// ---- comments and my posts ------------------------------------------------------------------
+
+let myComments: Comment[] = []
+let myPosts: Post[] = []
+let nextId = 1000
+
+/** A new id: a counter kept in the settings, so ids stay unique across launches. */
+fn newId(): string {
+  nextId += 1
+  setSetting("seq", `${nextId}`)
+  return `${nextId}`
+}
+
+export fn commentsAdded(post: string) => myComments.filter((c) => c.post == post)
+
+export fn addComment(post: string, text: string): bool {
+  const body = text.trim()
+  if (body == "") { return false }
+  const id = `c${newId()}`
+  myComments.push({ id: id, post: post, author: "me", text: body, minutes: 0, likes: 0 })
+  dbPut("comments", id, [post, body])
+  return true
+}
+
+/** My posts first, then the network's. */
+export fn feed(): Post[] {
+  let out: Post[] = []
+  for (const p of myPosts) { out.push(p) }
+  for (const p of posts) { out.push(p) }
+  return out
+}
+
+export fn myPostList() => myPosts
+
+export fn addPost(photo: int, caption: string, place: string) {
+  const id = `p${newId()}`
+  myPosts.insert(0, { id: id, author: "me", photo: photo, caption: caption, tag: "nuclo", place: place, likes: 0, comments: 0, minutes: 0 })
+  dbPut("posts", id, [`${photo}`, caption, place])
+}
+
+export fn deletePost(id: string) {
+  myPosts = myPosts.filter((p) => p.id != id)
+  dbDelete("posts", id)
+}
+
+export fn findAnyPost(id: string): Post? {
+  for (const p of myPosts) {
+    if (p.id == id) { return p }
+  }
+  for (const p of posts) {
+    if (p.id == id) { return p }
+  }
+  return null
+}
+
+// ---- messages ----------------------------------------------------------------------------
+
+let sent: Message[] = []
+
+export fn sentIn(chat: string) => sent.filter((m) => m.chat == chat)
+
+export fn send(chat: string, text: string): bool {
+  const body = text.trim()
+  if (body == "") { return false }
+  const id = `m${newId()}`
+  sent.push({ id: id, chat: chat, mine: true, text: body, minutes: 0 })
+  dbPut("messages", id, [chat, body])
+  return true
+}
+
+// ---- notes: a small CRUD over SQLite --------------------------------------------------------
+
+export type Note = { id: string, title: string, body: string, color: int, pinned: bool }
+
+let notes: Note[] = []
+
+export const noteColors: string[] = ["#ffd166", "#06d6a0", "#4cc9f0", "#f72585", "#b8b8ff", "#ff9f1c"]
+
+export fn allNotes(): Note[] {
+  let out: Note[] = []
+  for (const n of notes) { if (n.pinned) { out.push(n) } }
+  for (const n of notes) { if (!n.pinned) { out.push(n) } }
+  return out
+}
+
+export fn note(id: string): Note? {
+  for (const n of notes) {
+    if (n.id == id) { return n }
+  }
+  return null
+}
+
+fn writeNote(n: Note) {
+  dbPut("notes", n.id, [n.title, n.body, `${n.color}`, n.pinned ? "1" : "0"])
+}
+
+/** A new empty note, first in the list. Gives its id. */
+export fn createNote(title: string, body: string, color: int): string {
+  const n: Note = { id: `n${newId()}`, title: title, body: body, color: color, pinned: false }
+  notes.insert(0, n)
+  writeNote(n)
+  return n.id
+}
+
+export fn updateNote(id: string, title: string, body: string) {
+  for (const i of 0..notes.length - 1) {
+    if (notes[i].id == id) {
+      notes[i].title = title
+      notes[i].body = body
+      writeNote(notes[i])
+    }
+  }
+}
+
+export fn recolorNote(id: string, color: int) {
+  for (const i of 0..notes.length - 1) {
+    if (notes[i].id == id) {
+      notes[i].color = color
+      writeNote(notes[i])
+    }
+  }
+}
+
+export fn togglePin(id: string) {
+  for (const i of 0..notes.length - 1) {
+    if (notes[i].id == id) {
+      notes[i].pinned = !notes[i].pinned
+      writeNote(notes[i])
+    }
+  }
+}
+
+export fn deleteNote(id: string) {
+  notes = notes.filter((n) => n.id != id)
+  dbDelete("notes", id)
+}
+
+// ---- settings -------------------------------------------------------------------------------
+
+let settings: Map<string, string> = {}
+
+export fn setting(name: string, fallback: string): string => settings.get(name) ?? fallback
+export fn flag(name: string, fallback: bool): bool {
+  const v = settings.get(name) ?? return fallback
+  return v == "1"
+}
+
+export fn setSetting(name: string, value: string) {
+  settings.set(name, value)
+  dbPut("settings", name, [value])
+}
+
+export fn setFlag(name: string, on: bool) => setSetting(name, on ? "1" : "0")
+
+export fn darkMode() => flag("dark", false)
+
+export fn accentSetting(): int {
+  const v = setting("accent", "0")
+  for (const i of 0..4) {
+    if (v == `${i}`) { return i }
+  }
+  return 0
+}
+
+export fn applyTheme() => setTheme(darkMode(), accentSetting())
+
+// ---- storage screen ---------------------------------------------------------------------------
+
+export type TableInfo = { name: string, rows: int }
+
+export const tables: string[] = ["likes", "saved", "follows", "comments", "posts", "notes", "messages", "settings", "profile"]
+
+export fn tableInfo(): TableInfo[] => tables.map((name) => ({ name: name, rows: dbAll(name).length }))
+
+/** Removes what the user made; settings stay. */
+export fn eraseContent() {
+  for (const name of tables) {
+    if (name != "settings") { dbClear(name) }
+  }
+  load()
+}
+
+// ---- start -------------------------------------------------------------------------------------
+
+fn field(r: Row, i: int): string => r.fields.get(i) ?? ""
+
+fn toIntOr(s: string, fallback: int): int {
+  let n = 0
+  if (s == "") { return fallback }
+  for (const c of s.split("")) {
+    let d = -1
+    const digits: string[] = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
+    for (const k of 0..9) { if (digits[k] == c) { d = k } }
+    if (d < 0) { return fallback }
+    n = n * 10 + d
+  }
+  return n
+}
+
+/** Reads every table into memory. */
+export fn load() {
+  liked = Set(dbAll("likes").map((r) => r.id))
+  saved = Set(dbAll("saved").map((r) => r.id))
+  savedOrder = dbAll("saved").map((r) => r.id)
+  follows = Set(dbAll("follows").map((r) => r.id))
+  myComments = dbAll("comments").map((r) => ({ id: r.id, post: field(r, 0), author: "me", text: field(r, 1), minutes: 0, likes: 0 }))
+  myComments = reversed(myComments)
+  myPosts = dbAll("posts").map((r) => ({ id: r.id, author: "me", photo: toIntOr(field(r, 0), 10), caption: field(r, 1), tag: "nuclo", place: field(r, 2), likes: 0, comments: 0, minutes: 0 }))
+  sent = reversed(dbAll("messages").map((r) => ({ id: r.id, chat: field(r, 0), mine: true, text: field(r, 1), minutes: 0 })))
+  notes = dbAll("notes").map((r) => ({ id: r.id, title: field(r, 0), body: field(r, 1), color: toIntOr(field(r, 2), 0), pinned: field(r, 3) == "1" }))
+  settings = {}
+  for (const r of dbAll("settings")) { settings.set(r.id, field(r, 0)) }
+  for (const r of dbAll("profile")) {
+    me = { name: field(r, 0), handle: field(r, 1), bio: field(r, 2), avatar: me.avatar }
+  }
+  nextId = toIntOr(setting("seq", "1000"), 1000)
+  // The people the user follows at first.
+  if (dbAll("follows").length == 0 && setting("seeded", "") == "") {
+    for (const u of users) {
+      if (u.id == "2" || u.id == "4" || u.id == "7") { follows.add(u.id); dbPut("follows", u.id, []) }
+    }
+    setSetting("seeded", "1")
+  }
+}
+
+fn reversed<T>(xs: T[]): T[] {
+  let out: T[] = []
+  let i = xs.length - 1
+  while (i >= 0) {
+    out.push(xs[i])
+    i -= 1
+  }
+  return out
+}

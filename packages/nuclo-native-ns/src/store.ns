@@ -1,0 +1,18 @@
+// Storage on the device, in the platform's own database:
+//   android, ios, macos, linux, linux-gpui   SQLite (android.database.sqlite, libsqlite3, rusqlite)
+//   web                                     localStorage (the browser has no SQLite)
+// One table, rows(tbl, id, fields): a row is a list of strings, kept as a JSON array.
+
+/** A stored row: its id in its table, and its fields. */
+export type Row = { id: string, fields: string[] }
+
+/** Inserts the row, or replaces its fields (the row keeps its place). */
+export extern fn dbPut(table: string, id: string, fields: string[])
+/** The rows of `table`, newest first. */
+export extern fn dbAll(table: string): Row[]
+/** Removes the row, if it is there. */
+export extern fn dbDelete(table: string, id: string)
+/** Removes every row of `table`. */
+export extern fn dbClear(table: string)
+/** Where the rows are kept, for the Storage screen. */
+export extern fn dbInfo(): string

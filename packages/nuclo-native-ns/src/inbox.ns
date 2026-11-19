@@ -1,0 +1,272 @@
+// The Activity tab and the inbox: notifications (filtered by a segmented control), follow requests
+// (swipe a row to accept or decline), conversations, and a chat with a composer.
+
+import { css, div, p, span, button, img, input, list, when, update, go, back, later, haptic, View, Pan, Point } from "./ui"
+import { t, space, font, themed } from "./theme"
+import { Notice, Chat, Message, notices, chats, users, user, chat, messagesOf, findPost, photoUrl, ago } from "./data"
+import { isFollowing, toggleFollow, sentIn, send } from "./state"
+import {
+  page, fixedPage, column, row, grow, headline, sub, footnote, caption, strongText, body, smallBtn,
+  smallGhostBtn, avatar, segmented, empty, toast, menuAt, act, destructive, badge, divider,
+} from "./kit"
+
+// ---- activity ------------------------------------------------------------------------------------
+
+let filter = 0
+const filters: string[] = ["All", "Likes", "Comments", "Follows"]
+
+const noticeRow = css({ flexDirection: "row", alignItems: "center", gap: space.md, px: space.lg, py: space.sm, pressed: { opacity: 0.6 } })
+const noticeText = themed(() => css({ flex: 1, fontSize: font.sub, color: t().text, lineHeight: 19 }))
+const thumb = themed(() => css({ width: 44, height: 44, borderRadius: 6, overflow: "hidden", backgroundColor: t().skeleton }))
+const fill = css({ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 })
+const kindDot = css({ position: "absolute", right: -2, bottom: -2, lineHeight: 20, width: 20, height: 20, borderRadius: 10, alignItems: "center", justifyContent: "center", textAlign: "center", fontSize: 11, color: "#ffffff" })
+const segBox = css({ px: space.lg, py: space.md })
+const groupHead = themed(() => css({ px: space.lg, pt: space.md, pb: space.xs, fontSize: font.headline, fontWeight: "bold", color: t().text }))
+const requestsRow = css({ flexDirection: "row", alignItems: "center", gap: space.md, px: space.lg, py: space.md, pressed: { opacity: 0.6 } })
+
+fn dotColor(kind: string): string {
+  if (kind == "like") { return "#ff3b5c" }
+  if (kind == "comment") { return "#0a84ff" }
+  if (kind == "follow") { return "#7b5cff" }
+  return "#0fb37f"
+}
+
+fn dotGlyph(kind: string): string {
+  if (kind == "like") { return "♥" }
+  if (kind == "comment") { return "✎" }
+  if (kind == "follow") { return "+" }
+  return "@"
+}
+
+fn noticeLine(n: Notice): string {
+  const who = user(n.user).handle
+  if (n.kind == "like") { return `${who} liked your photo. · ${ago(n.minutes)}` }
+  if (n.kind == "comment") { return `${who} commented: ${n.text} · ${ago(n.minutes)}` }
+  if (n.kind == "follow") { return `${who} started following you. · ${ago(n.minutes)}` }
+  return `${who} mentioned you: ${n.text} · ${ago(n.minutes)}`
+}
+
+fn noticeCell(n: Notice): View {
+  const u = user(n.user)
+  return div(
+    noticeRow,
+    { onClick: () => go(n.kind == "follow" ? `/user/${u.id}` : `/post/${n.post}`) },
+    div(avatar(u.avatar, 44), span(kindDot, css({ backgroundColor: dotColor(n.kind) }), dotGlyph(n.kind))),
+    p(noticeText, noticeLine(n)),
+    when(() => n.kind == "follow", () => button(() => isFollowing(u.id) ? smallGhostBtn() : smallBtn(), () => isFollowing(u.id) ? "Following" : "Follow back", {
+      onClick: () => { toggleFollow(u.id); haptic("light"); update() },
+    })),
+    when(() => n.kind != "follow", () => div(thumb, img(fill, { src: photoUrl(postPhoto(n.post), 44) }))),
+  )
+}
+
+fn postPhoto(id: string): int {
+  const x = findPost(id) ?? return 10
+  return x.photo
+}
+
+fn shown(): Notice[] {
+  if (filter == 0) { return notices }
+  const kind = filter == 1 ? "like" : filter == 2 ? "comment" : "follow"
+  return notices.filter((n) => n.kind == kind || (kind == "comment" && n.kind == "mention"))
+}
+
+export fn activityScreen(): View {
+  return div(
+    page,
+    div(column,
+      div(segBox, segmented(filters, () => filter, (i) => { filter = i })),
+      div(requestsRow, { onClick: () => go("/requests") },
+        div(avatar(users[5].avatar, 44)),
+        div(grow, p(strongText, "Follow requests"), p(footnote, () => `${requests.length} people want to follow you`)),
+        when(() => requests.length > 0, () => span(badge, () => `${requests.length}`)),
+      ),
+      div(divider),
+      p(groupHead, "This week"),
+      list(() => shown(), (n, i) => noticeCell(n)),
+    ),
+  )
+}
+
+// ---- follow requests: swipe to answer --------------------------------------------------------------
+
+let requests: string[] = ["9", "11", "13", "15", "17"]
+/** The row being dragged, and how far. */
+let swiping = ""
+let swipeX = 0.0
+
+const reqOuter = themed(() => css({ overflow: "hidden", backgroundColor: t().surface2 }))
+const reqUnder = css({ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, flexDirection: "row", alignItems: "center", justifyContent: "space-between", px: space.xl })
+const acceptLabel = themed(() => css({ color: t().success, fontWeight: "bold", fontSize: font.sub }))
+const declineLabel = themed(() => css({ color: t().danger, fontWeight: "bold", fontSize: font.sub }))
+fn reqFront(id: string) => css({
+  flexDirection: "row", alignItems: "center", gap: space.md, px: space.lg, py: space.md, backgroundColor: t().bg,
+  translateX: swiping == id ? swipeX : 0.0, transition: swiping == id ? 0 : 280, easing: "spring",
+})
+const reqButtons = css({ flexDirection: "row", gap: space.sm })
+
+fn answer(id: string, accept: bool) {
+  requests = requests.filter((r) => r != id)
+  swiping = ""
+  swipeX = 0.0
+  haptic("success")
+  toast(accept ? `${user(id).handle} can now follow you` : "Request declined")
+  update()
+}
+
+fn requestCell(id: string): View {
+  const u = user(id)
+  return div(
+    reqOuter,
+    div(reqUnder, p(acceptLabel, "✓ Accept"), p(declineLabel, "Decline ✕")),
+    div(
+      () => reqFront(id),
+      {
+        onPan: (e: Pan) => {
+          swiping = id
+          swipeX = e.dx
+          if (e.state == "end" || e.state == "cancel") {
+            if (e.dx > 120.0 || e.vx > 900.0) { answer(id, true); return }
+            if (e.dx < -120.0 || e.vx < -900.0) { answer(id, false); return }
+            swiping = ""
+            swipeX = 0.0
+          }
+          update()
+        },
+      },
+      avatar(u.avatar, 48),
+      div(grow, p(strongText, u.handle), p(footnote, u.name)),
+      div(reqButtons,
+        button(smallBtn, "Confirm", { onClick: () => answer(id, true) }),
+        button(smallGhostBtn, "Delete", { onClick: () => answer(id, false) }),
+      ),
+    ),
+  )
+}
+
+export fn requestsScreen(): View {
+  return div(page, div(column,
+    p(css({ px: space.lg, py: space.md, fontSize: font.footnote, color: t().muted }), "Swipe right to accept, left to decline."),
+    list(() => requests, (id, i) => requestCell(id)),
+    when(() => requests.length == 0, () => empty("✓", "All caught up", "No pending follow requests.")),
+  ))
+}
+
+// ---- messages --------------------------------------------------------------------------------------
+
+let unread: Set<string> = Set(["1", "2", "3"])
+
+const chatRow = css({ flexDirection: "row", alignItems: "center", gap: space.md, px: space.lg, py: space.sm, pressed: { opacity: 0.6 } })
+const chatName = themed(() => css({ fontSize: font.body, color: t().text, fontWeight: "semibold" }))
+const chatNameRead = themed(() => css({ fontSize: font.body, color: t().text }))
+const chatPreview = themed(() => css({ fontSize: font.sub, color: t().text, numberOfLines: 1 }))
+const chatPreviewRead = themed(() => css({ fontSize: font.sub, color: t().muted, numberOfLines: 1 }))
+const unreadDot = themed(() => css({ width: 10, height: 10, borderRadius: 5, backgroundColor: t().accent }))
+const onlineDot = themed(() => css({ position: "absolute", right: 1, bottom: 1, width: 14, height: 14, borderRadius: 7, backgroundColor: t().success, borderWidth: 2, borderColor: t().bg }))
+const activeRow = css({ flexDirection: "row", gap: space.lg, overflow: "scroll", px: space.lg, py: space.md })
+const activeItem = css({ alignItems: "center", gap: space.xs, width: 64, pressed: { scale: 0.94 } })
+const activeName = themed(() => css({ fontSize: font.caption, color: t().text, numberOfLines: 1, width: 64, textAlign: "center" }))
+
+fn lastLine(c: Chat): string {
+  const mine = sentIn(c.id)
+  if (mine.length > 0) { return `You: ${mine[mine.length - 1].text}` }
+  const xs = messagesOf(c.id, toSeed(c.id))
+  return xs[0].text
+}
+
+fn toSeed(id: string): int => id.length * 7 + (id == "1" ? 1 : id == "2" ? 2 : 3)
+
+fn chatMenu(c: Chat, at: Point) {
+  menuAt(at, user(c.user).handle, [
+    act(unread.has(c.id) ? "Mark as read" : "Mark as unread", "◉", () => { if (unread.has(c.id)) { unread.delete(c.id) } else { unread.add(c.id) } }),
+    act("Mute", "🔕", () => toast("Muted")),
+    act("Pin", "📌", () => toast("Pinned")),
+    destructive("Delete chat", "✕", () => toast("Chat deleted")),
+  ])
+}
+
+fn chatCell(c: Chat): View {
+  const u = user(c.user)
+  return div(
+    chatRow,
+    { onClick: () => { unread.delete(c.id); go(`/chat/${c.id}`) }, onLongPress: (pt: Point) => chatMenu(c, pt) },
+    div(avatar(u.avatar, 56), when(() => c.unread > 0, () => span(onlineDot))),
+    div(grow,
+      p(() => unread.has(c.id) ? chatName() : chatNameRead(), u.name),
+      p(() => unread.has(c.id) ? chatPreview() : chatPreviewRead(), () => lastLine(c)),
+    ),
+    when(() => unread.has(c.id), () => span(unreadDot)),
+  )
+}
+
+export fn messagesScreen(): View {
+  return div(
+    page,
+    div(column,
+      div(activeRow, list(() => chats, (c, i) => div(activeItem, { onClick: () => go(`/chat/${c.id}`) },
+        div(avatar(user(c.user).avatar, 56), span(onlineDot)),
+        p(activeName, user(c.user).name),
+      ))),
+      list(() => chats, (c, i) => chatCell(c)),
+    ),
+  )
+}
+
+// ---- a chat --------------------------------------------------------------------------------------------
+
+let draft = ""
+let typing = false
+
+const thread = css({ flex: 1, overflow: "scroll" })
+const threadInner = css({ padding: space.md, gap: space.xs, alignSelf: "center", widthPct: 100, maxWidth: 680 })
+const theirs = themed(() => css({ alignSelf: "flex-start", maxWidth: 280, px: space.md + 2, py: space.sm + 1, borderRadius: 20, backgroundColor: t().surface2, color: t().text, fontSize: font.body, lineHeight: 21 }))
+const mine = themed(() => css({ alignSelf: "flex-end", maxWidth: 280, px: space.md + 2, py: space.sm + 1, borderRadius: 20, backgroundColor: t().accent, color: t().accentText, fontSize: font.body, lineHeight: 21 }))
+const stamp = themed(() => css({ alignSelf: "center", fontSize: font.caption, color: t().muted, py: space.sm }))
+const typingBubble = themed(() => css({ alignSelf: "flex-start", px: space.md, py: space.sm, borderRadius: 20, backgroundColor: t().surface2, color: t().muted, fontSize: font.sub }))
+const composer = themed(() => css({ flexDirection: "row", alignItems: "center", gap: space.sm, px: space.md, py: space.sm, borderTopWidth: 1, borderColor: t().line, backgroundColor: t().bg }))
+const field = themed(() => css({ flex: 1, height: 40, px: space.lg, borderRadius: 20, backgroundColor: t().surface2, color: t().text, fontSize: font.body }))
+const sendOn = themed(() => css({ width: 40, height: 40, padding: 0, borderRadius: 20, backgroundColor: t().accent, color: t().accentText, fontSize: 18, pressed: { scale: 0.9 }, transition: 160 }))
+const sendOff = themed(() => css({ width: 40, height: 40, padding: 0, borderRadius: 20, backgroundColor: t().surface2, color: t().muted, fontSize: 18 }))
+const chatHead = themed(() => css({ flexDirection: "row", alignItems: "center", gap: space.sm, px: space.lg, py: space.sm, borderBottomWidth: 1, borderColor: t().line }))
+
+fn bubble(m: Message): View => p(m.mine ? mine() : theirs(), m.text)
+
+fn sendNow(id: string) {
+  if (!send(id, draft)) { return }
+  draft = ""
+  haptic("light")
+  typing = true
+  update()
+  // A reply, as if the other person answered.
+  later(1400, () => { typing = false; update() })
+}
+
+export fn chatScreen(id: string): View {
+  const c = chat(id) ?? return div(page, empty("✉", "Chat not found", ""))
+  const u = user(c.user)
+  const seed = messagesOf(id, toSeed(id))
+  draft = ""
+  typing = false
+  return div(
+    fixedPage,
+    div(chatHead, { onClick: () => go(`/user/${u.id}`) }, avatar(u.avatar, 32), div(grow, p(strongText, u.name), p(caption, "Active now"))),
+    div(thread,
+      div(threadInner,
+        p(stamp, "Yesterday"),
+        list(() => seed, (m, i) => bubble(m)),
+        p(stamp, "Today"),
+        list(() => sentIn(id), (m, i) => bubble(m)),
+        when(() => typing, () => p(typingBubble, "typing…")),
+      ),
+    ),
+    div(composer,
+      input(field, {
+        placeholder: "Message…",
+        value: () => draft,
+        onInput: (v) => { draft = v; update() },
+        onKeyDown: (k) => { if (k == "Enter") { sendNow(id) } },
+      }),
+      button(() => draft.trim() == "" ? sendOff() : sendOn(), "↑", { label: "Send", onClick: () => sendNow(id) }),
+    ),
+  )
+}
