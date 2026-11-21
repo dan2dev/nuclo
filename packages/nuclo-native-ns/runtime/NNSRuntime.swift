@@ -58,6 +58,27 @@ public func nnsIncludes(_ s: String, _ part: String) -> Bool {
   for i in 0...(a.count - b.count) where Array(a[i..<(i + b.count)]) == b { return true }
   return false
 }
+/// `s.slice(start, end)`: positions count scalar values; a position out of range is moved into the range.
+public func strSlice(_ s: String, _ start: Int32, _ end: Int32?) -> String {
+  let scalars = s.unicodeScalars
+  let n = scalars.count
+  let from = min(max(Int(start), 0), n)
+  let to = min(max(end.map { Int($0) } ?? n, from), n)
+  if from == 0 && to == n { return s }
+  let a = scalars.index(scalars.startIndex, offsetBy: from)
+  return String(String.UnicodeScalarView(scalars[a..<scalars.index(a, offsetBy: to - from)]))
+}
+/// `s.indexOf(part)`: the scalar position of the first `part`, or -1; 0 for the empty part.
+public func strIndexOf(_ s: String, _ part: String) -> Int32 {
+  let a = Array(s.unicodeScalars), b = Array(part.unicodeScalars)
+  if b.isEmpty { return 0 }
+  if b.count > a.count { return -1 }
+  outer: for i in 0...(a.count - b.count) {
+    for j in 0..<b.count where a[i + j] != b[j] { continue outer }
+    return Int32(i)
+  }
+  return -1
+}
 /// The parts of `s` between the separators, with the empty parts. The separator is matched by scalar values.
 public func split(_ s: String, _ sep: String) -> [String] {
   let a = Array(s.unicodeScalars), b = Array(sep.unicodeScalars)

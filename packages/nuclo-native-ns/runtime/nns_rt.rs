@@ -24,6 +24,21 @@ impl fmt::Display for Str { fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result
 pub fn concat(a: &Str, b: &Str) -> Str { Str::from(format!("{}{}", a, b)) }
 pub fn print(text: &Str) { println!("{}", text); }
 pub fn split(s: &Str, separator: &Str) -> List<Str> { List(Rc::new(s.split(&**separator).map(Str::from).collect())) }
+/// `s.slice(start, end)`: positions count scalar values; a position out of range is moved into the range.
+pub fn str_slice(s: &Str, start: i32, end: Option<i32>) -> Str {
+  let ascii = s.is_ascii();
+  let at = |n: i32| -> usize {
+    if n <= 0 { 0 } else if ascii { (n as usize).min(s.len()) } else { s.char_indices().nth(n as usize).map_or(s.len(), |(i, _)| i) }
+  };
+  let from = at(start);
+  let to = end.map_or(s.len(), at).max(from);
+  if from == 0 && to == s.len() { return s.clone(); }
+  Str::from(&s[from..to])
+}
+/// `s.indexOf(part)`: the scalar position of the first `part`, or -1; 0 for the empty part.
+pub fn str_index_of(s: &Str, part: &Str) -> i32 {
+  match s.find(&**part) { Some(i) => s[..i].chars().count() as i32, None => -1 }
+}
 pub fn str_trim(s: &Str) -> Str { Str::from(s.trim()) }
 pub fn str_lower(s: &Str) -> Str { Str::from(s.to_lowercase()) }
 pub fn str_upper(s: &Str) -> Str { Str::from(s.to_uppercase()) }

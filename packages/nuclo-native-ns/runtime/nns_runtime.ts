@@ -63,6 +63,17 @@ export function length(s: string): number {
   for (const _ of s) n++
   return n
 }
+/** `s.slice(start, end)` of Nuclo Script: positions count scalar values; a position out of range is moved into the range. */
+export function strSlice(s: string, start: number, end?: number): string {
+  const from = Math.max(0, start)
+  const to = Math.max(0, end ?? Infinity)
+  return /[\uD800-\uDFFF]/.test(s) ? Array.from(s).slice(from, to).join("") : s.slice(from, to)
+}
+/** `s.indexOf(part)` of Nuclo Script: the scalar position of the first `part`, or -1; 0 for the empty part. */
+export function strIndexOf(s: string, part: string): number {
+  const i = s.indexOf(part)
+  return i <= 0 ? i : i - (s.slice(0, i).match(/[\uDC00-\uDFFF]/g)?.length ?? 0)
+}
 function compareStrings(a: string, b: string): number {
   const x = a[Symbol.iterator]()
   const y = b[Symbol.iterator]()

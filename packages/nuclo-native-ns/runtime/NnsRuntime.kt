@@ -85,6 +85,19 @@ fun text(x: Double): String {
 fun length(s: String): Int = s.codePointCount(0, s.length)
 fun split(s: String, separator: String): NList<String> = NList(ArrayList(s.split(separator)))
 
+/** `s.slice(start, end)`: positions count scalar values; a position out of range is moved into the range. */
+fun strSlice(s: String, start: Int, end: Int?): String {
+  val n = s.codePointCount(0, s.length)
+  val from = start.coerceIn(0, n)
+  val to = (end ?: n).coerceIn(from, n)
+  if (n == s.length) return s.substring(from, to)
+  return s.substring(s.offsetByCodePoints(0, from), s.offsetByCodePoints(0, to))
+}
+/** `s.indexOf(part)`: the scalar position of the first `part`, or -1; 0 for the empty part. */
+fun strIndexOf(s: String, part: String): Int {
+  val i = s.indexOf(part)
+  return if (i < 0) -1 else s.codePointCount(0, i)
+}
 // ---- string order by Unicode scalar values ---------------------------------------
 fun compare(a: String, b: String): Int {
   var i = 0
