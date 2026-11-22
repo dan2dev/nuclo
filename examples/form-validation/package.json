@@ -1,0 +1,18 @@
+{
+  "name": "nuclo-example-form-validation",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "Form validation where a field's validator only re-runs when its inputs changed.",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "nuclo": "workspace:*",
+    "typescript": "~7.0.2",
+    "vite": "^8.3.5"
+  }
+}

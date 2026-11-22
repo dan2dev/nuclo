@@ -113,6 +113,16 @@
         "vite": "^8.3.5",
       },
     },
+    "examples/form-validation": {
+      "name": "nuclo-example-form-validation",
+      "version": "0.0.0",
+      "devDependencies": {
+        "@types/node": "^26.6.6",
+        "nuclo": "workspace:*",
+        "typescript": "~7.0.2",
+        "vite": "^8.3.5",
+      },
+    },
     "examples/router": {
       "name": "nuclo-example-router",
       "version": "0.0.0",
@@ -893,6 +903,8 @@
     "nuclo-docs": ["nuclo-docs@workspace:docs"],
 
     "nuclo-example-css-editor": ["nuclo-example-css-editor@workspace:examples/css-editor"],
+
+    "nuclo-example-form-validation": ["nuclo-example-form-validation@workspace:examples/form-validation"],
 
     "nuclo-example-router": ["nuclo-example-router@workspace:examples/router"],
 
